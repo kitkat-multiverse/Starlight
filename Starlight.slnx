@@ -4,7 +4,7 @@
   </Folder>
   <Folder Name="/Libraries/">
     <Project Path="Libraries/Starlight.Common/Starlight.Common.csproj" />
-    <Project Path="Libraries/Starlight.Database/Starlight.Database.csproj" />
+    <Project Path="Libraries/Starlight.Sqlite/Starlight.Sqlite.csproj" />
   </Folder>
   <Folder Name="/Servers/">
     <Project Path="Source/Starlight.Game/Starlight.Game.csproj" />

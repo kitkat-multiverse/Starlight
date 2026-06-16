@@ -1,6 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
-using Starlight.Common.Config;
+using Starlight.Common;
 using Starlight.Database.Metadata;
 
 namespace Starlight.Database.Sql;
