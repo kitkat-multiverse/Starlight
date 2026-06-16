@@ -5,11 +5,15 @@
   <Folder Name="/Libraries/">
     <Project Path="Libraries/Starlight.Common/Starlight.Common.csproj" />
     <Project Path="Libraries/Starlight.Database/Starlight.Database.csproj" />
+    <Project Path="Libraries/Starlight.Rpc/Starlight.Rpc.csproj" />
     <Project Path="Libraries/Starlight.Kcp/Starlight.Kcp.csproj" />
   </Folder>
   <Folder Name="/Servers/">
     <Project Path="Source/Starlight.Game/Starlight.Game.csproj" />
     <Project Path="Source/Starlight.SDK/Starlight.SDK.csproj" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/Starlight.Tests/Starlight.Tests.csproj" />
   </Folder>
   <Project Path="Source/Starlight/Starlight.csproj" />
 </Solution>
