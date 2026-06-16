@@ -12,8 +12,8 @@ public sealed class JsonColumnAttribute : Attribute;
 
 public sealed class StarlightDbContext : DbContext
 {
-    public DbSet<Player> Players { get; set; }
-    public DbSet<PlayerProfile> Profiles { get; set; }
+    public DbSet<Player> Players { get; set; } = null!;
+    public DbSet<PlayerProfile> Profiles { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

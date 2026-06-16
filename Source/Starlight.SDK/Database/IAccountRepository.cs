@@ -4,5 +4,5 @@ namespace Starlight.SDK.Database;
 
 public interface IAccountRepository
 {
-    Task<Account?> GetAccountById(string id);
+    Task<Account?> GetAccountById(uint id);
 }

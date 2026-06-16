@@ -6,7 +6,7 @@ namespace Starlight.SDK.Database.Impl;
 
 public sealed class SqliteAccountRepository(StarlightDatabase db) : IAccountRepository
 {
-    public async Task<Account?> GetAccountById(string id)
+    public async Task<Account?> GetAccountById(uint id)
     {
         var entity = await db.FindAsync<AccountEntity>(id);
         if (entity is null) return null;

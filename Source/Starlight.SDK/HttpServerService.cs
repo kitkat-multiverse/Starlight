@@ -36,13 +36,16 @@ public static class ServiceExtensions
 {
     public static IServiceCollection AddSdkServer(this IServiceCollection collection, StarlightConfig config)
     {
-        switch (DatabaseHelper.ParseProvider(config.Database.ConnectionString, out var connString))
+        var provider = DatabaseHelper.ParseProvider(config.Database.ConnectionString, out var connString);
+        switch (provider)
         {
             case ProviderType.Sqlite: {
                 collection.AddStarlightDatabase(connString, config.Database.Sqlite, typeof(HttpServerService).Assembly);
                 collection.AddSingleton<IAccountRepository, SqliteAccountRepository>();
                 break;
             }
+            default:
+                throw new NotSupportedException($"Unsupported or missing database provider '{provider?.ToString() ?? "<null>"}'.");
         }
 
         collection.AddHostedService<HttpServerService>();

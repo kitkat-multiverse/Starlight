@@ -41,12 +41,12 @@ public sealed class AccountEntity : TrackableEntity
     {
         get;
         private set => Set(ref field, value);
-    }
+    } = DateTimeOffset.UtcNow;
 
     [DbColumn("updated_at", IsRequired = true)]
     public DateTimeOffset UpdatedAt
     {
         get;
         set => Set(ref field, value);
-    }
+    } = DateTimeOffset.UtcNow;
 }

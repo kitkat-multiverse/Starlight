@@ -36,7 +36,8 @@ public static class ServiceExtensions
     public static IServiceCollection AddDbGate(this IServiceCollection collection, StarlightConfig config)
     {
         collection.AddDbContext<StarlightDbContext>(opts => {
-            switch (DatabaseHelper.ParseProvider(config.Database.ConnectionString, out var connString))
+            var provider = DatabaseHelper.ParseProvider(config.Database.ConnectionString, out var connString);
+            switch (provider)
             {
                 case ProviderType.Sqlite: {
                     connString = new SqliteConnectionStringBuilder {
@@ -46,6 +47,8 @@ public static class ServiceExtensions
                     opts.UseSqlite(connString);
                     break;
                 }
+                default:
+                    throw new NotSupportedException($"Unsupported or missing database provider '{provider?.ToString() ?? "<null>"}'.");
             }
         });
 
