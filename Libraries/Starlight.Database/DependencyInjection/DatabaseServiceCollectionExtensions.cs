@@ -24,15 +24,15 @@ public static class DatabaseServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddStarlightDatabase(this IServiceCollection services, StarlightConfig config, params Assembly[] modelAssemblies)
+    public static IServiceCollection AddStarlightDatabase(this IServiceCollection services, SqliteConfig config, params Assembly[] modelAssemblies)
     {
         return services.AddStarlightDatabase(options => {
-            options.Path = config.Database.Path;
-            options.CreateIfMissing = config.Database.CreateIfMissing;
-            options.UseWal = config.Database.UseWal;
-            options.Synchronous = config.Database.Synchronous;
-            options.BusyTimeoutMilliseconds = config.Database.BusyTimeoutMilliseconds;
-            options.AllowClientEvaluation = config.Database.AllowClientEvaluation;
+            options.Path = config.Path;
+            options.CreateIfMissing = config.CreateIfMissing;
+            options.UseWal = config.UseWal;
+            options.Synchronous = config.Synchronous;
+            options.BusyTimeoutMilliseconds = config.BusyTimeoutMilliseconds;
+            options.AllowClientEvaluation = config.AllowClientEvaluation;
 
             foreach (var assembly in modelAssemblies.Distinct())
                 options.ModelAssemblies.Add(assembly);

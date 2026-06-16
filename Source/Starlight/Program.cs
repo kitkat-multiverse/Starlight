@@ -10,6 +10,7 @@ using Starlight.Console;
 using Starlight.Database.DependencyInjection;
 using Starlight.Game;
 using Starlight.Game.Resources;
+using Starlight.Rpc;
 using Starlight.SDK;
 
 namespace Starlight;
@@ -82,7 +83,8 @@ internal static class Program
                 .AddSerilog()
                 .AddSingleton(_ => Config.Instance)
                 .AddSingleton<GameData>()
-                .AddStarlightDatabase(Config.Instance, typeof(GateServerService).Assembly, typeof(Program).Assembly);
+                .AddSingleton<RpcTransport, DirectRpcTransport>()
+                .AddStarlightDatabase(Config.Instance.Database.Sqlite, typeof(GateServerService).Assembly, typeof(Program).Assembly);
 
             builder.Services
                 .AddCommands()
