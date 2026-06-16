@@ -4,7 +4,7 @@ using Starlight.Database.ChangeTracking;
 namespace Starlight.Game.Database;
 
 [DbTable("player_accounts")]
-[DbIndex("ix_player_accounts_uid", nameof(Uid), IsUnique = true)] // UID: 676767 hahaha so funny
+[DbIndex("ix_player_accounts_uid", nameof(Uid), IsUnique = true)]
 [DbIndex("ix_player_accounts_username", nameof(Username), IsUnique = true)] // Username as in the account username we put in Login, not the display name. Display name is not unique.
 public sealed class PlayerAccount : TrackableEntity
 {
