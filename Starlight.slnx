@@ -9,6 +9,7 @@
   <Folder Name="/Servers/">
     <Project Path="Source/Starlight.Game/Starlight.Game.csproj" />
     <Project Path="Source/Starlight.SDK/Starlight.SDK.csproj" />
+    <Project Path="Source/Starlight.DbGate/Starlight.DbGate.csproj" />
   </Folder>
   <Project Path="Source/Starlight/Starlight.csproj" />
 </Solution>
