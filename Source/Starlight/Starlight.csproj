@@ -17,7 +17,6 @@
     <ItemGroup>
       <ProjectReference Include="..\..\Libraries\Starlight.Common\Starlight.Common.csproj" />
       <ProjectReference Include="..\..\Libraries\Starlight.Game.Resources\Starlight.Game.Resources.csproj" />
-      <ProjectReference Include="..\..\Libraries\Starlight.Sqlite\Starlight.Sqlite.csproj" />
       <ProjectReference Include="..\Starlight.Game\Starlight.Game.csproj" />
       <ProjectReference Include="..\Starlight.SDK\Starlight.SDK.csproj" />
     </ItemGroup>

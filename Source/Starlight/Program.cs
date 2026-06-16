@@ -6,7 +6,6 @@ using Serilog;
 using Serilog.Core;
 using Serilog.Events;
 using Serilog.Sinks.SystemConsole.Themes;
-using Starlight.Database.DependencyInjection;
 using Starlight.Game;
 using Starlight.Game.Resources;
 using Starlight.SDK;
@@ -80,10 +79,10 @@ internal static class Program
             builder.Services
                 .AddSerilog()
                 .AddSingleton(_ => Config.Instance)
-                .AddSingleton<GameData>()
-                .AddStarlightDatabase(Config.Instance, typeof(GateServerService).Assembly, typeof(Program).Assembly);
+                .AddSingleton<GameData>();
 
             builder.Services
+                .AddSdkServer()
                 .AddHostedService<GateServerService>()
                 .AddHostedService<HttpServerService>();
 
