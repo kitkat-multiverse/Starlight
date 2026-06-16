@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 using Google.Protobuf;
 using Starlight.Rpc;
 
-namespace Starlight;
+namespace Starlight.Rpc;
 
 /// <summary>
 /// A fully in-memory, single process transport for 'remote' procedure calls.
@@ -27,7 +27,12 @@ public sealed class DirectRpcTransport : RpcTransport
     {
         if (_handlers.TryGetValue(subject, out var handlers))
         {
-            foreach (var handler in handlers)
+            List<AsyncDataHandler> snapshot;
+            lock (handlers)
+            {
+                snapshot = [.. handlers];
+            }
+            foreach (var handler in snapshot)
             {
                 await handler(message);
             }

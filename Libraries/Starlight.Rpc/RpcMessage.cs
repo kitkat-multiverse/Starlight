@@ -1,5 +1,6 @@
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
+using Serilog;
 
 namespace Starlight.Rpc;
 
@@ -23,23 +24,26 @@ public class RpcMessage(byte[] payload)
     /// <typeparam name="T">The message to decode into.</typeparam>
     /// <returns>The parsed message, or null if it failed to parse.</returns>
     /// <exception cref="Exception">If the message doesn't have a parser.</exception>
-    public virtual T? TryDeserialize<T>() where T : IMessage
+    public virtual T? TryDeserialize<T>() where T : IMessage<T>
     {
-        var parser = typeof(T)
+        var parser = (MessageParser<T>?) typeof(T)
             .GetProperty("Parser")?
             .GetValue(null);
 
-        // Check if the parser exists.
-        if (parser == null) {
-            throw new Exception("Invalid protobuf message type.");
+        try
+        {
+            return parser == null ?
+                throw new Exception("Invalid protobuf message type.") :
+                parser.ParseFrom(Payload);
         }
-
-        return (T?) parser.GetType()
-            .GetMethod("ParseFrom", [typeof(byte[])])!
-            .Invoke(parser, [Payload]);
+        catch (InvalidProtocolBufferException ex)
+        {
+            Log.Warning(ex, "Failed to deserialize RPC message.");
+            return default;
+        }
     }
 
-    public T Deserialize<T>() where T : IMessage
+    public T Deserialize<T>() where T : IMessage<T>
         => TryDeserialize<T>() ?? throw new NullReferenceException("Failed to deserialize message.");
 
     /// <summary>

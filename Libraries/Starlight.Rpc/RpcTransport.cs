@@ -101,9 +101,9 @@ public abstract class RpcTransport : IHostedService
         message.ReplySubject = replySubject;
 
         // Subscribe to the reply subject.
-        var tcs = new TaskCompletionSource<RpcMessage>();
+        var tcs = new TaskCompletionSource<RpcMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
         var subscription = await Subscribe(replySubject, msg => {
-            tcs.SetResult(msg);
+            tcs.TrySetResult(msg);
             return Task.CompletedTask;
         });
         

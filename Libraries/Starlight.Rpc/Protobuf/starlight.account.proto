@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package starlight.player;
+package starlight.account;
 
 option csharp_namespace = "Starlight.Rpc.Proto";
 
