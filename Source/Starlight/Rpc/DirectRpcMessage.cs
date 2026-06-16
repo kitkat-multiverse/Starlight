@@ -1,7 +1,7 @@
 using Google.Protobuf;
 using Starlight.Rpc;
 
-namespace Starlight;
+namespace Starlight.Rpc;
 
 public sealed class DirectRpcMessage : RpcMessage
 {
