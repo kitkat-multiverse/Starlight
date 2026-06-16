@@ -8,5 +8,5 @@ public sealed class AvatarTalentData : Data {
     public new uint Id { get; set; }
 
     [JsonPropertyName("openConfig")]
-    public string ConfigName { get; set; }
+    public string ConfigName { get; set; } = string.Empty;
 }

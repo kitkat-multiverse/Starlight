@@ -2,7 +2,7 @@
 
 namespace Starlight.Commands;
 
-public class TestCommand : IConsoleCommand
+public class TestCommand : ICommand
 {
     public string Name => "test";
     public string Description => "Test command";

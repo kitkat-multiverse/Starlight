@@ -1,12 +1,13 @@
 using System.Diagnostics;
-using Common.Config;
+using Starlight.Common.Config;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
 using Serilog.Sinks.SystemConsole.Themes;
-using Starlight.Extensions;
+using Starlight.Console;
+using Starlight.Database.DependencyInjection;
 using Starlight.Game;
 using Starlight.Game.Resources;
 using Starlight.SDK;
@@ -80,10 +81,11 @@ internal static class Program
             builder.Services
                 .AddSerilog()
                 .AddSingleton(_ => Config.Instance)
-                .AddSingleton<GameData>();
+                .AddSingleton<GameData>()
+                .AddStarlightDatabase(Config.Instance, typeof(GateServerService).Assembly, typeof(Program).Assembly);
 
             builder.Services
-                .AddConsoleCommands()
+                .AddCommands()
                 .AddHostedService<GateServerService>()
                 .AddHostedService<HttpServerService>();
 

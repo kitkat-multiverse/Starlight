@@ -1,17 +1,17 @@
 ﻿using Microsoft.Extensions.Hosting;
 using Serilog;
 
-namespace Starlight;
+namespace Starlight.Console;
 
 public sealed class ConsoleService(
-    ConsoleCommandRegistry registry,
+    CommandRegistry registry,
     IHostApplicationLifetime lifetime) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            Console.Write("> ");
+            System.Console.Write("> ");
 
             var input = await System.Console.In.ReadLineAsync(stoppingToken);
 

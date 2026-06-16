@@ -11,7 +11,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\Libraries\Common\Common.csproj" />
+      <ProjectReference Include="..\..\Libraries\Starlight.Common\Starlight.Common.csproj" />
     </ItemGroup>
 
 </Project>

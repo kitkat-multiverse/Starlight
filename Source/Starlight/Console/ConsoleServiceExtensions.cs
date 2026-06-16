@@ -1,15 +1,15 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Starlight.Commands;
 
-namespace Starlight.Extensions;
+namespace Starlight.Console;
 
 public static class ConsoleServiceExtensions
 {
-    public static IServiceCollection AddConsoleCommands(this IServiceCollection services)
+    public static IServiceCollection AddCommands(this IServiceCollection services)
     {
-        var commandType = typeof(IConsoleCommand);
+        var commandType = typeof(ICommand);
 
-        var commands = typeof(IConsoleCommand).Assembly
+        var commands = typeof(ICommand).Assembly
             .GetTypes()
             .Where(type =>
                 commandType.IsAssignableFrom(type) &&
@@ -20,7 +20,7 @@ public static class ConsoleServiceExtensions
             services.AddSingleton(commandType, command);
         }
 
-        services.AddSingleton<ConsoleCommandRegistry>();
+        services.AddSingleton<CommandRegistry>();
         services.AddHostedService<ConsoleService>();
 
         return services;

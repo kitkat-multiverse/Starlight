@@ -4,7 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Serilog;
 using Serilog.Events;
 
-namespace Common.Config;
+namespace Starlight.Common.Config;
 
 public static class Config
 {
@@ -15,6 +15,7 @@ public static class Config
     public static LogEventLevel LogLevel => Instance.LogLevel;
     public static ExternalResources Resources => Instance.Resources;
     public static ServerConfig Server => Instance.Server;
+    public static DatabaseConfig Database => Instance.Database;
 
     public static void Load(string path = "config.json")
     {
@@ -56,6 +57,7 @@ public sealed class StarlightConfig
     public LogEventLevel LogLevel { get; set; } = LogEventLevel.Information;
     public ExternalResources Resources { get; set; } = new();
     public ServerConfig Server { get; set; } = new();
+    public DatabaseConfig Database { get; set; } = new();
 }
 
 public sealed class ExternalResources
@@ -66,6 +68,16 @@ public sealed class ExternalResources
 public sealed class ServerConfig
 {
     public HttpConfig Http { get; set; } = new();
+}
+
+public sealed class DatabaseConfig
+{
+    public string Path { get; set; } = "./data/starlight.db";
+    public bool CreateIfMissing { get; set; } = true;
+    public bool UseWal { get; set; } = true;
+    public string Synchronous { get; set; } = "NORMAL";
+    public int BusyTimeoutMilliseconds { get; set; } = 5000;
+    public bool AllowClientEvaluation { get; set; } = true;
 }
 
 public sealed class HttpConfig

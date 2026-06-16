@@ -9,5 +9,5 @@ public sealed class CoopPointData : Data {
     [JsonPropertyName("acceptQuest")]
     public uint AcceptQuest { get; set; }
     [JsonPropertyName("postPointList")]
-    public uint[] PostPointList { get; set; }
+    public uint[] PostPointList { get; set; } = [];
 }

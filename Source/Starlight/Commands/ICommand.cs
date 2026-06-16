@@ -1,6 +1,6 @@
 ﻿namespace Starlight.Commands;
 
-public interface IConsoleCommand
+public interface ICommand
 {
     string Name { get; }
     string Description { get; }
