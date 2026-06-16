@@ -5,6 +5,7 @@
   <Folder Name="/Libraries/">
     <Project Path="Libraries/Starlight.Common/Starlight.Common.csproj" />
     <Project Path="Libraries/Starlight.Database/Starlight.Database.csproj" />
+    <Project Path="Libraries/Starlight.Kcp/Starlight.Kcp.csproj" />
   </Folder>
   <Folder Name="/Servers/">
     <Project Path="Source/Starlight.Game/Starlight.Game.csproj" />
