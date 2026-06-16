@@ -16,6 +16,9 @@ public interface IStarlightDatabase : IAsyncDisposable, IDisposable
     void Remove<T>(T entity) where T : class, new();
 
     Task<T?> FindAsync<T>(object key, CancellationToken cancellationToken = default) where T : class, new();
-    Task<List<T>> QueryAsync<T>(Expression<Func<T, bool>>? predicate = null, CancellationToken cancellationToken = default) where T : class, new();
+
+    Task<List<T>> QueryAsync<T>(Expression<Func<T, bool>>? predicate = null, CancellationToken cancellationToken = default)
+        where T : class, new();
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

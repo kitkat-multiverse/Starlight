@@ -18,13 +18,16 @@ public static class Env
 {
     /// If true, the application is running in a container.
     public static bool IsContainerized => GetOrDefault("DOTNET_RUNNING_IN_CONTAINER", out _);
-    
+
     /// <summary>
     /// Fetches an environment variable or returns false if it is not set or empty.
     /// </summary>
-    public static bool GetOrDefault(string variable, out string value) {
+    public static bool GetOrDefault(string variable, out string value)
+    {
         var env = Environment.GetEnvironmentVariable(variable);
-        if (string.IsNullOrWhiteSpace(env)) {
+
+        if (string.IsNullOrWhiteSpace(env))
+        {
             value = string.Empty;
             return false;
         }

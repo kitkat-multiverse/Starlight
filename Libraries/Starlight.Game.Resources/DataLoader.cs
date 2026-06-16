@@ -20,11 +20,12 @@ internal static partial class DataLoader
             Task.Run(() => LoadExcels(output))
         );
     }
-    
+
     /// <summary>
     /// Loads all ExcelBinOutput (xlsx -> json) files.
     /// </summary>
-    private static void LoadExcels(GameData output) {
+    private static void LoadExcels(GameData output)
+    {
         var stopwatch = Stopwatch.StartNew();
 
         var resources = typeof(DataLoader).Assembly.GetTypes()
@@ -33,34 +34,43 @@ internal static partial class DataLoader
             .OrderByDescending(t => t.attr.Priority)
             .ToList();
 
-        foreach (var (type, info) in resources) {
+        foreach (var (type, info) in resources)
+        {
             var filePath = $"ExcelBinOutput/{info.FileName}";
             var typeName = type.Name;
 
             if (typeof(GameData)
                     .GetField(typeName, BindingFlags.Public | BindingFlags.Static)?
                     .GetValue(null) is not
-                IDictionary dictionary) {
+                IDictionary dictionary)
+            {
                 Log.Warning("Resource {0} has an invalid type.", typeName);
                 continue;
             }
 
-            switch (filePath.FileExtension()) {
+            switch (filePath.FileExtension())
+            {
                 case "json":
                     var listType = typeof(List<>).MakeGenericType(type);
 
                     var data = Resources.Loader.ReadJson(filePath, listType);
-                    if (data is not IList list) {
+
+                    if (data is not IList list)
+                    {
                         Log.Warning("Failed to load resource file: {0}", filePath);
                         continue;
                     }
 
-                    foreach (var item in list) {
+                    foreach (var item in list)
+                    {
                         if (item is not Data resource) continue;
+
                         var id = resource.GetId();
 
                         resource.OnLoad();
-                        if (dictionary.Contains(id)) {
+
+                        if (dictionary.Contains(id))
+                        {
                             Log.Warning("Resource {0} has a value in the dictionary!", id);
                         }
                         dictionary[id] = resource;
@@ -84,23 +94,30 @@ internal static partial class DataLoader
     /// <summary>
     /// Loads all teleport waypoints for all scenes.
     /// </summary>
-    private static void LoadScenePoints(GameData output) {
+    private static void LoadScenePoints(GameData output)
+    {
         var regex = ScenePointRegex();
         var stopwatch = Stopwatch.StartNew();
+
         Resources.Loader.ListFiles("BinOutput/Scene/Point", "scene*_point.json")
             .Select((uint sceneId, ScenePointConfig? data) (p) => {
                 var match = regex.Match(p);
-                if (!match.Success) {
+
+                if (!match.Success)
+                {
                     return (uint.MinValue, null);
                 }
 
                 var sceneId = uint.Parse(match.Groups[1].Value);
                 var data = Resources.Loader.ReadJson<ScenePointConfig>(p);
-                if (data?.Points is null) {
+
+                if (data?.Points is null)
+                {
                     return (uint.MinValue, null);
                 }
 
-                foreach (var (pointId, point) in data.Points) {
+                foreach (var (pointId, point) in data.Points)
+                {
                     point.PointId = uint.Parse(pointId);
                     point.SceneId = sceneId;
                 }
@@ -110,7 +127,9 @@ internal static partial class DataLoader
             .Where(d => d.data is not null)
             .Select(d => {
                 var data = new Dictionary<uint, PointData>();
-                foreach (var (_, point) in d.data!.Points) {
+
+                foreach (var (_, point) in d.data!.Points)
+                {
                     data.Add(point.PointId, point);
                 }
 
@@ -123,7 +142,7 @@ internal static partial class DataLoader
     }
 
     #endregion
-    
+
     #region Expressions
 
     [GeneratedRegex(@"scene([0-9]+)_point\.json")]

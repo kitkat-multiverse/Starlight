@@ -8,6 +8,7 @@ internal static class SqliteSchemaBuilder
     public static string CreateTable(DatabaseModel model)
     {
         var builder = new StringBuilder();
+
         builder.Append("CREATE TABLE IF NOT EXISTS ")
             .Append(SqliteNames.QuoteIdentifier(model.TableName))
             .Append(" (");
@@ -15,6 +16,7 @@ internal static class SqliteSchemaBuilder
         for (var i = 0; i < model.Columns.Count; i++)
         {
             var column = model.Columns[i];
+
             if (i > 0)
                 builder.Append(", ");
 
@@ -25,6 +27,7 @@ internal static class SqliteSchemaBuilder
             if (column.IsPrimaryKey)
             {
                 builder.Append(" PRIMARY KEY");
+
                 if (column.AutoIncrement)
                     builder.Append(" AUTOINCREMENT");
             }
@@ -36,7 +39,8 @@ internal static class SqliteSchemaBuilder
                 builder.Append(" UNIQUE");
 
             if (column.MaxLength > 0)
-                builder.Append(" CHECK(length(").Append(SqliteNames.QuoteIdentifier(column.ColumnName)).Append(") <= ").Append(column.MaxLength).Append(')');
+                builder.Append(" CHECK(length(").Append(SqliteNames.QuoteIdentifier(column.ColumnName)).Append(") <= ")
+                    .Append(column.MaxLength).Append(')');
 
             if (!string.IsNullOrWhiteSpace(column.DefaultSql))
                 builder.Append(" DEFAULT ").Append(column.DefaultSql);
@@ -50,7 +54,8 @@ internal static class SqliteSchemaBuilder
     {
         foreach (var index in model.Indexes)
         {
-            yield return $"CREATE {(index.IsUnique ? "UNIQUE " : string.Empty)}INDEX IF NOT EXISTS {SqliteNames.QuoteIdentifier(index.Name)} ON {SqliteNames.QuoteIdentifier(model.TableName)} ({string.Join(", ", index.Columns.Select(x => SqliteNames.QuoteIdentifier(x.ColumnName)))});";
+            yield return
+                $"CREATE {(index.IsUnique ? "UNIQUE " : string.Empty)}INDEX IF NOT EXISTS {SqliteNames.QuoteIdentifier(index.Name)} ON {SqliteNames.QuoteIdentifier(model.TableName)} ({string.Join(", ", index.Columns.Select(x => SqliteNames.QuoteIdentifier(x.ColumnName)))});";
         }
     }
 }

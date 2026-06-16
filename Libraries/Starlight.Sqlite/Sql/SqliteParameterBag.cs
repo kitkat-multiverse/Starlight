@@ -19,6 +19,8 @@ internal sealed class SqliteParameterBag
     public void Apply(SqliteCommand command)
     {
         foreach (var parameter in _parameters)
+        {
             command.Parameters.Add(parameter);
+        }
     }
 }

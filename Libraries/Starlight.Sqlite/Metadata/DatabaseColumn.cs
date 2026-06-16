@@ -47,6 +47,7 @@ internal sealed class DatabaseModel
     public DatabaseColumn GetColumn(string propertyName)
     {
         var column = Columns.FirstOrDefault(x => x.Property.Name == propertyName);
+
         if (column is null)
             throw new InvalidOperationException($"Property '{ClrType.Name}.{propertyName}' is not mapped to a database column.");
 

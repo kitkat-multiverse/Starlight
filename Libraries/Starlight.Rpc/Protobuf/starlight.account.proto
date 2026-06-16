@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package starlight.account;
+
+option csharp_namespace = "Starlight.Rpc.Proto";
+
+import "starlight.proto";
+
+// Path: Game Server -> SDK
+// Subject: `sdk.account.validate`
+message ValidateAccountReq {
+  string account_id = 1;
+  string account_token = 2;
+}
+
+// Path: SDK -> Game Server
+// Subject: `sdk.account.validate`
+message ValidateAccountRsp {
+  StarlightRetcode retcode = 1;
+}

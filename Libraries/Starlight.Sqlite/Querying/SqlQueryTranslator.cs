@@ -71,6 +71,7 @@ internal sealed class SqlQueryTranslator(Type rootType)
             case nameof(Queryable.Count):
             case nameof(Queryable.LongCount):
                 Visit(expression.Arguments[0], plan);
+
                 if (expression.Arguments.Count == 2)
                 {
                     var countLambda = UnquoteLambda(expression.Arguments[1]);
@@ -81,6 +82,7 @@ internal sealed class SqlQueryTranslator(Type rootType)
 
             case nameof(Queryable.Any):
                 Visit(expression.Arguments[0], plan);
+
                 if (expression.Arguments.Count == 2)
                 {
                     var anyLambda = UnquoteLambda(expression.Arguments[1]);
@@ -94,12 +96,14 @@ internal sealed class SqlQueryTranslator(Type rootType)
             case nameof(Queryable.Single):
             case nameof(Queryable.SingleOrDefault):
                 Visit(expression.Arguments[0], plan);
+
                 if (expression.Arguments.Count == 2)
                 {
                     var lambda = UnquoteLambda(expression.Arguments[1]);
                     plan.Predicates.Add(new PredicateSqlTranslator(Model, plan.Parameters).Translate(lambda.Body));
                 }
                 plan.Limit = name.StartsWith("Single", StringComparison.Ordinal) ? 2 : 1;
+
                 plan.Terminal = name switch {
                     nameof(Queryable.First) => QueryTerminal.First,
                     nameof(Queryable.FirstOrDefault) => QueryTerminal.FirstOrDefault,
@@ -110,13 +114,15 @@ internal sealed class SqlQueryTranslator(Type rootType)
 
             case nameof(Queryable.Select):
                 var selectLambda = UnquoteLambda(expression.Arguments[1]);
+
                 if (selectLambda.Body == selectLambda.Parameters[0])
                 {
                     Visit(expression.Arguments[0], plan);
                     return;
                 }
 
-                throw new NotSupportedException("Projection is evaluated client-side. SQL projection support intentionally stays conservative to preserve type safety.");
+                throw new NotSupportedException(
+                    "Projection is evaluated client-side. SQL projection support intentionally stays conservative to preserve type safety.");
 
             default:
                 throw new NotSupportedException($"Queryable.{name} is not translated to SQLite.");
@@ -148,10 +154,12 @@ internal sealed class PredicateSqlTranslator(DatabaseModel model, SqliteParamete
     public string TranslateMemberAccess(Expression expression)
     {
         expression = StripConvert(expression);
+
         if (expression is not MemberExpression member)
             throw new NotSupportedException("ORDER BY expressions must reference a mapped property.");
 
         var column = ResolveColumn(member);
+
         if (column is null)
             throw new NotSupportedException("ORDER BY expressions must reference a mapped property.");
 
@@ -203,7 +211,8 @@ internal sealed class PredicateSqlTranslator(DatabaseModel model, SqliteParamete
             _ => throw new NotSupportedException($"Binary operator '{binary.NodeType}' is not supported.")
         };
 
-        if (binary.NodeType is ExpressionType.Equal or ExpressionType.NotEqual or ExpressionType.GreaterThan or ExpressionType.GreaterThanOrEqual or ExpressionType.LessThan or ExpressionType.LessThanOrEqual)
+        if (binary.NodeType is ExpressionType.Equal or ExpressionType.NotEqual or ExpressionType.GreaterThan
+            or ExpressionType.GreaterThanOrEqual or ExpressionType.LessThan or ExpressionType.LessThanOrEqual)
         {
             var leftColumn = ResolveColumnExpression(left);
             var rightColumn = ResolveColumnExpression(right);
@@ -221,6 +230,7 @@ internal sealed class PredicateSqlTranslator(DatabaseModel model, SqliteParamete
     private string VisitMemberSql(MemberExpression member)
     {
         var column = ResolveColumn(member);
+
         if (column is not null)
             return SqliteNames.QuoteIdentifier(column.ColumnName);
 
@@ -235,7 +245,8 @@ internal sealed class PredicateSqlTranslator(DatabaseModel model, SqliteParamete
         if (call.Method.DeclaringType == typeof(Enumerable) && call.Method.Name == nameof(Enumerable.Contains))
             return VisitEnumerableContainsSql(call);
 
-        if (call.Method.Name == "Contains" && call.Object is not null && call.Object.Type != typeof(string) && typeof(IEnumerable).IsAssignableFrom(call.Object.Type))
+        if (call.Method.Name == "Contains" && call.Object is not null && call.Object.Type != typeof(string) &&
+            typeof(IEnumerable).IsAssignableFrom(call.Object.Type))
             return VisitInstanceContainsSql(call);
 
         throw new NotSupportedException($"Method '{call.Method.Name}' cannot be translated to SQLite.");
@@ -247,9 +258,9 @@ internal sealed class PredicateSqlTranslator(DatabaseModel model, SqliteParamete
         var argument = Evaluate(call.Arguments[0])?.ToString() ?? string.Empty;
 
         return call.Method.Name switch {
-            nameof(string.Contains) => $"{target} LIKE {parameters.Add($"%{EscapeLike(argument)}%") } ESCAPE '\\'",
-            nameof(string.StartsWith) => $"{target} LIKE {parameters.Add($"{EscapeLike(argument)}%") } ESCAPE '\\'",
-            nameof(string.EndsWith) => $"{target} LIKE {parameters.Add($"%{EscapeLike(argument)}") } ESCAPE '\\'",
+            nameof(string.Contains) => $"{target} LIKE {parameters.Add($"%{EscapeLike(argument)}%")} ESCAPE '\\'",
+            nameof(string.StartsWith) => $"{target} LIKE {parameters.Add($"{EscapeLike(argument)}%")} ESCAPE '\\'",
+            nameof(string.EndsWith) => $"{target} LIKE {parameters.Add($"%{EscapeLike(argument)}")} ESCAPE '\\'",
             nameof(string.Equals) => $"{target} = {parameters.Add(argument)}",
             _ => throw new NotSupportedException($"String method '{call.Method.Name}' cannot be translated to SQLite.")
         };
@@ -258,7 +269,7 @@ internal sealed class PredicateSqlTranslator(DatabaseModel model, SqliteParamete
     private string VisitEnumerableContainsSql(MethodCallExpression call)
     {
         var values = (IEnumerable?)Evaluate(call.Arguments[0])
-            ?? throw new NotSupportedException("Enumerable.Contains requires a non-null enumerable.");
+                     ?? throw new NotSupportedException("Enumerable.Contains requires a non-null enumerable.");
         var item = call.Arguments[1];
         var itemSql = VisitSql(item);
         return BuildInSql(itemSql, values.Cast<object?>(), ResolveColumnExpression(item));
@@ -267,7 +278,7 @@ internal sealed class PredicateSqlTranslator(DatabaseModel model, SqliteParamete
     private string VisitInstanceContainsSql(MethodCallExpression call)
     {
         var values = (IEnumerable?)Evaluate(call.Object!)
-            ?? throw new NotSupportedException("Contains requires a non-null enumerable.");
+                     ?? throw new NotSupportedException("Contains requires a non-null enumerable.");
         var item = call.Arguments[0];
         var itemSql = VisitSql(item);
         return BuildInSql(itemSql, values.Cast<object?>(), ResolveColumnExpression(item));
@@ -276,6 +287,7 @@ internal sealed class PredicateSqlTranslator(DatabaseModel model, SqliteParamete
     private string BuildInSql(string itemSql, IEnumerable<object?> values, DatabaseColumn? itemColumn)
     {
         var parameterNames = values.Select(v => parameters.Add(v, itemColumn)).ToArray();
+
         if (parameterNames.Length == 0)
             return "0 = 1";
 
@@ -294,6 +306,7 @@ internal sealed class PredicateSqlTranslator(DatabaseModel model, SqliteParamete
             return null;
 
         var expression = StripConvert(member.Expression!);
+
         if (expression is not ParameterExpression || expression.Type != model.ClrType)
             return null;
 

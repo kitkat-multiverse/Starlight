@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package starlight.player;
+
+option csharp_namespace = "Starlight.Rpc.Proto";
+
+import "starlight.proto";

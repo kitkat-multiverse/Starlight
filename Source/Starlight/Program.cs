@@ -7,8 +7,11 @@ using Serilog.Core;
 using Serilog.Events;
 using Serilog.Sinks.SystemConsole.Themes;
 using Starlight.DbGate;
+using Starlight.Console;
+using Starlight.Database.DependencyInjection;
 using Starlight.Game;
 using Starlight.Game.Resources;
+using Starlight.Rpc;
 using Starlight.SDK;
 
 namespace Starlight;
@@ -63,7 +66,7 @@ internal static class Program
                 outputTemplate: LoggerConsoleTemplate,
                 theme: LoggerTheme)
             .WriteTo.File(
-                path: "logs/latest.log",
+                "logs/latest.log",
                 rollingInterval: RollingInterval.Day,
                 outputTemplate: LoggerFileTemplate,
                 restrictedToMinimumLevel: LogEventLevel.Information)
@@ -80,9 +83,12 @@ internal static class Program
             builder.Services
                 .AddSerilog()
                 .AddSingleton(_ => Config.Instance)
-                .AddSingleton<GameData>();
+                .AddSingleton<GameData>()
+                .AddSingleton<RpcTransport, DirectRpcTransport>();
 
             builder.Services
+                .AddCommands()
+                .AddHostedService(s => s.GetRequiredService<RpcTransport>())
                 .AddDbGate(Config.Instance)
                 .AddSdkServer(Config.Instance)
                 .AddHostedService<GateServerService>();

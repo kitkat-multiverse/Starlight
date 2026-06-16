@@ -30,9 +30,7 @@ internal sealed class SqlQueryPlan(DatabaseModel model)
     {
         var builder = new StringBuilder("SELECT ");
 
-        builder.Append(selectAllColumns
-            ? string.Join(", ", Model.Columns.Select(x => SqliteNames.QuoteIdentifier(x.ColumnName)))
-            : "1");
+        builder.Append(selectAllColumns ? string.Join(", ", Model.Columns.Select(x => SqliteNames.QuoteIdentifier(x.ColumnName))) : "1");
 
         builder.Append(" FROM ").Append(SqliteNames.QuoteIdentifier(Model.TableName));
         AppendWhereOrderLimit(builder);

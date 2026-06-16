@@ -14,7 +14,7 @@ namespace Starlight.Database;
 public sealed class StarlightDatabase(StarlightDatabaseOptions options) : IStarlightDatabase
 {
     private readonly ConcurrentDictionary<object, EntityEntry> _entries = new(ReferenceEqualityComparer.Instance);
-    private readonly SemaphoreSlim _sync = new(1, 1);
+    private readonly SemaphoreSlim _sync = new(initialCount: 1, maxCount: 1);
     private SqliteConnection? _connection;
     private bool _disposed;
 
@@ -24,7 +24,8 @@ public sealed class StarlightDatabase(StarlightDatabaseOptions options) : IStarl
 
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
-        var models = DatabaseModelCache.Discover(options.ModelAssemblies.DefaultIfEmpty(Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly()).ToArray());
+        var models = DatabaseModelCache.Discover(options.ModelAssemblies
+            .DefaultIfEmpty(Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly()).ToArray());
         await InitializeAsync(models.Select(x => x.ClrType), cancellationToken);
     }
 
@@ -33,6 +34,7 @@ public sealed class StarlightDatabase(StarlightDatabaseOptions options) : IStarl
         await EnsureOpenAsync(cancellationToken);
 
         var models = modelTypes.Distinct().Select(DatabaseModelCache.Get).ToArray();
+
         if (models.Length == 0)
         {
             Log.Information("SQLite database initialized with no discovered models.");
@@ -40,14 +42,17 @@ public sealed class StarlightDatabase(StarlightDatabaseOptions options) : IStarl
         }
 
         await _sync.WaitAsync(cancellationToken);
+
         try
         {
             foreach (var model in models)
             {
-                await ExecuteNonQueryLockedAsync(SqliteSchemaBuilder.CreateTable(model), null, cancellationToken);
+                await ExecuteNonQueryLockedAsync(SqliteSchemaBuilder.CreateTable(model), parameterBag: null, cancellationToken);
 
                 foreach (var indexSql in SqliteSchemaBuilder.CreateIndexes(model))
-                    await ExecuteNonQueryLockedAsync(indexSql, null, cancellationToken);
+                {
+                    await ExecuteNonQueryLockedAsync(indexSql, parameterBag: null, cancellationToken);
+                }
             }
         }
         finally
@@ -83,15 +88,19 @@ public sealed class StarlightDatabase(StarlightDatabaseOptions options) : IStarl
 
         var parameterBag = new SqliteParameterBag();
         var where = $"{SqliteNames.QuoteIdentifier(primaryKey.ColumnName)} = {parameterBag.Add(key, primaryKey)}";
-        var sql = $"SELECT {string.Join(", ", model.Columns.Select(x => SqliteNames.QuoteIdentifier(x.ColumnName)))} FROM {SqliteNames.QuoteIdentifier(model.TableName)} WHERE {where} LIMIT 1";
+
+        var sql =
+            $"SELECT {string.Join(", ", model.Columns.Select(x => SqliteNames.QuoteIdentifier(x.ColumnName)))} FROM {SqliteNames.QuoteIdentifier(model.TableName)} WHERE {where} LIMIT 1";
 
         var rows = await ExecuteEntityQueryAsync<T>(sql, parameterBag, cancellationToken);
         return rows.FirstOrDefault();
     }
 
-    public async Task<List<T>> QueryAsync<T>(Expression<Func<T, bool>>? predicate = null, CancellationToken cancellationToken = default) where T : class, new()
+    public async Task<List<T>> QueryAsync<T>(Expression<Func<T, bool>>? predicate = null, CancellationToken cancellationToken = default)
+        where T : class, new()
     {
         IQueryable<T> query = Set<T>();
+
         if (predicate is not null)
             query = query.Where(predicate);
 
@@ -110,6 +119,7 @@ public sealed class StarlightDatabase(StarlightDatabaseOptions options) : IStarl
             return 0;
 
         await _sync.WaitAsync(cancellationToken);
+
         try
         {
             await using var transaction = (SqliteTransaction)await _connection!.BeginTransactionAsync(cancellationToken);
@@ -118,6 +128,7 @@ public sealed class StarlightDatabase(StarlightDatabaseOptions options) : IStarl
             foreach (var entry in entries)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+
                 affected += entry.State switch {
                     EntityState.Added => await InsertLockedAsync(entry, transaction, cancellationToken),
                     EntityState.Deleted => await DeleteLockedAsync(entry, transaction, cancellationToken),
@@ -146,7 +157,12 @@ public sealed class StarlightDatabase(StarlightDatabaseOptions options) : IStarl
         }
     }
 
-    internal async Task<object?> ExecuteTranslatedQueryAsync(Type rootType, Expression expression, Type requestedType, CancellationToken cancellationToken)
+    internal async Task<object?> ExecuteTranslatedQueryAsync(
+        Type rootType,
+        Expression expression,
+        Type requestedType,
+        CancellationToken cancellationToken
+    )
     {
         await EnsureOpenAsync(cancellationToken);
 
@@ -157,7 +173,8 @@ public sealed class StarlightDatabase(StarlightDatabaseOptions options) : IStarl
             QueryTerminal.Count => await ExecuteScalarAsync<int>(plan.BuildCountSql(), plan.Parameters, cancellationToken),
             QueryTerminal.LongCount => await ExecuteScalarAsync<long>(plan.BuildCountSql(), plan.Parameters, cancellationToken),
             QueryTerminal.Any => await ExecuteScalarAsync<long>(plan.BuildAnySql(), plan.Parameters, cancellationToken) != 0,
-            QueryTerminal.First or QueryTerminal.FirstOrDefault or QueryTerminal.Single or QueryTerminal.SingleOrDefault => await ExecuteTerminalEntityAsync(rootType, plan, cancellationToken),
+            QueryTerminal.First or QueryTerminal.FirstOrDefault or QueryTerminal.Single or QueryTerminal.SingleOrDefault =>
+                await ExecuteTerminalEntityAsync(rootType, plan, cancellationToken),
             _ => await ExecuteSequenceAsync(rootType, requestedType, plan, cancellationToken)
         };
     }
@@ -172,13 +189,14 @@ public sealed class StarlightDatabase(StarlightDatabaseOptions options) : IStarl
     }
 
     private List<T> LoadAllForClientEvaluationGeneric<T>() where T : class, new()
-        => ExecuteEntityQueryAsync<T>(BuildSelectAllSql(DatabaseModelCache.Get<T>()), null, CancellationToken.None)
+        => ExecuteEntityQueryAsync<T>(BuildSelectAllSql(DatabaseModelCache.Get<T>()), parameterBag: null, CancellationToken.None)
             .GetAwaiter()
             .GetResult();
 
     private async Task<object?> ExecuteSequenceAsync(Type rootType, Type requestedType, SqlQueryPlan plan, CancellationToken cancellationToken)
     {
         var elementType = requestedType.GetSequenceElementType();
+
         if (elementType != rootType)
             throw new NotSupportedException("The LINQ projection is not directly translatable to SQLite.");
 
@@ -201,7 +219,8 @@ public sealed class StarlightDatabase(StarlightDatabaseOptions options) : IStarl
         return await (Task<object?>)method.Invoke(this, [plan, cancellationToken])!;
     }
 
-    private async Task<object?> ExecuteTerminalEntityGenericAsync<T>(SqlQueryPlan plan, CancellationToken cancellationToken) where T : class, new()
+    private async Task<object?> ExecuteTerminalEntityGenericAsync<T>(SqlQueryPlan plan, CancellationToken cancellationToken)
+        where T : class, new()
     {
         var rows = await ExecuteEntityQueryAsync<T>(plan.BuildSelectSql(), plan.Parameters, cancellationToken);
 
@@ -214,7 +233,8 @@ public sealed class StarlightDatabase(StarlightDatabaseOptions options) : IStarl
         };
     }
 
-    private async Task<List<T>> ExecuteEntityQueryAsync<T>(string sql, SqliteParameterBag? parameterBag, CancellationToken cancellationToken) where T : class, new()
+    private async Task<List<T>> ExecuteEntityQueryAsync<T>(string sql, SqliteParameterBag? parameterBag, CancellationToken cancellationToken)
+        where T : class, new()
     {
         await EnsureOpenAsync(cancellationToken);
         await _sync.WaitAsync(cancellationToken);
@@ -283,12 +303,13 @@ public sealed class StarlightDatabase(StarlightDatabaseOptions options) : IStarl
         if (columns.Length == 0)
         {
             sql = $"INSERT INTO {SqliteNames.QuoteIdentifier(entry.Model.TableName)} DEFAULT VALUES;";
-        }
-        else
+        } else
         {
             var names = columns.Select(x => SqliteNames.QuoteIdentifier(x.ColumnName)).ToArray();
             var values = columns.Select(x => parameterBag.Add(x.GetValue(entry.Entity), x)).ToArray();
-            sql = $"INSERT INTO {SqliteNames.QuoteIdentifier(entry.Model.TableName)} ({string.Join(", ", names)}) VALUES ({string.Join(", ", values)});";
+
+            sql =
+                $"INSERT INTO {SqliteNames.QuoteIdentifier(entry.Model.TableName)} ({string.Join(", ", names)}) VALUES ({string.Join(", ", values)});";
         }
 
         var affected = await ExecuteNonQueryLockedAsync(sql, parameterBag, cancellationToken, transaction);
@@ -307,35 +328,45 @@ public sealed class StarlightDatabase(StarlightDatabaseOptions options) : IStarl
 
     private async Task<int> UpdateLockedAsync(EntityEntry entry, SqliteTransaction transaction, CancellationToken cancellationToken)
     {
-        var key = entry.Model.PrimaryKey ?? throw new InvalidOperationException($"Model '{entry.Model.ClrType.Name}' cannot be updated because it does not have a primary key.");
+        var key = entry.Model.PrimaryKey ??
+                  throw new InvalidOperationException(
+                      $"Model '{entry.Model.ClrType.Name}' cannot be updated because it does not have a primary key.");
         var changed = entry.GetChangedColumns().Where(x => !x.IsPrimaryKey).ToArray();
 
         if (changed.Length == 0)
             return 0;
 
         var parameterBag = new SqliteParameterBag();
+
         var setters = changed
             .Select(x => $"{SqliteNames.QuoteIdentifier(x.ColumnName)} = {parameterBag.Add(x.GetValue(entry.Entity), x)}")
             .ToArray();
         var keyParameter = parameterBag.Add(key.GetValue(entry.Entity), key);
 
-        var sql = $"UPDATE {SqliteNames.QuoteIdentifier(entry.Model.TableName)} SET {string.Join(", ", setters)} WHERE {SqliteNames.QuoteIdentifier(key.ColumnName)} = {keyParameter};";
+        var sql =
+            $"UPDATE {SqliteNames.QuoteIdentifier(entry.Model.TableName)} SET {string.Join(", ", setters)} WHERE {SqliteNames.QuoteIdentifier(key.ColumnName)} = {keyParameter};";
         return await ExecuteNonQueryLockedAsync(sql, parameterBag, cancellationToken, transaction);
     }
 
     private async Task<int> DeleteLockedAsync(EntityEntry entry, SqliteTransaction transaction, CancellationToken cancellationToken)
     {
-        var key = entry.Model.PrimaryKey ?? throw new InvalidOperationException($"Model '{entry.Model.ClrType.Name}' cannot be deleted because it does not have a primary key.");
+        var key = entry.Model.PrimaryKey ??
+                  throw new InvalidOperationException(
+                      $"Model '{entry.Model.ClrType.Name}' cannot be deleted because it does not have a primary key.");
         var parameterBag = new SqliteParameterBag();
         var keyParameter = parameterBag.Add(key.GetValue(entry.Entity), key);
-        var sql = $"DELETE FROM {SqliteNames.QuoteIdentifier(entry.Model.TableName)} WHERE {SqliteNames.QuoteIdentifier(key.ColumnName)} = {keyParameter};";
+
+        var sql =
+            $"DELETE FROM {SqliteNames.QuoteIdentifier(entry.Model.TableName)} WHERE {SqliteNames.QuoteIdentifier(key.ColumnName)} = {keyParameter};";
         return await ExecuteNonQueryLockedAsync(sql, parameterBag, cancellationToken, transaction);
     }
 
     private EntityEntry Track(object entity, EntityState state)
     {
         var model = DatabaseModelCache.Get(entity.GetType());
-        var entry = _entries.GetOrAdd(entity, static (item, args) => new EntityEntry(item, args.Model, args.State), (Model: model, State: state));
+
+        var entry = _entries.GetOrAdd(entity, static (item, args) => new EntityEntry(item, args.Model, args.State),
+            (Model: model, State: state));
         entry.State = state;
         return entry;
     }
@@ -347,7 +378,8 @@ public sealed class StarlightDatabase(StarlightDatabaseOptions options) : IStarl
 
         if (options.CreateIfMissing)
         {
-            var directory = System.IO.Path.GetDirectoryName(System.IO.Path.GetFullPath(options.Path));
+            var directory = Path.GetDirectoryName(Path.GetFullPath(options.Path));
+
             if (!string.IsNullOrWhiteSpace(directory))
                 Directory.CreateDirectory(directory);
         }
@@ -363,7 +395,9 @@ public sealed class StarlightDatabase(StarlightDatabaseOptions options) : IStarl
         await _connection.OpenAsync(cancellationToken);
 
         await using var command = _connection.CreateCommand();
-        command.CommandText = $"PRAGMA foreign_keys = ON; PRAGMA busy_timeout = {options.BusyTimeoutMilliseconds}; PRAGMA synchronous = {options.Synchronous};";
+
+        command.CommandText =
+            $"PRAGMA foreign_keys = ON; PRAGMA busy_timeout = {options.BusyTimeoutMilliseconds}; PRAGMA synchronous = {options.Synchronous};";
         await command.ExecuteNonQueryAsync(cancellationToken);
 
         if (options.UseWal)
@@ -373,7 +407,12 @@ public sealed class StarlightDatabase(StarlightDatabaseOptions options) : IStarl
         }
     }
 
-    private async Task<int> ExecuteNonQueryLockedAsync(string sql, SqliteParameterBag? parameterBag, CancellationToken cancellationToken, SqliteTransaction? transaction = null)
+    private async Task<int> ExecuteNonQueryLockedAsync(
+        string sql,
+        SqliteParameterBag? parameterBag,
+        CancellationToken cancellationToken,
+        SqliteTransaction? transaction = null
+    )
     {
         await using var command = _connection!.CreateCommand();
         command.CommandText = sql;
@@ -383,7 +422,8 @@ public sealed class StarlightDatabase(StarlightDatabaseOptions options) : IStarl
     }
 
     private static string BuildSelectAllSql(DatabaseModel model)
-        => $"SELECT {string.Join(", ", model.Columns.Select(x => SqliteNames.QuoteIdentifier(x.ColumnName)))} FROM {SqliteNames.QuoteIdentifier(model.TableName)}";
+        =>
+            $"SELECT {string.Join(", ", model.Columns.Select(x => SqliteNames.QuoteIdentifier(x.ColumnName)))} FROM {SqliteNames.QuoteIdentifier(model.TableName)}";
 
     private static bool IsDefaultValue(object? value)
     {
@@ -463,8 +503,11 @@ public sealed class StarlightDatabase(StarlightDatabaseOptions options) : IStarl
         {
             State = EntityState.Unchanged;
             _originalValues.Clear();
+
             foreach (var pair in Snapshot())
+            {
                 _originalValues[pair.Key] = pair.Value;
+            }
 
             if (Entity is IDirtyTrackable trackable)
                 trackable.AcceptChanges();

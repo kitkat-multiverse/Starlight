@@ -14,6 +14,7 @@ public static class DatabaseServiceCollectionExtensions
 
         services.AddSingleton(options);
         services.AddSingleton<StarlightDatabase>();
+
         services.AddSingleton<IStarlightDatabase>(sp => {
             var database = sp.GetRequiredService<StarlightDatabase>();
             Database.Instance = database;

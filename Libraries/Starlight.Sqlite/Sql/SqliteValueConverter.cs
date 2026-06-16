@@ -17,7 +17,8 @@ internal static class SqliteValueConverter
         if (type.IsEnum)
             return column.StoreEnumAsText ? "TEXT" : "INTEGER";
 
-        if (type == typeof(string) || type == typeof(char) || type == typeof(Guid) || type == typeof(DateTime) || type == typeof(DateTimeOffset))
+        if (type == typeof(string) || type == typeof(char) || type == typeof(Guid) || type == typeof(DateTime) ||
+            type == typeof(DateTimeOffset))
             return "TEXT";
 
         if (type == typeof(bool) || type == typeof(byte) || type == typeof(sbyte) || type == typeof(short) || type == typeof(ushort) ||
@@ -33,7 +34,8 @@ internal static class SqliteValueConverter
         if (column.IsJson)
             return "TEXT";
 
-        throw new NotSupportedException($"Property '{column.Property.DeclaringType?.Name}.{column.Property.Name}' uses unsupported type '{column.ClrType}'. Add [DbJson] if it should be serialized as JSON.");
+        throw new NotSupportedException(
+            $"Property '{column.Property.DeclaringType?.Name}.{column.Property.Name}' uses unsupported type '{column.ClrType}'. Add [DbJson] if it should be serialized as JSON.");
     }
 
     public static object? ToDatabase(object? value, DatabaseColumn? column = null)

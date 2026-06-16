@@ -34,7 +34,8 @@ internal static class DatabaseModelCache
             .GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
             .Where(p => p.GetMethod is { IsStatic: false } && p.GetCustomAttribute<DbIgnoreAttribute>() is null)
             .Where(p => p.GetIndexParameters().Length == 0)
-            .Where(p => p.GetMethod?.IsPublic == true || p.GetCustomAttribute<DbColumnAttribute>() is not null || p.GetCustomAttribute<DbPrimaryKeyAttribute>() is not null)
+            .Where(p => p.GetMethod?.IsPublic == true || p.GetCustomAttribute<DbColumnAttribute>() is not null ||
+                        p.GetCustomAttribute<DbPrimaryKeyAttribute>() is not null)
             .Select(BuildColumn)
             .ToArray();
 
@@ -42,8 +43,10 @@ internal static class DatabaseModelCache
             throw new InvalidOperationException($"Database model '{type.FullName}' does not expose any mapped properties.");
 
         var primaryKeys = columns.Where(x => x.IsPrimaryKey).ToArray();
+
         if (primaryKeys.Length > 1)
-            throw new InvalidOperationException($"Database model '{type.FullName}' has multiple primary keys. The lightweight SQLite mapper supports one primary key per table.");
+            throw new InvalidOperationException(
+                $"Database model '{type.FullName}' has multiple primary keys. The lightweight SQLite mapper supports one primary key per table.");
 
         var indexes = BuildIndexes(type, columns);
 
@@ -97,13 +100,17 @@ internal static class DatabaseModelCache
         foreach (var attr in type.GetCustomAttributes<DbIndexAttribute>())
         {
             var selected = attr.Properties
-                .Select(p => columns.FirstOrDefault(x => string.Equals(x.Property.Name, p, StringComparison.Ordinal) || string.Equals(x.ColumnName, p, StringComparison.OrdinalIgnoreCase)))
+                .Select(p => columns.FirstOrDefault(x =>
+                    string.Equals(x.Property.Name, p, StringComparison.Ordinal) ||
+                    string.Equals(x.ColumnName, p, StringComparison.OrdinalIgnoreCase)))
                 .ToArray();
 
             if (selected.Any(x => x is null))
             {
                 var missing = attr.Properties.First(p => selected.All(x => x?.Property.Name != p && x?.ColumnName != p));
-                throw new InvalidOperationException($"Index '{attr.Name}' on '{type.FullName}' references unmapped property or column '{missing}'.");
+
+                throw new InvalidOperationException(
+                    $"Index '{attr.Name}' on '{type.FullName}' references unmapped property or column '{missing}'.");
             }
 
             indexes.Add(new DatabaseIndex {
@@ -126,14 +133,14 @@ internal static class DatabaseModelCache
         for (var i = 0; i < value.Length; i++)
         {
             var ch = value[i];
+
             if (char.IsUpper(ch))
             {
                 if (i > 0 && (char.IsLower(value[i - 1]) || i + 1 < value.Length && char.IsLower(value[i + 1])))
                     builder.Append('_');
 
                 builder.Append(char.ToLowerInvariant(ch));
-            }
-            else
+            } else
             {
                 builder.Append(ch);
             }

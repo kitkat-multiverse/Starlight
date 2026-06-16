@@ -8,12 +8,12 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Starlight.Common\Starlight.Common.csproj" />
+        <ProjectReference Include="..\Starlight.Common\Starlight.Common.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.8" />
-      <PackageReference Include="Microsoft.Extensions.Hosting" Version="11.0.0-preview.5.26302.115" />
+        <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.8"/>
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="11.0.0-preview.5.26302.115"/>
     </ItemGroup>
 
 </Project>

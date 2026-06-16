@@ -10,7 +10,9 @@ internal sealed class StarlightQueryProvider(StarlightDatabase database, Type ro
     {
         var elementType = expression.Type.GetSequenceElementType() ?? expression.Type;
         var queryableType = typeof(StarlightQueryable<>).MakeGenericType(elementType);
-        return (IQueryable)Activator.CreateInstance(queryableType, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, binder: null, args: [this, expression], culture: null)!;
+
+        return (IQueryable)Activator.CreateInstance(queryableType, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+            binder: null, [this, expression], culture: null)!;
     }
 
     public IQueryable<TElement> CreateQuery<TElement>(Expression expression)
@@ -28,6 +30,7 @@ internal sealed class StarlightQueryProvider(StarlightDatabase database, Type ro
     public async Task<List<T>> ToListAsync<T>(Expression expression, CancellationToken cancellationToken)
     {
         var result = await ExecuteAsync(expression, typeof(IEnumerable<T>), cancellationToken);
+
         return result switch {
             List<T> list => list,
             IEnumerable<T> enumerable => enumerable.ToList(),
@@ -51,6 +54,7 @@ internal sealed class StarlightQueryProvider(StarlightDatabase database, Type ro
     public async Task<int> CountAsync(Expression expression, CancellationToken cancellationToken)
     {
         var elementType = expression.Type.GetSequenceElementType() ?? rootType;
+
         var countCall = Expression.Call(
             typeof(Queryable),
             nameof(Queryable.Count),
@@ -64,6 +68,7 @@ internal sealed class StarlightQueryProvider(StarlightDatabase database, Type ro
     public async Task<bool> AnyAsync(Expression expression, CancellationToken cancellationToken)
     {
         var elementType = expression.Type.GetSequenceElementType() ?? rootType;
+
         var anyCall = Expression.Call(
             typeof(Queryable),
             nameof(Queryable.Any),
@@ -103,6 +108,7 @@ internal sealed class StarlightQueryProvider(StarlightDatabase database, Type ro
             if (node.Value is IQueryable queryable && queryable.ElementType == rootType)
             {
                 var starlightQueryableType = typeof(StarlightQueryable<>).MakeGenericType(rootType);
+
                 if (starlightQueryableType.IsAssignableFrom(queryable.GetType()))
                     return replacement;
             }
