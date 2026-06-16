@@ -88,6 +88,7 @@ internal static class Program
 
             builder.Services
                 .AddCommands()
+                .AddHostedService(s => s.GetRequiredService<RpcTransport>())
                 .AddHostedService<GateServerService>()
                 .AddHostedService<HttpServerService>();
 
