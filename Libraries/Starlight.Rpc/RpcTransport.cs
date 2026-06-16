@@ -56,7 +56,7 @@ public abstract class RpcTransport : IHostedService
     /// </summary>
     /// <typeparam name="T">The protobuf type to deserialize messages as.</typeparam>
     /// <returns>A subscription. Disposing this object will cancel the subscription, preventing the handler from receiving more messages.</returns>
-    public virtual Task<IDisposable> Subscribe<T>(string subject, AsyncMessageHandler<T> handler) where T : IMessage
+    public virtual Task<IDisposable> Subscribe<T>(string subject, AsyncMessageHandler<T> handler) where T : IMessage<T>
     {
         return Subscribe(subject, ActivityListener);
         
@@ -83,8 +83,8 @@ public abstract class RpcTransport : IHostedService
     public virtual async Task<TResponse> Request<TRequest, TResponse>(
         string subject, TRequest request,
         TimeSpan? timeout = null)
-        where TRequest : IMessage
-        where TResponse : IMessage
+        where TRequest : IMessage<TRequest>
+        where TResponse : IMessage<TResponse>
     {
         timeout ??= TimeSpan.FromSeconds(5);
 
