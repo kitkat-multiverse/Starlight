@@ -10,16 +10,20 @@ public sealed class KcpServer : IDisposable
     private readonly Dictionary<(int Conv, int Token), KcpConnection> _connections = new();
     private readonly CancellationTokenSource _cts = new();
 
-    public KcpServer(int port, IKcpServerHandler handler)
+    public KcpServer(string address, int port, IKcpServerHandler handler)
     {
-        _socket = new UdpClient(port);
+        var endpoint = new IPEndPoint(
+            IPAddress.Parse(address),
+            port);
+
+        _socket = new UdpClient(endpoint);
         _handler = handler;
     }
 
-    public async Task RunAsync()
+    public async Task RunAsync(CancellationToken ct = default)
     {
         var receiveLoop = ReceiveLoopAsync(_cts.Token);
-        var updateLoop  = UpdateLoopAsync(_cts.Token);
+        var updateLoop = UpdateLoopAsync(_cts.Token);
         await Task.WhenAll(receiveLoop, updateLoop);
     }
 

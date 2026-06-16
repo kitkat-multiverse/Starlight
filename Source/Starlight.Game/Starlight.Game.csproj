@@ -9,6 +9,7 @@
     <ItemGroup>
       <ProjectReference Include="..\..\Libraries\Starlight.Common\Starlight.Common.csproj" />
       <ProjectReference Include="..\..\Libraries\Starlight.Database\Starlight.Database.csproj" />
+      <ProjectReference Include="..\..\Libraries\Starlight.Kcp\Starlight.Kcp.csproj" />
     </ItemGroup>
 
 </Project>

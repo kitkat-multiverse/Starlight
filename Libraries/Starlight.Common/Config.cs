@@ -67,6 +67,7 @@ public sealed class ExternalResources
 
 public sealed class ServerConfig
 {
+    public GameConfig Game { get; set; } = new();
     public HttpConfig Http { get; set; } = new();
 }
 
@@ -84,4 +85,10 @@ public sealed class HttpConfig
 {
     public string BindAddress { get; set; } = "0.0.0.0";
     public int BindPort { get; set; } = 8080;
+}
+
+public sealed class GameConfig
+{
+    public string BindAddress { get; set; } = "0.0.0.0";
+    public int BindPort { get; set; } = 22102;
 }
