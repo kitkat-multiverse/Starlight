@@ -96,7 +96,7 @@ public sealed class DirectRpcTransportTests
         var sent = new StringValue { Value = "hello" };
         StringValue? received = null;
 
-        await transport.Subscribe<StringValue>(Subject, msg => {
+        await transport.Subscribe<StringValue>(Subject, (msg, _) => {
             received = msg;
             return Task.CompletedTask;
         });

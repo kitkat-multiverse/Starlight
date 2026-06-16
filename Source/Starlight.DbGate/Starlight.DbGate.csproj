@@ -8,6 +8,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\Libraries\Starlight.Common\Starlight.Common.csproj" />
+      <ProjectReference Include="..\..\Libraries\Starlight.Rpc\Starlight.Rpc.csproj" />
     </ItemGroup>
 
     <ItemGroup>

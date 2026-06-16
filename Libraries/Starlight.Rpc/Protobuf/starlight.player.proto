@@ -5,3 +5,31 @@ package starlight.player;
 option csharp_namespace = "Starlight.Rpc.Proto";
 
 import "starlight.proto";
+
+message NetPlayer {
+  uint32 uid = 1;
+  uint32 account_id = 2;
+  NetPlayerProfile profile = 3;
+}
+
+message NetPlayerProfile {
+  string nickname = 1;
+  string signature = 2;
+  uint32 picture_id = 3;
+  uint32 name_card_id = 4;
+}
+
+// --- MESSAGES START --- \\
+
+// Path: Game Server -> DB Gate
+// Subject: `game.player.fetch`
+message FetchPlayerReq {
+  uint32 uid = 1;
+}
+
+// Path: DB Gate -> Game Server
+// Subject: `game.player.fetch`
+message FetchPlayerRsp {
+  StarlightRetcode retcode = 1;
+  optional NetPlayer player = 2;
+}

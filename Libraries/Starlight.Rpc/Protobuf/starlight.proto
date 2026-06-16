@@ -8,8 +8,11 @@ option csharp_namespace = "Starlight.Rpc.Proto";
 enum StarlightRetcode {
   STARLIGHT_RETCODE_SUCCESS = 0;
   STARLIGHT_RETCODE_SERVER_ERROR = -1;
-  
+
   // Account error codes.
   STARLIGHT_RETCODE_ACCOUNT_NOT_FOUND = -10001;
   STARLIGHT_RETCODE_ACCOUNT_INVALID_TOKEN = -10002;
+
+  // Player (data) error codes.
+  STARLIGHT_RETCODE_PLAYER_NOT_FOUND = -20001;
 }

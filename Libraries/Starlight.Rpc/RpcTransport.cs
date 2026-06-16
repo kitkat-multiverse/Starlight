@@ -5,7 +5,7 @@ using Starlight.Common;
 namespace Starlight.Rpc;
 
 public delegate Task AsyncDataHandler(RpcMessage message);
-public delegate Task AsyncMessageHandler<in T>(T message) where T : IMessage;
+public delegate Task AsyncMessageHandler<in T>(T msg, RpcMessage rpc) where T : IMessage;
 
 /// <summary>
 /// A remote-procedure-call (RPC) transport defines how the services
@@ -63,7 +63,7 @@ public abstract class RpcTransport : IHostedService
         {
             if (message.TryDeserialize<T>() is {} deserialized)
             {
-                await handler(deserialized);
+                await handler(deserialized, message);
             }
         }
     }

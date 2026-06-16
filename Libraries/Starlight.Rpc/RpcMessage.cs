@@ -71,3 +71,11 @@ public class RpcMessage(byte[] payload)
         await Transport.Publish(ReplySubject, reply as IMessage ?? new Empty());
     }
 }
+
+public interface IRpcSerializable<out T> where T : IMessage<T>
+{
+    /// <summary>
+    /// Serializes this object into an instance of <see cref="T"/>
+    /// </summary>
+    T Serialize();
+}
