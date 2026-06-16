@@ -4,7 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Serilog;
 using Serilog.Events;
 
-namespace Starlight.Common.Config;
+namespace Starlight.Common;
 
 public static class Config
 {
@@ -70,14 +70,19 @@ public sealed class ServerConfig
     public HttpConfig Http { get; set; } = new();
 }
 
-public sealed class DatabaseConfig
+public sealed class SqliteConfig
 {
-    public string Path { get; set; } = "./data/starlight.db";
     public bool CreateIfMissing { get; set; } = true;
     public bool UseWal { get; set; } = true;
     public string Synchronous { get; set; } = "NORMAL";
     public int BusyTimeoutMilliseconds { get; set; } = 5000;
     public bool AllowClientEvaluation { get; set; } = true;
+}
+
+public sealed class DatabaseConfig
+{
+    public string ConnectionString { get; set; } = "sqlite:./data/starlight.db";
+    public SqliteConfig Sqlite { get; set; } = new();
 }
 
 public sealed class HttpConfig

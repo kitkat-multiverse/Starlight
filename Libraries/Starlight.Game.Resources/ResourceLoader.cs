@@ -2,7 +2,7 @@ using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using Starlight.Common.Config;
+using Starlight.Common;
 using Serilog;
 
 namespace Starlight.Game.Resources;

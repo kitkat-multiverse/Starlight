@@ -2,7 +2,7 @@ using System.Collections;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using Starlight.Common.Config;
+using Starlight.Common;
 using Serilog;
 using Starlight.Game.Resources.Binary;
 

@@ -2,7 +2,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Starlight.Common.Config;
+namespace Starlight.Common;
 
 public static class Constants
 {

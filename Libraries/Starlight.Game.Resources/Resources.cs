@@ -1,5 +1,5 @@
 using System.IO.Compression;
-using Starlight.Common.Config;
+using Starlight.Common;
 using Serilog;
 
 namespace Starlight.Game.Resources;
