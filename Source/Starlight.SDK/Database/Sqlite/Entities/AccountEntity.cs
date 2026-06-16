@@ -9,7 +9,7 @@ public sealed class AccountEntity : TrackableEntity
 {
     [DbPrimaryKey(AutoIncrement = true)]
     [DbColumn("id", IsRequired = true, IsUnique = true)]
-    public long Id
+    public uint Id
     {
         get;
         private set => Set(ref field, value);
@@ -21,7 +21,7 @@ public sealed class AccountEntity : TrackableEntity
         get;
         set => Set(ref field, value);
     } = string.Empty;
-    
+
     [DbColumn("email", MaxLength = 320)]
     public string? Email
     {
@@ -35,7 +35,7 @@ public sealed class AccountEntity : TrackableEntity
         get;
         set => Set(ref field, value);
     } = string.Empty;
-    
+
     [DbColumn("created_at", IsRequired = true)]
     public DateTimeOffset CreatedAt
     {
