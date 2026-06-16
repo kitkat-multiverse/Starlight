@@ -5,26 +5,20 @@ using Starlight.Kcp;
 
 namespace Starlight.Game;
 
-public sealed class GateServerService : BackgroundService
+public sealed class GateServerService(
+    ILogger<GateServerService> logger) : BackgroundService
 {
-    private readonly ILogger<GateServerService> _logger;
-
-    public GateServerService(ILogger<GateServerService> logger)
-    {
-        _logger = logger;
-    }
-
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         try
         {
-            var handler = new GateServerHandler(_logger);
+            var handler = new GateServerHandler(logger);
             var server = new KcpServer(
                 Config.Server.Game.BindAddress,
                 Config.Server.Game.BindPort,
                 handler);
 
-            _logger.LogInformation("Starting GameServer at {0}:{1}",
+            logger.LogInformation("Starting GameServer at {0}:{1}",
                 Config.Server.Game.BindAddress,
                 Config.Server.Game.BindPort);
             
@@ -32,7 +26,7 @@ public sealed class GateServerService : BackgroundService
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "An error occured while trying to start GameServer!");
+            logger.LogError(e, "An error occured while trying to start GameServer!");
         }
     }
 }
