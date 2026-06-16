@@ -8,11 +8,19 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Starlight.Common\Starlight.Common.csproj" />
+        <ProjectReference Include="..\Starlight.Common\Starlight.Common.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Google.Protobuf" Version="3.35.1" />
+        <PackageReference Include="Grpc.Tools" Version="2.51.0">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Google.Protobuf" Version="3.35.1" />
+    </ItemGroup>
+    
+    <ItemGroup>
+        <Protobuf Include="Protobuf/*.proto" ProtoRoot="Protobuf" GrpcServices="None" />
     </ItemGroup>
 
 </Project>
