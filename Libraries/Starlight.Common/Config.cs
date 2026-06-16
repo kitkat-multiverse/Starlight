@@ -4,7 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Serilog;
 using Serilog.Events;
 
-namespace Common.Config;
+namespace Starlight.Common.Config;
 
 public static class Config
 {

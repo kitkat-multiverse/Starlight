@@ -1,5 +1,5 @@
 using System.Reflection;
-using Common.Config;
+using Starlight.Common.Config;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 

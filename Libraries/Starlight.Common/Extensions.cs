@@ -1,4 +1,4 @@
-namespace Common.Config;
+namespace Starlight.Common.Config;
 
 public static class StringExtensions
 {
