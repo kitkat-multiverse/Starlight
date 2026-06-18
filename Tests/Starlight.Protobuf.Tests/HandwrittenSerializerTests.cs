@@ -6,7 +6,7 @@ namespace Starlight.Protobuf.Tests;
 
 /// <summary>
 /// Validates the runtime contract (<see cref="ISerializer{T}"/>,
-/// <see cref="MessageExtensions"/>) with a hand-written serializer, and confirms
+/// <see cref="Core.MessageExtensions"/>) with a hand-written serializer, and confirms
 /// the produced bytes equal canonical proto3 wire format.
 /// </summary>
 public sealed class HandwrittenSerializerTests
