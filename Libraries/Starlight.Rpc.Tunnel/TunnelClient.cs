@@ -1,4 +1,5 @@
 using Google.Protobuf;
+using Serilog;
 using Starlight.Common;
 using Starlight.Rpc;
 using Starlight.Rpc.Proto;
@@ -16,21 +17,22 @@ public sealed class TunnelClient(RpcTransport rpc, ITunnelConnector connector)
     /// </summary>
     /// <param name="subject">The tunnel subject the requester wants (matched by the acceptor).</param>
     /// <param name="metadata">Optional opaque bytes sent to the acceptor.</param>
-    /// <param name="timeout">
-    ///   For the first-reply path: how long to wait before giving up.<br/>
-    ///   For the sorted path: how long to collect replies before picking the winner.
-    /// </param>
+    /// <param name="reqTimeout">For the first-reply path: how long to wait before giving up.</param>
+    /// <param name="collectWindow">For the sorted path: how long to collect replies before picking the winner.</param>
     /// <param name="sorter">
-    ///   Optional. When provided, all replies received within <paramref name="timeout"/> are
+    ///   Optional. When provided, all replies received within <paramref name="reqTimeout"/> are
     ///   collected, then <paramref name="sorter"/> selects the winner. The list is never empty
     ///   when <paramref name="sorter"/> is called.<br/>
     ///   When null, first-reply-wins semantics apply (faster; stops waiting immediately).
     /// </param>
+    /// <param name="ct">Cancellation token when using the sorted path.</param>
     public async Task<RpcTunnel> Open(
         string subject,
         byte[]? metadata = null,
-        TimeSpan? timeout = null,
-        Func<IReadOnlyList<NewTunnelRsp>, NewTunnelRsp>? sorter = null
+        TimeSpan? reqTimeout = null,
+        TimeSpan? collectWindow = null,
+        Func<IReadOnlyList<NewTunnelRsp>, NewTunnelRsp>? sorter = null,
+        CancellationToken ct = default
     )
     {
         var req = new NewTunnelReq {
@@ -38,18 +40,27 @@ public sealed class TunnelClient(RpcTransport rpc, ITunnelConnector connector)
             Metadata = ByteString.CopyFrom(metadata ?? [])
         };
 
-        if (sorter is not null)
-            return await OpenWithSorter(req, sorter, timeout ?? TimeSpan.FromSeconds(5));
+        if (sorter is not null && collectWindow is not null)
+            return await OpenWithSorter(req, sorter, (TimeSpan)collectWindow, ct);
 
         var rsp = await rpc.Request<NewTunnelReq, NewTunnelRsp>(
-            TunnelSubjects.NewTunnel, req, timeout);
+            TunnelSubjects.NewTunnel, req, reqTimeout, ct);
+
+        if (rsp.HasError)
+        {
+            Log.Debug("Tunnel request for subject '{Subject}' was rejected: {Error}", req.Subject, rsp.Error);
+            throw new TunnelHandshakeException(
+                $"Tunnel request for subject '{req.Subject}' was rejected: {rsp.Error}");
+        }
+
         return await connector.Connect(rsp);
     }
 
     private async Task<RpcTunnel> OpenWithSorter(
         NewTunnelReq req,
         Func<IReadOnlyList<NewTunnelRsp>, NewTunnelRsp> sorter,
-        TimeSpan window
+        TimeSpan window,
+        CancellationToken token
     )
     {
         var replySubject = $"reply_{Random.Shared.NextUuid()}";
@@ -61,9 +72,15 @@ public sealed class TunnelClient(RpcTransport rpc, ITunnelConnector connector)
 
         var replies = new List<NewTunnelRsp>();
 
-        var sub = await rpc.Subscribe(replySubject, msg => {
+        using var sub = await rpc.Subscribe(replySubject, msg => {
             if (msg.TryDeserialize<NewTunnelRsp>() is not {} rsp)
                 return Task.CompletedTask;
+
+            if (rsp.HasError)
+            {
+                Log.Verbose("Tunnel request for subject '{Subject}' was rejected: {Error}", req.Subject, rsp.Error);
+                return Task.CompletedTask;
+            }
 
             lock (replies)
             {
@@ -73,8 +90,7 @@ public sealed class TunnelClient(RpcTransport rpc, ITunnelConnector connector)
         });
 
         await rpc.Publish(TunnelSubjects.NewTunnel, reqMsg);
-        await Task.Delay(window);
-        sub.Dispose();
+        await Task.Delay(window, token);
 
         NewTunnelRsp[] snapshot;
 

@@ -8,5 +8,8 @@ public sealed class TunnelRequestTimeoutException(string id, TimeSpan period)
 public sealed class TunnelClosedException()
     : TunnelException("The tunnel is closed.");
 
+public sealed class TunnelDecodeException(string message)
+    : TunnelException(message);
+
 public sealed class TunnelHandshakeException(string message)
     : TunnelException(message);

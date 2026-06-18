@@ -2,7 +2,6 @@ using Starlight.Protobuf.Fixtures;
 using Starlight.Rpc;
 using Starlight.Rpc.Proto;
 using Starlight.Rpc.Tunnel;
-using Starlight.Rpc.Tunnel.Connection;
 using Xunit;
 
 namespace Starlight.Tests;
@@ -383,7 +382,7 @@ public sealed class TunnelHandshakeTests
         var (_, _, client, _) = Build();
 
         await Assert.ThrowsAsync<NoRespondersException>(() =>
-            client.Open("game", timeout: TimeSpan.FromSeconds(5)));
+            client.Open("game", reqTimeout: TimeSpan.FromSeconds(5)));
     }
 
     [Fact]
@@ -397,7 +396,7 @@ public sealed class TunnelHandshakeTests
         // A host IS listening on rpc.tunnel, but it ignores "lobby" subjects.
         // HasResponders is true, so the request is sent but never answered → timeout.
         await Assert.ThrowsAsync<RequestTimeoutException>(() =>
-            client.Open("lobby", timeout: TimeSpan.FromMilliseconds(100)));
+            client.Open("lobby", reqTimeout: TimeSpan.FromMilliseconds(100)));
     }
 
     [Fact]
@@ -417,7 +416,7 @@ public sealed class TunnelHandshakeTests
 
         var clientEnd = await client.Open(
             "game",
-            timeout: TimeSpan.FromMilliseconds(300),
+            collectWindow: TimeSpan.FromMilliseconds(300),
             sorter: list => {
                 captured = list;
                 return list[^1];

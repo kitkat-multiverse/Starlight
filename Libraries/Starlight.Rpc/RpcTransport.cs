@@ -76,13 +76,15 @@ public abstract class RpcTransport : IHostedService
     /// <param name="subject">The subject to publish the request on.</param>
     /// <param name="request">The request data.</param>
     /// <param name="timeout">The amount of time to wait before failing. Defaults to 5 seconds.</param>
+    /// <param name="ct">The cancellation token to use for the request.</param>
     /// <typeparam name="TRequest">The protobuf message type for the request.</typeparam>
     /// <typeparam name="TResponse">The protobuf message type for the response.</typeparam>
     /// <returns>The response data, deserialized.</returns>
     public virtual async Task<TResponse> Request<TRequest, TResponse>(
         string subject,
         TRequest request,
-        TimeSpan? timeout = null
+        TimeSpan? timeout = null,
+        CancellationToken ct = default
     )
         where TRequest : IMessage<TRequest>
         where TResponse : IMessage<TResponse>
@@ -117,7 +119,7 @@ public abstract class RpcTransport : IHostedService
 
         try
         {
-            reply = await tcs.Task.WaitAsync(timeout.Value);
+            reply = await tcs.Task.WaitAsync(timeout.Value, ct);
         }
         catch (TimeoutException)
         {

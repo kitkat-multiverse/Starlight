@@ -115,13 +115,20 @@ public abstract class RpcTunnel : IDisposable
 
     // --- closure ---
 
-    public void Close()
+    public virtual void Close()
     {
         if (Interlocked.Exchange(ref _closedFlag, value: 1) != 0) return;
 
         _closed.Cancel();
-        OnClosed?.Invoke();
-        NotifyPeerClosed();
+
+        try
+        {
+            OnClosed?.Invoke();
+        }
+        finally
+        {
+            NotifyPeerClosed();
+        }
     }
 
     /// <summary>Called by the peer's <see cref="Close"/>; cancels without re-notifying.</summary>
@@ -140,5 +147,17 @@ public abstract class RpcTunnel : IDisposable
         if (IsClosed) throw new TunnelClosedException();
     }
 
-    public void Dispose() => Close();
+    public void Dispose()
+    {
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!disposing) return;
+
+        Close();
+        _closed.Dispose();
+    }
 }

@@ -17,7 +17,12 @@ message NewTunnelReq {
 // In-memory: metadata holds the broker handle (Guid, 16 bytes).
 // Network: metadata holds implementation-defined connection info (IP/port/token).
 //
+// When `error` is set, the acceptor is rejecting the request (capacity reached,
+// auth failure, unknown subject) and `metadata` is meaningless; the requester
+// discards the response instead of connecting.
+//
 // Subject: `rpc.tunnel` (reply)
 message NewTunnelRsp {
   bytes metadata = 1;
+  optional string error = 2;
 }

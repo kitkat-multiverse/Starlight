@@ -26,6 +26,15 @@ public sealed class DirectTunnel : RpcTunnel
         return (a, b);
     }
 
+    public override void Close()
+    {
+        base.Close();
+
+        _intHandlers.Clear();
+        _stringHandlers.Clear();
+        _peer = null!;
+    }
+
     protected override TunnelMessage Serialize(IMessage message) => new DirectTunnelMessage(message);
 
     public override IDisposable Subscribe(int id, AsyncTunnelHandler handler)
@@ -36,14 +45,20 @@ public sealed class DirectTunnel : RpcTunnel
 
     public override Task Publish(int id, TunnelMessage message)
     {
+        // Capture peer before the closed check so a concurrent Close() that nulls _peer
+        // cannot produce an NRE. A message queued this way may still reach the peer even
+        // if Close() wins the race after ThrowIfClosed() — that window is intentional
+        // (delivery-in-flight is preferable to a silent drop or a hard throw mid-send).
+        var peer = _peer;
         ThrowIfClosed();
-        return _peer.Deliver(_peer._intHandlers, id, message);
+        return peer.Deliver(peer._intHandlers, id, message);
     }
 
     public override Task Publish(string id, TunnelMessage message)
     {
+        var peer = _peer;
         ThrowIfClosed();
-        return _peer.Deliver(_peer._stringHandlers, id, message);
+        return peer.Deliver(peer._stringHandlers, id, message);
     }
 
     protected override void NotifyPeerClosed() => _peer.MarkClosedFromPeer();

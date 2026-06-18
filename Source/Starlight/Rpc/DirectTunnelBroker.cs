@@ -10,7 +10,8 @@ public sealed class DirectTunnelBroker : ITunnelBroker
     public Guid Register(RpcTunnel clientEnd)
     {
         var id = Random.Shared.NextUuid();
-        _pending[id] = clientEnd;
+        while (!_pending.TryAdd(id, clientEnd))
+            id = Random.Shared.NextUuid();
         return id;
     }
 

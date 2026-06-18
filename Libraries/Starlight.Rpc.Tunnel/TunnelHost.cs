@@ -1,5 +1,5 @@
+using System.Collections.Concurrent;
 using Google.Protobuf;
-using Starlight.Rpc;
 using Starlight.Rpc.Proto;
 using Starlight.Rpc.Tunnel.Connection;
 
@@ -10,7 +10,7 @@ namespace Starlight.Rpc.Tunnel;
 /// </summary>
 public sealed class TunnelHost(RpcTransport rpc, ITunnelAcceptor acceptor) : IDisposable
 {
-    private readonly HashSet<IDisposable> _subs = [];
+    private readonly ConcurrentDictionary<IDisposable, byte> _subs = new();
 
     /// <summary>
     /// Raised when an incoming tunnel request for a listened subject is accepted.
@@ -23,9 +23,13 @@ public sealed class TunnelHost(RpcTransport rpc, ITunnelAcceptor acceptor) : IDi
     /// Starts listening for tunnel requests targeting <paramref name="subject"/>.
     /// One <see cref="TunnelHost"/> can listen on multiple subjects.
     /// </summary>
-    public async Task Listen(string subject)
+    /// <returns>
+    /// A handle that stops listening on <paramref name="subject"/> when disposed.
+    /// Disposing the <see cref="TunnelHost"/> stops all subjects.
+    /// </returns>
+    public async Task<IDisposable> Listen(string subject)
     {
-        _subs.Add(await rpc.Subscribe<NewTunnelReq>(TunnelSubjects.NewTunnel, async (req, raw) => {
+        var sub = await rpc.Subscribe<NewTunnelReq>(TunnelSubjects.NewTunnel, async (req, raw) => {
             if (req.Subject != subject) return;
 
             var (localEnd, meta) = await acceptor.Accept(req);
@@ -44,15 +48,31 @@ public sealed class TunnelHost(RpcTransport rpc, ITunnelAcceptor acceptor) : IDi
             }
 
             await raw.Reply(new NewTunnelRsp { Metadata = ByteString.CopyFrom(meta) });
-        }));
+        });
+
+        _subs[sub] = 0;
+        return new Subscription(this, sub);
     }
 
     public void Dispose()
     {
-        foreach (var sub in _subs)
+        foreach (var sub in _subs.Keys)
         {
             sub.Dispose();
         }
         _subs.Clear();
+    }
+
+    /// <summary>Idempotent handle returned by <see cref="Listen"/>.</summary>
+    private sealed class Subscription(TunnelHost host, IDisposable sub) : IDisposable
+    {
+        private int _disposed;
+
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
+            host._subs.TryRemove(sub, out _);
+            sub.Dispose();
+        }
     }
 }
