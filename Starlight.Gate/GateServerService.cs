@@ -9,7 +9,7 @@ public sealed class GateServerService(
     ILogger<GateServerService> logger
 ) : BackgroundService
 {
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(CancellationToken ct)
     {
         try
         {
@@ -24,7 +24,7 @@ public sealed class GateServerService(
                 Config.Server.Game.BindAddress,
                 Config.Server.Game.BindPort);
 
-            await server.RunAsync(stoppingToken);
+            await server.RunAsync(ct);
         }
         catch (Exception e)
         {
