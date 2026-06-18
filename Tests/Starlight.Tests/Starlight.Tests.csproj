@@ -16,6 +16,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\..\Source\Starlight\Starlight.csproj"/>
+        <ProjectReference Include="..\Starlight.Protobuf.Fixtures\Starlight.Protobuf.Fixtures.csproj"/>
     </ItemGroup>
 
 </Project>

@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package starlight.tunnel;
+
+option csharp_namespace = "Starlight.Rpc.Proto";
+
+// Sent by a requester to announce it wants a new tunnel.
+//
+// Subject: `rpc.tunnel`
+message NewTunnelReq {
+  string subject = 1;
+  bytes metadata = 2;
+}
+
+// Sent by an acceptor with connection metadata.
+//
+// In-memory: metadata holds the broker handle (Guid, 16 bytes).
+// Network: metadata holds implementation-defined connection info (IP/port/token).
+//
+// Subject: `rpc.tunnel` (reply)
+message NewTunnelRsp {
+  bytes metadata = 1;
+}

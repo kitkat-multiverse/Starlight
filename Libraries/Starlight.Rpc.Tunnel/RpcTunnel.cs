@@ -1,0 +1,122 @@
+using Starlight.Common;
+using IMessage = Starlight.Protobuf.Core.IMessage;
+
+namespace Starlight.Rpc.Tunnel;
+
+public delegate Task AsyncTunnelHandler(TunnelMessage message);
+public delegate Task AsyncTunnelHandler<in T>(T message, TunnelMessage raw) where T : class, IMessage;
+
+/// <summary>
+/// One end of a direct, point-to-point RPC tunnel.
+/// <br/>
+/// Publish sends to the peer; Subscribe registers handlers on this end.
+/// Frequencies are either numeric (packet/cmd IDs) or string (control flow);
+/// the two namespaces are fully isolated.
+/// </summary>
+public abstract class RpcTunnel : IDisposable
+{
+    private readonly CancellationTokenSource _closed = new();
+    private int _closedFlag;
+
+    public CancellationToken Closed => _closed.Token;
+    public bool IsClosed => _closedFlag != 0;
+
+    public event Action? OnClosed;
+
+    // --- transport surface (implemented by concrete transports) ---
+
+    /// <summary>Wraps <paramref name="message"/> in a transport-appropriate payload container.</summary>
+    protected abstract TunnelMessage Serialize(IMessage message);
+
+    public abstract IDisposable Subscribe(int frequency, AsyncTunnelHandler handler);
+    public abstract IDisposable Subscribe(string frequency, AsyncTunnelHandler handler);
+
+    /// <summary>Low-level publish. Delivers a pre-built <see cref="TunnelMessage"/> to the peer.</summary>
+    public abstract Task Publish(int frequency, TunnelMessage message);
+    /// <inheritdoc cref="Publish(int,TunnelMessage)"/>
+    public abstract Task Publish(string frequency, TunnelMessage message);
+
+    // --- ergonomic overloads ---
+
+    public Task Publish(int frequency, IMessage message) => Publish(frequency, Serialize(message));
+    public Task Publish(string frequency, IMessage message) => Publish(frequency, Serialize(message));
+
+    public IDisposable Subscribe<T>(int frequency, AsyncTunnelHandler<T> handler) where T : class, IMessage
+        => Subscribe(frequency, Wrap(handler));
+    public IDisposable Subscribe<T>(string frequency, AsyncTunnelHandler<T> handler) where T : class, IMessage
+        => Subscribe(frequency, Wrap(handler));
+
+    private static AsyncTunnelHandler Wrap<T>(AsyncTunnelHandler<T> handler) where T : class, IMessage
+        => async msg => { if (msg.TryDecode<T>() is { } t) await handler(t, msg); };
+
+    // --- request/reply ---
+
+    /// <summary>
+    /// Publishes <paramref name="request"/> on the numeric <paramref name="frequency"/>,
+    /// then awaits a single reply on an ephemeral string frequency.
+    /// </summary>
+    public Task<TRsp> Request<TRsp>(int frequency, IMessage request, TimeSpan? timeout = null)
+        where TRsp : class, IMessage
+        => RequestCore<TRsp>(request, m => Publish(frequency, m), frequency.ToString(), timeout);
+
+    /// <summary>
+    /// Publishes <paramref name="request"/> on the string <paramref name="frequency"/>,
+    /// then awaits a single reply on an ephemeral string frequency.
+    /// </summary>
+    public Task<TRsp> Request<TRsp>(string frequency, IMessage request, TimeSpan? timeout = null)
+        where TRsp : class, IMessage
+        => RequestCore<TRsp>(request, m => Publish(frequency, m), frequency, timeout);
+
+    private async Task<TRsp> RequestCore<TRsp>(
+        IMessage request,
+        Func<TunnelMessage, Task> publish,
+        string label,
+        TimeSpan? timeout)
+        where TRsp : class, IMessage
+    {
+        ThrowIfClosed();
+        timeout ??= TimeSpan.FromSeconds(5);
+
+        var replyFreq = $"reply_{Random.Shared.NextUuid()}";
+        var message = Serialize(request);
+        message.ReplyFrequency = replyFreq;
+
+        var tcs = new TaskCompletionSource<TunnelMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var sub = Subscribe(replyFreq, msg => { tcs.TrySetResult(msg); return Task.CompletedTask; });
+
+        await publish(message);
+
+        TunnelMessage reply;
+        try { reply = await tcs.Task.WaitAsync(timeout.Value); }
+        catch (TimeoutException) { throw new TunnelRequestTimeoutException(label, timeout.Value); }
+
+        return reply.Decode<TRsp>();
+    }
+
+    // --- closure ---
+
+    public void Close()
+    {
+        if (Interlocked.Exchange(ref _closedFlag, 1) != 0) return;
+        _closed.Cancel();
+        OnClosed?.Invoke();
+        NotifyPeerClosed();
+    }
+
+    /// <summary>Called by the peer's <see cref="Close"/>; cancels without re-notifying.</summary>
+    protected void MarkClosedFromPeer()
+    {
+        if (Interlocked.Exchange(ref _closedFlag, 1) != 0) return;
+        _closed.Cancel();
+        OnClosed?.Invoke();
+    }
+
+    protected abstract void NotifyPeerClosed();
+
+    protected void ThrowIfClosed()
+    {
+        if (IsClosed) throw new TunnelClosedException();
+    }
+
+    public void Dispose() => Close();
+}
