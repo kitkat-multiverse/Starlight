@@ -34,21 +34,21 @@ public sealed class UnknownFieldSet
             case WireFormat.WireType.Varint: {
                 var value = input.ReadUInt64();
                 var buffer = new byte[CodedOutputStream.ComputeUInt64Size(value)];
-                var output = new CodedOutputStream(buffer);
+                using var output = new CodedOutputStream(buffer);
                 output.WriteUInt64(value);
                 output.Flush();
                 return new UnknownField(number, wireType, buffer);
             }
             case WireFormat.WireType.Fixed32: {
                 var buffer = new byte[4];
-                var output = new CodedOutputStream(buffer);
+                using var output = new CodedOutputStream(buffer);
                 output.WriteFixed32(input.ReadFixed32());
                 output.Flush();
                 return new UnknownField(number, wireType, buffer);
             }
             case WireFormat.WireType.Fixed64: {
                 var buffer = new byte[8];
-                var output = new CodedOutputStream(buffer);
+                using var output = new CodedOutputStream(buffer);
                 output.WriteFixed64(input.ReadFixed64());
                 output.Flush();
                 return new UnknownField(number, wireType, buffer);

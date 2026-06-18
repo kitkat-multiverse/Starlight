@@ -38,8 +38,8 @@ public sealed class ScalarMatrixTests
     /// field numbers, in ascending order, as a parity oracle.</summary>
     private static byte[] Oracle(ScalarMatrix m)
     {
-        var stream = new MemoryStream();
-        var o = new CodedOutputStream(stream);
+        using var stream = new MemoryStream();
+        using var o = new CodedOutputStream(stream);
         o.WriteTag(fieldNumber: 101, WireFormat.WireType.Varint);
         o.WriteInt32(m.FInt32);
         o.WriteTag(fieldNumber: 102, WireFormat.WireType.Varint);

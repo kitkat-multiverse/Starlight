@@ -21,7 +21,7 @@ internal static partial class CodeEmitter
     internal sealed class Transform
     {
         public string Ops = "";
-        public long[] Operands = System.Array.Empty<long>();
+        public long[] Operands = [];
     }
 
     /// <summary>A mask rejected at compile time because it cannot be inverted for decode.</summary>
@@ -275,12 +275,12 @@ internal static partial class CodeEmitter
         {
             // fop = "first operation": which of add/xor is applied first on encode.
             return fop == "xor" ?
-                new Transform { Ops = "^+", Operands = new[] { xor.Value, add.Value } } :
-                new Transform { Ops = "+^", Operands = new[] { add.Value, xor.Value } };
+                new Transform { Ops = "^+", Operands = [xor.Value, add.Value] } :
+                new Transform { Ops = "+^", Operands = [add.Value, xor.Value] };
         }
 
-        if (add.HasValue) return new Transform { Ops = "+", Operands = new[] { add.Value } };
-        if (xor.HasValue) return new Transform { Ops = "^", Operands = new[] { xor.Value } };
+        if (add.HasValue) return new Transform { Ops = "+", Operands = [add.Value] };
+        if (xor.HasValue) return new Transform { Ops = "^", Operands = [xor.Value] };
 
         return null;
     }
@@ -353,7 +353,8 @@ internal static partial class CodeEmitter
 
     private static bool TryTokenizeMask(string s, out List<string> tokens)
     {
-        tokens = new List<string>();
+        tokens = [
+        ];
         var i = 0;
 
         while (i < s.Length)

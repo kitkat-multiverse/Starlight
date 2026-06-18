@@ -85,13 +85,13 @@ public sealed class KCP
     public int DeadLink { get; set; } = KCP_DEADLINK;
     public int Incr { get; set; }
 
-    public List<KcpSegment> SndQueue { get; } = new();
-    public List<KcpSegment> RcvQueue { get; } = new();
-    public List<KcpSegment> SndBuf { get; } = new();
-    public List<KcpSegment> RcvBuf { get; } = new();
+    public List<KcpSegment> SndQueue { get; } = [];
+    public List<KcpSegment> RcvQueue { get; } = [];
+    public List<KcpSegment> SndBuf { get; } = [];
+    public List<KcpSegment> RcvBuf { get; } = [];
 
     /// <summary>Pending ACKs: SN and timestamp.</summary>
-    public List<(int Sn, int Ts)> AckList { get; } = new();
+    public List<(int Sn, int Ts)> AckList { get; } = [];
 
     public ByteBuffer Buffer { get; } = new(new byte[(KCP_MTU_DEF + KCP_OVERHEAD_HYV_V1) * 3]);
 
@@ -682,7 +682,7 @@ public sealed class KCP
 
             if (KcpVersion.HasExtraHash())
             {
-                newSegment.ByteCheckCode = ComputeByteCheckCode(newSegment.Data ?? Array.Empty<byte>());
+                newSegment.ByteCheckCode = ComputeByteCheckCode(newSegment.Data ?? []);
             }
 
             SndBuf.Add(newSegment);
@@ -856,7 +856,7 @@ public sealed class KCP
         {
             var seg = RcvQueue[0];
             RcvQueue.RemoveAt(0);
-            cur.Write(seg.Data ?? Array.Empty<byte>());
+            cur.Write(seg.Data ?? []);
 
             if (seg.Frg == 0)
             {

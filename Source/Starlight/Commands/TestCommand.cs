@@ -6,7 +6,7 @@ public class TestCommand : ICommand
 {
     public string Name => "test";
     public string Description => "Test command";
-    public string[] Aliases => new string[] {};
+    public string[] Aliases => [];
     public string Usage => "test";
 
     public Task ExecuteAsync(string[] args, CancellationToken cancellationToken)

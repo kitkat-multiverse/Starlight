@@ -54,7 +54,7 @@ public sealed partial class ProtobufCompiler
         return set;
     }
 
-    private static readonly string[] TransformOptionNames = { "add", "xor", "fop", "mask", "alts" };
+    private static readonly string[] TransformOptionNames = ["add", "xor", "fop", "mask", "alts"];
 
     private static bool IsTransformOptionError(string message)
     {

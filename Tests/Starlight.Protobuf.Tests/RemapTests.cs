@@ -75,7 +75,7 @@ public sealed class RemapTests
             var bytes = message.ToByteArray(Serializer);
 
             // First (only) field on the wire must now carry field number 99, not 21.
-            var input = new CodedInputStream(bytes);
+            using var input = new CodedInputStream(bytes);
             var tag = input.ReadTag();
             Assert.Equal(expected: 99, WireFormat.GetTagFieldNumber(tag));
             Assert.Equal(WireFormat.WireType.Varint, WireFormat.GetTagWireType(tag));
@@ -161,7 +161,7 @@ public sealed class RemapTests
                     var bytes = message.ToByteArray(Serializer);
                     // The 'a' field is the only one set, so the wire must carry one
                     // complete snapshot: number 21 (default) or 99 (remapped), value 123.
-                    var input = new CodedInputStream(bytes);
+                    using var input = new CodedInputStream(bytes);
                     var number = WireFormat.GetTagFieldNumber(input.ReadTag());
                     Assert.True(number is 21 or 99, $"torn field number {number}");
                     Assert.Equal(expected: 123, input.ReadInt32());

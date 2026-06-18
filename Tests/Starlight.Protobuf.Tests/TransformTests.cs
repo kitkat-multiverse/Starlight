@@ -31,7 +31,7 @@ public sealed class TransformTests
     public void FastPath_WritesObfuscatedWireValues()
     {
         var bytes = Sample().ToByteArray(Serializer);
-        var input = new CodedInputStream(bytes);
+        using var input = new CodedInputStream(bytes);
 
         Assert.Equal(EncA(7), ReadVarintField(input, expectedNumber: 1, () => input.ReadUInt32()));
         Assert.Equal(EncB(1000), ReadVarintField(input, expectedNumber: 2, () => input.ReadUInt64()));

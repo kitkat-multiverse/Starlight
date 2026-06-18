@@ -248,6 +248,11 @@ public sealed class MessageDescriptor
 
         foreach (var f in Fields)
         {
+            if (byNumber.TryGetValue(f.Number, out var existing))
+            {
+                throw new InvalidOperationException(
+                    $"Duplicate wire field number {f.Number} on message '{Name}' for fields '{existing.Name}' and '{f.Name}'.");
+            }
             byNumber[f.Number] = f;
         }
         return new Index(hasRemaps, byNumber.ToFrozenDictionary());

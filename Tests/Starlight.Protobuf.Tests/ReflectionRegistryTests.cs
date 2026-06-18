@@ -111,8 +111,8 @@ public sealed class ReflectionRegistryTests
 
         var bytes = registry.Serialize(message);
 
-        var stream = new MemoryStream();
-        var o = new CodedOutputStream(stream);
+        using var stream = new MemoryStream();
+        using var o = new CodedOutputStream(stream);
         o.WriteTag(fieldNumber: 1, WireFormat.WireType.Varint);
         o.WriteInt32(123);
         o.WriteTag(fieldNumber: 2, WireFormat.WireType.Varint);
@@ -173,22 +173,23 @@ public sealed class ReflectionRegistryTests
         original.GetList("g").Add(g1);
         original.GetList("g").Add(g2);
 
-        original.Set("color", (int)2); // BLUE
+        original.Set("color", 2); // BLUE
         original.SetOneof("Choice", caseNumber: 9, value: 4567); // oneof field h (base number 9)
 
         var bytes = registry.Serialize(original);
         var restored = (DynamicMessage)registry.Create(4001);
-        registry.Deserialize(restored, new CodedInputStream(bytes));
+        using var stream = new CodedInputStream(bytes);
+        registry.Deserialize(restored, stream);
 
         Assert.Equal(expected: 42, restored.Get("a"));
         Assert.Equal("hello", restored.Get("b"));
         Assert.Equal(expected: -7, restored.Get("c"));
-        Assert.Equal(new object?[] { 1, 2, 300 }, restored.GetList("d").Cast<object?>());
+        Assert.Equal([1, 2, 300], restored.GetList("d").Cast<object?>());
         Assert.Equal("ten", restored.GetMap("e")[10]);
         Assert.Equal("twenty", restored.GetMap("e")[20]);
         Assert.Equal(expected: 99, ((DynamicMessage)restored.Get("f")!).Get("n"));
         var gs = restored.GetList("g").Cast<DynamicMessage>().Select(m => m.Get("n")).ToArray();
-        Assert.Equal(new object?[] { 1, 2 }, gs);
+        Assert.Equal([1, 2], gs);
         Assert.Equal(expected: 2, restored.Get("color"));
         Assert.Equal(expected: 9, restored.ActiveOneof("Choice"));
         Assert.Equal(expected: 4567, restored.GetOneof("Choice"));
@@ -205,7 +206,8 @@ public sealed class ReflectionRegistryTests
 
         var bytes = registry.Serialize(original);
         var restored = registry.CreateByName("Probe");
-        registry.Deserialize(restored, new CodedInputStream(bytes));
+        using var stream = new CodedInputStream(bytes);
+        registry.Deserialize(restored, stream);
 
         Assert.Equal(expected: 10, restored.ActiveOneof("Choice"));
         Assert.Equal(expected: 77, ((DynamicMessage)restored.GetOneof("Choice")!).Get("n"));
@@ -217,16 +219,17 @@ public sealed class ReflectionRegistryTests
         var registry = Load();
 
         // A wire payload with a field (50) the schema does not define.
-        var stream = new MemoryStream();
-        var o = new CodedOutputStream(stream);
-        o.WriteTag(fieldNumber: 1, WireFormat.WireType.Varint);
-        o.WriteInt32(5); // Sub.n
-        o.WriteTag(fieldNumber: 50, WireFormat.WireType.Varint);
-        o.WriteInt32(999); // unknown
-        o.Flush();
+        using var stream = new MemoryStream();
+        using var cos = new CodedOutputStream(stream);
+        cos.WriteTag(fieldNumber: 1, WireFormat.WireType.Varint);
+        cos.WriteInt32(5); // Sub.n
+        cos.WriteTag(fieldNumber: 50, WireFormat.WireType.Varint);
+        cos.WriteInt32(999); // unknown
+        cos.Flush();
 
         var message = registry.CreateByName("Sub");
-        registry.Deserialize(message, new CodedInputStream(stream.ToArray()));
+        using var cis = new CodedInputStream(stream.ToArray());
+        registry.Deserialize(message, cis);
 
         Assert.Equal(expected: 5, message.Get("n"));
         Assert.NotNull(message.UnknownFields);

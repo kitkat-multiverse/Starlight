@@ -266,7 +266,7 @@ public sealed partial class ProtobufCompiler : IIncrementalGenerator
         // --- Independent: POCO + single serializer, no version system -------
         foreach (var file in independentFiles)
         {
-            var set = Parse(ctx, new[] { file }, protos);
+            var set = Parse(ctx, [file], protos);
             var ns = NamespaceOf(set) ?? "Generated";
             var resolver = BuildResolver(set);
             var csNames = BuildCsNames(set);

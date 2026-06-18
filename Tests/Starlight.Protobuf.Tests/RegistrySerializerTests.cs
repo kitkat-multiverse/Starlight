@@ -53,7 +53,8 @@ public sealed class RegistrySerializerTests
         byte[] expected = [0x32, 0x03, 0x01, 0x02, 0x03]; // tag, length 3, three 1-byte varints
         Assert.Equal(expected, bytes);
 
-        var restored = (PingReq)Registry.Deserialize(PingReqCmdId, new CodedInputStream(bytes));
+        using var stream = new CodedInputStream(bytes);
+        var restored = (PingReq)Registry.Deserialize(PingReqCmdId, stream);
         Assert.Equal(new uint[] { 1, 2, 3 }, restored.Tags);
     }
 
@@ -68,7 +69,8 @@ public sealed class RegistrySerializerTests
         };
 
         var bytes = Registry.Serialize(original);
-        var restored = (PingReq)Registry.Deserialize(PingReqCmdId, new CodedInputStream(bytes));
+        using var stream = new CodedInputStream(bytes);
+        var restored = (PingReq)Registry.Deserialize(PingReqCmdId, stream);
 
         Assert.Equal(original.ClientId, restored.ClientId);
         Assert.Equal(original.Seq, restored.Seq);
@@ -82,16 +84,16 @@ public sealed class RegistrySerializerTests
         // Field 1824 has no canonical counterpart, so on read it must be captured
         // (never discarded) while the known field still deserializes. client_id is
         // v99 wire field 5.
-        var output = new MemoryStream();
-        var cos = new CodedOutputStream(output);
+        using var output = new MemoryStream();
+        using var cos = new CodedOutputStream(output);
         cos.WriteTag(fieldNumber: 1824, WireFormat.WireType.LengthDelimited);
         cos.WriteString("obfuscated");
         cos.WriteTag(fieldNumber: 5, WireFormat.WireType.LengthDelimited); // client_id
         cos.WriteString("client");
         cos.Flush();
 
-        var restored = (PingReq)Registry.Deserialize(
-            PingReqCmdId, new CodedInputStream(output.ToArray()));
+        using var cis = new CodedInputStream(output.ToArray());
+        var restored = (PingReq)Registry.Deserialize(PingReqCmdId, cis);
 
         Assert.Equal("client", restored.ClientId);
 
@@ -105,16 +107,16 @@ public sealed class RegistrySerializerTests
     [Fact]
     public void Inspect_RendersKnownAndUnknownFields()
     {
-        var output = new MemoryStream();
-        var cos = new CodedOutputStream(output);
+        using var output = new MemoryStream();
+        using var cos = new CodedOutputStream(output);
         cos.WriteTag(fieldNumber: 1824, WireFormat.WireType.LengthDelimited);
         cos.WriteString("obfuscated");
         cos.WriteTag(fieldNumber: 5, WireFormat.WireType.LengthDelimited); // client_id
         cos.WriteString("client");
         cos.Flush();
 
-        var restored = (PingReq)Registry.Deserialize(
-            PingReqCmdId, new CodedInputStream(output.ToArray()));
+        using var cis = new CodedInputStream(output.ToArray());
+        var restored = (PingReq)Registry.Deserialize(PingReqCmdId, cis);
 
         var json = ProtocolInspector.ToJson(restored);
 

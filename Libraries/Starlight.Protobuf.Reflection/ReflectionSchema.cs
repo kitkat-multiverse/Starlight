@@ -20,7 +20,9 @@ namespace Starlight.Protobuf.Reflection;
 /// </summary>
 public sealed class ReflectionSchema
 {
-    private static readonly HashSet<string> KnownFirstNames = new() { "GetPlayerTokenReq", "PingReq" };
+    private static readonly HashSet<string> KnownFirstNames = [
+        "GetPlayerTokenReq", "PingReq"
+    ];
 
     private ReflectionSchema(
         string version,
