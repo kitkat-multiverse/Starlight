@@ -77,6 +77,7 @@ public sealed class TunnelClient(RpcTransport rpc, ITunnelConnector connector)
         sub.Dispose();
 
         NewTunnelRsp[] snapshot;
+
         lock (replies)
         {
             snapshot = [.. replies];
