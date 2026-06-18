@@ -28,22 +28,22 @@ public sealed class DirectTunnel : RpcTunnel
 
     protected override TunnelMessage Serialize(IMessage message) => new DirectTunnelMessage(message);
 
-    public override IDisposable Subscribe(int frequency, AsyncTunnelHandler handler)
-        => Add(_intHandlers, frequency, handler);
+    public override IDisposable Subscribe(int id, AsyncTunnelHandler handler)
+        => Add(_intHandlers, id, handler);
 
-    public override IDisposable Subscribe(string frequency, AsyncTunnelHandler handler)
-        => Add(_stringHandlers, frequency, handler);
+    public override IDisposable Subscribe(string id, AsyncTunnelHandler handler)
+        => Add(_stringHandlers, id, handler);
 
-    public override Task Publish(int frequency, TunnelMessage message)
+    public override Task Publish(int id, TunnelMessage message)
     {
         ThrowIfClosed();
-        return _peer.Deliver(_peer._intHandlers, frequency, message);
+        return _peer.Deliver(_peer._intHandlers, id, message);
     }
 
-    public override Task Publish(string frequency, TunnelMessage message)
+    public override Task Publish(string id, TunnelMessage message)
     {
         ThrowIfClosed();
-        return _peer.Deliver(_peer._stringHandlers, frequency, message);
+        return _peer.Deliver(_peer._stringHandlers, id, message);
     }
 
     protected override void NotifyPeerClosed() => _peer.MarkClosedFromPeer();
@@ -60,7 +60,7 @@ public sealed class DirectTunnel : RpcTunnel
                 map[key] = list = [];
             list.Add(handler);
         }
-        return new FrequencySubscription<TKey>(map, key, handler);
+        return new Subscription<TKey>(map, key, handler);
     }
 
     private async Task Deliver<TKey>(
@@ -87,7 +87,7 @@ public sealed class DirectTunnel : RpcTunnel
         }
     }
 
-    private sealed class FrequencySubscription<TKey>(
+    private sealed class Subscription<TKey>(
         Dictionary<TKey, List<AsyncTunnelHandler>> map,
         TKey key,
         AsyncTunnelHandler handler

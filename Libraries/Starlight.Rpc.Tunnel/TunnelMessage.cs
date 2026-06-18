@@ -8,7 +8,7 @@ public class TunnelMessage
     /// Ephemeral string frequency the requester listens on for the reply.
     /// Null for non-request publishes.
     /// </summary>
-    public string? ReplyFrequency { get; set; }
+    public string? ReplyId { get; set; }
 
     /// <summary>
     /// The receiving end of the tunnel that delivered this message.
@@ -33,9 +33,9 @@ public class TunnelMessage
 
     public async Task Reply(IMessage reply)
     {
-        if (string.IsNullOrEmpty(ReplyFrequency) || Tunnel is null)
+        if (string.IsNullOrEmpty(ReplyId) || Tunnel is null)
             throw new InvalidOperationException("Message is not configured with reply values.");
 
-        await Tunnel.Publish(ReplyFrequency, reply);
+        await Tunnel.Publish(ReplyId, reply);
     }
 }

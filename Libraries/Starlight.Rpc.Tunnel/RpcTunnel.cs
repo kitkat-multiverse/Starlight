@@ -28,25 +28,25 @@ public abstract class RpcTunnel : IDisposable
     /// <summary>Wraps <paramref name="message"/> in a transport-appropriate payload container.</summary>
     protected abstract TunnelMessage Serialize(IMessage message);
 
-    public abstract IDisposable Subscribe(int frequency, AsyncTunnelHandler handler);
-    public abstract IDisposable Subscribe(string frequency, AsyncTunnelHandler handler);
+    public abstract IDisposable Subscribe(int id, AsyncTunnelHandler handler);
+    public abstract IDisposable Subscribe(string id, AsyncTunnelHandler handler);
 
     /// <summary>Low-level publish. Delivers a pre-built <see cref="TunnelMessage"/> to the peer.</summary>
-    public abstract Task Publish(int frequency, TunnelMessage message);
+    public abstract Task Publish(int id, TunnelMessage message);
 
     /// <inheritdoc cref="Publish(int,TunnelMessage)"/>
-    public abstract Task Publish(string frequency, TunnelMessage message);
+    public abstract Task Publish(string id, TunnelMessage message);
 
     // --- ergonomic overloads ---
 
-    public Task Publish(int frequency, IMessage message) => Publish(frequency, Serialize(message));
-    public Task Publish(string frequency, IMessage message) => Publish(frequency, Serialize(message));
+    public Task Publish(int id, IMessage message) => Publish(id, Serialize(message));
+    public Task Publish(string id, IMessage message) => Publish(id, Serialize(message));
 
-    public IDisposable Subscribe<T>(int frequency, AsyncTunnelHandler<T> handler) where T : class, IMessage
-        => Subscribe(frequency, Wrap(handler));
+    public IDisposable Subscribe<T>(int id, AsyncTunnelHandler<T> handler) where T : class, IMessage
+        => Subscribe(id, Wrap(handler));
 
-    public IDisposable Subscribe<T>(string frequency, AsyncTunnelHandler<T> handler) where T : class, IMessage
-        => Subscribe(frequency, Wrap(handler));
+    public IDisposable Subscribe<T>(string id, AsyncTunnelHandler<T> handler) where T : class, IMessage
+        => Subscribe(id, Wrap(handler));
 
     private static AsyncTunnelHandler Wrap<T>(AsyncTunnelHandler<T> handler) where T : class, IMessage
         => async msg => {
@@ -56,20 +56,20 @@ public abstract class RpcTunnel : IDisposable
     // --- request/reply ---
 
     /// <summary>
-    /// Publishes <paramref name="request"/> on the numeric <paramref name="frequency"/>,
-    /// then awaits a single reply on an ephemeral string frequency.
+    /// Publishes <paramref name="request"/> on the numeric <paramref name="id"/>,
+    /// then awaits a single reply on an ephemeral string id.
     /// </summary>
-    public Task<TRsp> Request<TRsp>(int frequency, IMessage request, TimeSpan? timeout = null)
+    public Task<TRsp> Request<TRsp>(int id, IMessage request, TimeSpan? timeout = null)
         where TRsp : class, IMessage
-        => RequestCore<TRsp>(request, m => Publish(frequency, m), frequency.ToString(), timeout);
+        => RequestCore<TRsp>(request, m => Publish(id, m), id.ToString(), timeout);
 
     /// <summary>
-    /// Publishes <paramref name="request"/> on the string <paramref name="frequency"/>,
-    /// then awaits a single reply on an ephemeral string frequency.
+    /// Publishes <paramref name="request"/> on the string <paramref name="id"/>,
+    /// then awaits a single reply on an ephemeral string id.
     /// </summary>
-    public Task<TRsp> Request<TRsp>(string frequency, IMessage request, TimeSpan? timeout = null)
+    public Task<TRsp> Request<TRsp>(string id, IMessage request, TimeSpan? timeout = null)
         where TRsp : class, IMessage
-        => RequestCore<TRsp>(request, m => Publish(frequency, m), frequency, timeout);
+        => RequestCore<TRsp>(request, m => Publish(id, m), id, timeout);
 
     private async Task<TRsp> RequestCore<TRsp>(
         IMessage request,
@@ -84,7 +84,7 @@ public abstract class RpcTunnel : IDisposable
 
         var replyFreq = $"reply_{Random.Shared.NextUuid()}";
         var message = Serialize(request);
-        message.ReplyFrequency = replyFreq;
+        message.ReplyId = replyFreq;
 
         var tcs = new TaskCompletionSource<TunnelMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
 
