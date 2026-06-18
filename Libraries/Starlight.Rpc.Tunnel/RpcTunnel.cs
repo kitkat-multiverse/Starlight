@@ -33,6 +33,7 @@ public abstract class RpcTunnel : IDisposable
 
     /// <summary>Low-level publish. Delivers a pre-built <see cref="TunnelMessage"/> to the peer.</summary>
     public abstract Task Publish(int frequency, TunnelMessage message);
+
     /// <inheritdoc cref="Publish(int,TunnelMessage)"/>
     public abstract Task Publish(string frequency, TunnelMessage message);
 
@@ -43,11 +44,14 @@ public abstract class RpcTunnel : IDisposable
 
     public IDisposable Subscribe<T>(int frequency, AsyncTunnelHandler<T> handler) where T : class, IMessage
         => Subscribe(frequency, Wrap(handler));
+
     public IDisposable Subscribe<T>(string frequency, AsyncTunnelHandler<T> handler) where T : class, IMessage
         => Subscribe(frequency, Wrap(handler));
 
     private static AsyncTunnelHandler Wrap<T>(AsyncTunnelHandler<T> handler) where T : class, IMessage
-        => async msg => { if (msg.TryDecode<T>() is { } t) await handler(t, msg); };
+        => async msg => {
+            if (msg.TryDecode<T>() is {} t) await handler(t, msg);
+        };
 
     // --- request/reply ---
 
@@ -71,7 +75,8 @@ public abstract class RpcTunnel : IDisposable
         IMessage request,
         Func<TunnelMessage, Task> publish,
         string label,
-        TimeSpan? timeout)
+        TimeSpan? timeout
+    )
         where TRsp : class, IMessage
     {
         ThrowIfClosed();
@@ -82,13 +87,24 @@ public abstract class RpcTunnel : IDisposable
         message.ReplyFrequency = replyFreq;
 
         var tcs = new TaskCompletionSource<TunnelMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
-        using var sub = Subscribe(replyFreq, msg => { tcs.TrySetResult(msg); return Task.CompletedTask; });
+
+        using var sub = Subscribe(replyFreq, msg => {
+            tcs.TrySetResult(msg);
+            return Task.CompletedTask;
+        });
 
         await publish(message);
 
         TunnelMessage reply;
-        try { reply = await tcs.Task.WaitAsync(timeout.Value); }
-        catch (TimeoutException) { throw new TunnelRequestTimeoutException(label, timeout.Value); }
+
+        try
+        {
+            reply = await tcs.Task.WaitAsync(timeout.Value, Closed);
+        }
+        catch (TimeoutException)
+        {
+            throw new TunnelRequestTimeoutException(label, timeout.Value);
+        }
 
         return reply.Decode<TRsp>();
     }
@@ -97,7 +113,8 @@ public abstract class RpcTunnel : IDisposable
 
     public void Close()
     {
-        if (Interlocked.Exchange(ref _closedFlag, 1) != 0) return;
+        if (Interlocked.Exchange(ref _closedFlag, value: 1) != 0) return;
+
         _closed.Cancel();
         OnClosed?.Invoke();
         NotifyPeerClosed();
@@ -106,7 +123,8 @@ public abstract class RpcTunnel : IDisposable
     /// <summary>Called by the peer's <see cref="Close"/>; cancels without re-notifying.</summary>
     protected void MarkClosedFromPeer()
     {
-        if (Interlocked.Exchange(ref _closedFlag, 1) != 0) return;
+        if (Interlocked.Exchange(ref _closedFlag, value: 1) != 0) return;
+
         _closed.Cancel();
         OnClosed?.Invoke();
     }

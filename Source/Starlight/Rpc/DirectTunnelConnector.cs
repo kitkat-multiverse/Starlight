@@ -8,8 +8,9 @@ public sealed class DirectTunnelConnector(ITunnelBroker broker) : ITunnelConnect
     public Task<RpcTunnel> Connect(NewTunnelRsp reply)
     {
         var handle = new Guid(reply.Metadata.Span);
+
         var tunnel = broker.Claim(handle)
-            ?? throw new TunnelHandshakeException($"Unknown tunnel handle '{handle}'.");
+                     ?? throw new TunnelHandshakeException($"Unknown tunnel handle '{handle}'.");
         return Task.FromResult(tunnel);
     }
 }

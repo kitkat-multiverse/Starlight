@@ -12,7 +12,9 @@ public sealed class DirectTunnel : RpcTunnel
     private readonly Dictionary<int, List<AsyncTunnelHandler>> _intHandlers = new();
     private readonly Dictionary<string, List<AsyncTunnelHandler>> _stringHandlers = new();
 
-    private DirectTunnel() { }
+    private DirectTunnel()
+    {
+    }
 
     /// <summary>Creates two linked tunnel ends. Publish on one delivers to the other.</summary>
     public static (RpcTunnel client, RpcTunnel server) CreatePair()
@@ -28,6 +30,7 @@ public sealed class DirectTunnel : RpcTunnel
 
     public override IDisposable Subscribe(int frequency, AsyncTunnelHandler handler)
         => Add(_intHandlers, frequency, handler);
+
     public override IDisposable Subscribe(string frequency, AsyncTunnelHandler handler)
         => Add(_stringHandlers, frequency, handler);
 
@@ -48,7 +51,8 @@ public sealed class DirectTunnel : RpcTunnel
     private static IDisposable Add<TKey>(
         Dictionary<TKey, List<AsyncTunnelHandler>> map,
         TKey key,
-        AsyncTunnelHandler handler) where TKey : notnull
+        AsyncTunnelHandler handler
+    ) where TKey : notnull
     {
         lock (map)
         {
@@ -62,11 +66,13 @@ public sealed class DirectTunnel : RpcTunnel
     private async Task Deliver<TKey>(
         Dictionary<TKey, List<AsyncTunnelHandler>> map,
         TKey key,
-        TunnelMessage message) where TKey : notnull
+        TunnelMessage message
+    ) where TKey : notnull
     {
         message.Tunnel = this;
 
         List<AsyncTunnelHandler>? snapshot = null;
+
         lock (map)
         {
             if (map.TryGetValue(key, out var list))
@@ -74,20 +80,25 @@ public sealed class DirectTunnel : RpcTunnel
         }
 
         if (snapshot is null) return;
+
         foreach (var handler in snapshot)
+        {
             await handler(message);
+        }
     }
 
     private sealed class FrequencySubscription<TKey>(
         Dictionary<TKey, List<AsyncTunnelHandler>> map,
         TKey key,
-        AsyncTunnelHandler handler) : IDisposable where TKey : notnull
+        AsyncTunnelHandler handler
+    ) : IDisposable where TKey : notnull
     {
         public void Dispose()
         {
             lock (map)
             {
                 if (!map.TryGetValue(key, out var list)) return;
+
                 list.Remove(handler);
                 if (list.Count == 0) map.Remove(key);
             }
@@ -98,7 +109,10 @@ public sealed class DirectTunnel : RpcTunnel
 /// <summary>Zero-copy message wrapper: stashes the live <see cref="IMessage"/> in <see cref="TunnelMessage.Metadata"/>.</summary>
 public sealed class DirectTunnelMessage : TunnelMessage
 {
-    public DirectTunnelMessage(IMessage message) => Metadata = message;
+    public DirectTunnelMessage(IMessage message)
+    {
+        Metadata = message;
+    }
 
     public override T? TryDecode<T>() where T : class => Metadata as T;
 

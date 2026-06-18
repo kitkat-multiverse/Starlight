@@ -9,6 +9,6 @@ public sealed class DirectTunnelAcceptor(ITunnelBroker broker) : ITunnelAcceptor
     {
         var (client, server) = DirectTunnel.CreatePair();
         var handle = broker.Register(client);
-        return Task.FromResult(((RpcTunnel)server, handle.ToByteArray()));
+        return Task.FromResult((server, handle.ToByteArray()));
     }
 }

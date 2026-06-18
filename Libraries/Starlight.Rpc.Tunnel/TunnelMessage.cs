@@ -35,6 +35,7 @@ public class TunnelMessage
     {
         if (string.IsNullOrEmpty(ReplyFrequency) || Tunnel is null)
             throw new InvalidOperationException("Message is not configured with reply values.");
+
         await Tunnel.Publish(ReplyFrequency, reply);
     }
 }

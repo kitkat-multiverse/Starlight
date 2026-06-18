@@ -30,38 +30,45 @@ public sealed class TunnelClient(RpcTransport rpc, ITunnelConnector connector)
         string subject,
         byte[]? metadata = null,
         TimeSpan? timeout = null,
-        Func<IReadOnlyList<NewTunnelRsp>, NewTunnelRsp>? sorter = null)
+        Func<IReadOnlyList<NewTunnelRsp>, NewTunnelRsp>? sorter = null
+    )
     {
         var req = new NewTunnelReq {
             Subject = subject,
             Metadata = ByteString.CopyFrom(metadata ?? [])
         };
 
-        if (sorter is null)
-        {
-            var rsp = await rpc.Request<NewTunnelReq, NewTunnelRsp>(
-                TunnelSubjects.NewTunnel, req, timeout);
-            return await connector.Connect(rsp);
-        }
+        if (sorter is not null)
+            return await OpenWithSorter(req, sorter, timeout ?? TimeSpan.FromSeconds(5));
 
-        return await OpenWithSorter(req, sorter, timeout ?? TimeSpan.FromSeconds(5));
+        var rsp = await rpc.Request<NewTunnelReq, NewTunnelRsp>(
+            TunnelSubjects.NewTunnel, req, timeout);
+        return await connector.Connect(rsp);
     }
 
     private async Task<RpcTunnel> OpenWithSorter(
         NewTunnelReq req,
         Func<IReadOnlyList<NewTunnelRsp>, NewTunnelRsp> sorter,
-        TimeSpan window)
+        TimeSpan window
+    )
     {
         var replySubject = $"reply_{Random.Shared.NextUuid()}";
-        var reqMsg = new RpcMessage(req.ToByteArray());
-        reqMsg.ReplySubject = replySubject;
-        reqMsg.Transport = rpc;
+
+        var reqMsg = new RpcMessage(req.ToByteArray()) {
+            ReplySubject = replySubject,
+            Transport = rpc
+        };
 
         var replies = new List<NewTunnelRsp>();
 
         var sub = await rpc.Subscribe(replySubject, msg => {
-            if (msg.TryDeserialize<NewTunnelRsp>() is { } rsp)
-                lock (replies) replies.Add(rsp);
+            if (msg.TryDeserialize<NewTunnelRsp>() is not {} rsp)
+                return Task.CompletedTask;
+
+            lock (replies)
+            {
+                replies.Add(rsp);
+            }
             return Task.CompletedTask;
         });
 

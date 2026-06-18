@@ -25,8 +25,11 @@ public sealed class TunnelPubSubTests
         var frame = new Frame { SequenceId = 99 };
         Frame? received = null;
 
-        server.Subscribe<Frame>(5, (msg, _) => { received = msg; return Task.CompletedTask; });
-        await client.Publish(5, frame);
+        server.Subscribe<Frame>(frequency: 5, (msg, _) => {
+            received = msg;
+            return Task.CompletedTask;
+        });
+        await client.Publish(frequency: 5, frame);
 
         Assert.Same(frame, received);
     }
@@ -38,7 +41,10 @@ public sealed class TunnelPubSubTests
         var frame = new Frame { SentMs = 42 };
         Frame? received = null;
 
-        server.Subscribe<Frame>("control.cmd", (msg, _) => { received = msg; return Task.CompletedTask; });
+        server.Subscribe<Frame>("control.cmd", (msg, _) => {
+            received = msg;
+            return Task.CompletedTask;
+        });
         await client.Publish("control.cmd", frame);
 
         Assert.Same(frame, received);
@@ -52,11 +58,18 @@ public sealed class TunnelPubSubTests
         var inbound = new Frame { SequenceId = 2 };
         Frame? clientReceived = null, serverReceived = null;
 
-        client.Subscribe<Frame>(1, (msg, _) => { clientReceived = msg; return Task.CompletedTask; });
-        server.Subscribe<Frame>(1, (msg, _) => { serverReceived = msg; return Task.CompletedTask; });
+        client.Subscribe<Frame>(frequency: 1, (msg, _) => {
+            clientReceived = msg;
+            return Task.CompletedTask;
+        });
 
-        await client.Publish(1, outbound);
-        await server.Publish(1, inbound);
+        server.Subscribe<Frame>(frequency: 1, (msg, _) => {
+            serverReceived = msg;
+            return Task.CompletedTask;
+        });
+
+        await client.Publish(frequency: 1, outbound);
+        await server.Publish(frequency: 1, inbound);
 
         Assert.Same(outbound, serverReceived);
         Assert.Same(inbound, clientReceived);
@@ -69,10 +82,17 @@ public sealed class TunnelPubSubTests
         var intFired = false;
         var strFired = false;
 
-        server.Subscribe(5, _ => { intFired = true; return Task.CompletedTask; });
-        server.Subscribe("5", _ => { strFired = true; return Task.CompletedTask; });
+        server.Subscribe(frequency: 5, _ => {
+            intFired = true;
+            return Task.CompletedTask;
+        });
 
-        await client.Publish(5, new Frame());
+        server.Subscribe("5", _ => {
+            strFired = true;
+            return Task.CompletedTask;
+        });
+
+        await client.Publish(frequency: 5, new Frame());
 
         Assert.True(intFired);
         Assert.False(strFired);
@@ -84,12 +104,19 @@ public sealed class TunnelPubSubTests
         var (client, server) = Pair.Create();
         var count = 0;
 
-        server.Subscribe<Frame>(7, (_, _) => { Interlocked.Increment(ref count); return Task.CompletedTask; });
-        server.Subscribe<Frame>(7, (_, _) => { Interlocked.Increment(ref count); return Task.CompletedTask; });
+        server.Subscribe<Frame>(frequency: 7, (_, _) => {
+            Interlocked.Increment(ref count);
+            return Task.CompletedTask;
+        });
 
-        await client.Publish(7, new Frame());
+        server.Subscribe<Frame>(frequency: 7, (_, _) => {
+            Interlocked.Increment(ref count);
+            return Task.CompletedTask;
+        });
 
-        Assert.Equal(2, count);
+        await client.Publish(frequency: 7, new Frame());
+
+        Assert.Equal(expected: 2, count);
     }
 
     [Fact]
@@ -98,19 +125,22 @@ public sealed class TunnelPubSubTests
         var (client, server) = Pair.Create();
         var count = 0;
 
-        var sub = server.Subscribe<Frame>(3, (_, _) => { Interlocked.Increment(ref count); return Task.CompletedTask; });
-        await client.Publish(3, new Frame());
+        var sub = server.Subscribe<Frame>(frequency: 3, (_, _) => {
+            Interlocked.Increment(ref count);
+            return Task.CompletedTask;
+        });
+        await client.Publish(frequency: 3, new Frame());
         sub.Dispose();
-        await client.Publish(3, new Frame());
+        await client.Publish(frequency: 3, new Frame());
 
-        Assert.Equal(1, count);
+        Assert.Equal(expected: 1, count);
     }
 
     [Fact]
     public async Task Publish_NoSubscribers_DoesNotThrow()
     {
         var (client, _) = Pair.Create();
-        await client.Publish(99, new Frame());
+        await client.Publish(frequency: 99, new Frame());
         await client.Publish("nobody", new Frame());
     }
 }
@@ -126,8 +156,11 @@ public sealed class TunnelDecodeTests
         var frame = new Frame { Flags = 7 };
         TunnelMessage? raw = null;
 
-        server.Subscribe(1, msg => { raw = msg; return Task.CompletedTask; });
-        await client.Publish(1, frame);
+        server.Subscribe(frequency: 1, msg => {
+            raw = msg;
+            return Task.CompletedTask;
+        });
+        await client.Publish(frequency: 1, frame);
 
         Assert.NotNull(raw);
         Assert.Same(frame, raw!.TryDecode<Frame>());
@@ -140,8 +173,11 @@ public sealed class TunnelDecodeTests
         var frame = new Frame { Length = 12 };
         TunnelMessage? raw = null;
 
-        server.Subscribe(1, msg => { raw = msg; return Task.CompletedTask; });
-        await client.Publish(1, frame);
+        server.Subscribe(frequency: 1, msg => {
+            raw = msg;
+            return Task.CompletedTask;
+        });
+        await client.Publish(frequency: 1, frame);
 
         Assert.NotNull(raw);
         Assert.Same(frame, raw!.TryDecode(typeof(Frame)));
@@ -153,8 +189,11 @@ public sealed class TunnelDecodeTests
         var (client, server) = Pair.Create();
         TunnelMessage? raw = null;
 
-        server.Subscribe(1, msg => { raw = msg; return Task.CompletedTask; });
-        await client.Publish(1, new Frame());
+        server.Subscribe(frequency: 1, msg => {
+            raw = msg;
+            return Task.CompletedTask;
+        });
+        await client.Publish(frequency: 1, new Frame());
 
         Assert.Null(raw!.TryDecode<Crate>());
         Assert.Null(raw!.TryDecode(typeof(Crate)));
@@ -170,13 +209,11 @@ public sealed class TunnelRequestReplyTests
     {
         var (client, server) = Pair.Create();
 
-        server.Subscribe<Frame>(10, async (req, raw) => {
-            await raw.Reply(new Frame { SequenceId = req.SequenceId + 1 });
-        });
+        server.Subscribe<Frame>(frequency: 10, async (req, raw) => { await raw.Reply(new Frame { SequenceId = req.SequenceId + 1 }); });
 
-        var reply = await client.Request<Frame>(10, new Frame { SequenceId = 5 });
+        var reply = await client.Request<Frame>(frequency: 10, new Frame { SequenceId = 5 });
 
-        Assert.Equal(6u, reply.SequenceId);
+        Assert.Equal(expected: 6u, reply.SequenceId);
     }
 
     [Fact]
@@ -184,23 +221,21 @@ public sealed class TunnelRequestReplyTests
     {
         var (client, server) = Pair.Create();
 
-        server.Subscribe<Frame>("ping", async (req, raw) => {
-            await raw.Reply(new Frame { SentMs = req.SentMs * 2 });
-        });
+        server.Subscribe<Frame>("ping", async (req, raw) => { await raw.Reply(new Frame { SentMs = req.SentMs * 2 }); });
 
         var reply = await client.Request<Frame>("ping", new Frame { SentMs = 21 });
 
-        Assert.Equal(42UL, reply.SentMs);
+        Assert.Equal(expected: 42UL, reply.SentMs);
     }
 
     [Fact]
     public async Task Request_ResponderNeverReplies_TimesOut()
     {
         var (client, server) = Pair.Create();
-        server.Subscribe(1, _ => Task.CompletedTask);
+        server.Subscribe(frequency: 1, _ => Task.CompletedTask);
 
         await Assert.ThrowsAsync<TunnelRequestTimeoutException>(() =>
-            client.Request<Frame>(1, new Frame(), TimeSpan.FromMilliseconds(50)));
+            client.Request<Frame>(frequency: 1, new Frame(), TimeSpan.FromMilliseconds(50)));
     }
 }
 
@@ -248,7 +283,8 @@ public sealed class TunnelClosureTests
         client.Close();
 
         await Assert.ThrowsAsync<TunnelClosedException>(() =>
-            client.Publish(1, new Frame()));
+            client.Publish(frequency: 1, new Frame()));
+
         await Assert.ThrowsAsync<TunnelClosedException>(() =>
             client.Publish("x", new Frame()));
     }
@@ -310,20 +346,32 @@ public sealed class TunnelHandshakeTests
         var (_, _, client, host) = Build();
 
         RpcTunnel? serverEnd = null;
-        host.TunnelOpened += (end, _) => { serverEnd = end; return Task.CompletedTask; };
+
+        host.TunnelOpened += (end, _) => {
+            serverEnd = end;
+            return Task.CompletedTask;
+        };
         await host.Listen("game");
 
         var clientEnd = await client.Open("game");
         Assert.NotNull(serverEnd);
 
         Frame? serverReceived = null, clientReceived = null;
-        serverEnd!.Subscribe<Frame>(1, (msg, _) => { serverReceived = msg; return Task.CompletedTask; });
-        clientEnd.Subscribe<Frame>(2, (msg, _) => { clientReceived = msg; return Task.CompletedTask; });
+
+        serverEnd!.Subscribe<Frame>(frequency: 1, (msg, _) => {
+            serverReceived = msg;
+            return Task.CompletedTask;
+        });
+
+        clientEnd.Subscribe<Frame>(frequency: 2, (msg, _) => {
+            clientReceived = msg;
+            return Task.CompletedTask;
+        });
 
         var outbound = new Frame { SequenceId = 10 };
         var inbound = new Frame { SequenceId = 20 };
-        await clientEnd.Publish(1, outbound);
-        await serverEnd.Publish(2, inbound);
+        await clientEnd.Publish(frequency: 1, outbound);
+        await serverEnd.Publish(frequency: 2, inbound);
 
         Assert.Same(outbound, serverReceived);
         Assert.Same(inbound, clientReceived);
@@ -366,13 +414,17 @@ public sealed class TunnelHandshakeTests
         await h2.Listen("game");
 
         IReadOnlyList<NewTunnelRsp>? captured = null;
+
         var clientEnd = await client.Open(
             "game",
             timeout: TimeSpan.FromMilliseconds(300),
-            sorter: list => { captured = list; return list[^1]; });
+            sorter: list => {
+                captured = list;
+                return list[^1];
+            });
 
         Assert.NotNull(captured);
-        Assert.Equal(2, captured!.Count);
+        Assert.Equal(expected: 2, captured!.Count);
         Assert.NotNull(clientEnd);
     }
 }

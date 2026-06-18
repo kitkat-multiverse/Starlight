@@ -32,7 +32,7 @@ public sealed class TunnelHost(RpcTransport rpc, ITunnelAcceptor acceptor) : IDi
 
             // Raise event before replying so handlers are attached before the gate
             // can publish its first message.
-            if (TunnelOpened is { } handler)
+            if (TunnelOpened is {} handler)
                 await handler(localEnd, req);
 
             await raw.Reply(new NewTunnelRsp { Metadata = ByteString.CopyFrom(meta) });
@@ -41,7 +41,10 @@ public sealed class TunnelHost(RpcTransport rpc, ITunnelAcceptor acceptor) : IDi
 
     public void Dispose()
     {
-        foreach (var sub in _subs) sub.Dispose();
+        foreach (var sub in _subs)
+        {
+            sub.Dispose();
+        }
         _subs.Clear();
     }
 }
