@@ -14,7 +14,7 @@ namespace Starlight.Protobuf.Tests;
 /// </summary>
 public sealed class ScalarMatrixTests
 {
-    private static readonly ScalarMatrixSerializer Serializer = ScalarMatrixSerializer.Instance;
+    private static readonly Fixtures.V99.ScalarMatrixSerializer Serializer = Fixtures.V99.ScalarMatrixSerializer.Instance;
 
     private static ScalarMatrix Sample() => new() {
         FInt32 = 123,

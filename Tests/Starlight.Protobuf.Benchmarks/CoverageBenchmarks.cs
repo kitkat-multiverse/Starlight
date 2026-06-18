@@ -15,7 +15,7 @@ namespace Starlight.Protobuf.Benchmarks;
 [CategoriesColumn]
 public class CoverageBenchmarks
 {
-    private static readonly CoverageSerializer Serializer = CoverageSerializer.Instance;
+    private static readonly Fixtures.V99.CoverageSerializer Serializer = Fixtures.V99.CoverageSerializer.Instance;
 
     [Params(1, 1000)]
     public int N;

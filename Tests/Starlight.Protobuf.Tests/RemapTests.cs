@@ -21,8 +21,8 @@ namespace Starlight.Protobuf.Tests;
 /// </summary>
 public sealed class RemapTests
 {
-    private static readonly RemapProbeSerializer Serializer = RemapProbeSerializer.Instance;
-    private static MessageDescriptor Descriptor => RemapProbeSerializer.Descriptor;
+    private static readonly Fixtures.V99.RemapProbeSerializer Serializer = Fixtures.V99.RemapProbeSerializer.Instance;
+    private static MessageDescriptor Descriptor => Fixtures.V99.RemapProbeSerializer.Descriptor;
 
     private static RemapProbe Sample() => new() {
         A = 123,

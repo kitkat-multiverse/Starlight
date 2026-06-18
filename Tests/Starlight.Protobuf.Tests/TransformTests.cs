@@ -15,8 +15,8 @@ namespace Starlight.Protobuf.Tests;
 /// </summary>
 public sealed class TransformTests
 {
-    private static readonly TransformedSerializer Serializer = TransformedSerializer.Instance;
-    private static MessageDescriptor Descriptor => TransformedSerializer.Descriptor;
+    private static readonly Fixtures.V99.TransformedSerializer Serializer = Fixtures.V99.TransformedSerializer.Instance;
+    private static MessageDescriptor Descriptor => Fixtures.V99.TransformedSerializer.Descriptor;
 
     private static Transformed Sample() => new() { A = 7, B = 1000, C = 42, D = 5, E = 1000 };
 

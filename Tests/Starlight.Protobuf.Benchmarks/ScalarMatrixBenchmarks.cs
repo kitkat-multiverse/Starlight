@@ -15,7 +15,7 @@ namespace Starlight.Protobuf.Benchmarks;
 [CategoriesColumn]
 public class ScalarMatrixBenchmarks
 {
-    private static readonly ScalarMatrixSerializer Serializer = ScalarMatrixSerializer.Instance;
+    private static readonly Fixtures.V99.ScalarMatrixSerializer Serializer = Fixtures.V99.ScalarMatrixSerializer.Instance;
 
     [Params(1, 1000)]
     public int N;
