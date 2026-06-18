@@ -7,7 +7,7 @@ public sealed class KcpServer : IDisposable
 {
     private readonly UdpClient _socket;
     private readonly IKcpServerHandler _handler;
-    private readonly Dictionary<(int Conv, int Token), KcpConnection> _connections = new();
+    private readonly Dictionary<(uint Conv, uint Token), KcpConnection> _connections = new();
     private readonly CancellationTokenSource _cts = new();
 
     public KcpServer(string address, int port, IKcpServerHandler handler)
@@ -58,8 +58,8 @@ public sealed class KcpServer : IDisposable
     {
         if (data.Length < 8) return;
 
-        var conv = BitConverter.ToInt32(data, startIndex: 0);
-        var token = BitConverter.ToInt32(data, startIndex: 4);
+        var conv = BitConverter.ToUInt32(data, startIndex: 0);
+        var token = BitConverter.ToUInt32(data, startIndex: 4);
         var key = (conv, token);
 
         if (!_connections.TryGetValue(key, out var conn))

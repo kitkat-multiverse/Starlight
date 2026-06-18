@@ -11,8 +11,8 @@ public sealed class KcpSegment
     public KcpVersion Version { get; }
     public byte[]? Data { get; }
 
-    public int Conv { get; set; }
-    public int Token { get; set; }
+    public uint Conv { get; set; }
+    public uint Token { get; set; }
     public byte Cmd { get; set; }
     public byte Frg { get; set; }
     public int Wnd { get; set; }

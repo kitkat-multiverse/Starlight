@@ -3,9 +3,9 @@ using static Starlight.Kcp.Internals.KcpConstants;
 
 namespace Starlight.Kcp.Internals;
 
-public sealed class KCP
+public sealed class Kcp
 {
-    public KCP(int conv, int token, bool stream, IWriter sink)
+    public Kcp(uint conv, uint token, bool stream, IWriter sink)
     {
         Conv = conv;
         Token = token;
@@ -15,7 +15,10 @@ public sealed class KCP
     }
 
     /// <summary>Conversation ID.</summary>
-    public int Conv { get; set; }
+    public uint Conv { get; set; }
+
+    /// <summary>User token.</summary>
+    public uint Token { get; }
 
     /// <summary>Maximum Transmission Unit.</summary>
     public int Mtu { get; set; } = KCP_MTU_DEF;
@@ -25,9 +28,6 @@ public sealed class KCP
 
     /// <summary>Connection state.</summary>
     public int State { get; set; }
-
-    /// <summary>User token.</summary>
-    public int Token { get; }
 
     /// <summary>First unacknowledged packet.</summary>
     public int SndUna { get; set; }
@@ -340,8 +340,8 @@ public sealed class KCP
             KCP_EXTRA_OVERHEAD_DEFAULT => KcpVersion.KCP_BASE,
             KCP_EXTRA_OVERHEAD_HYV_V1 => KcpVersion.KCP_HYV_V1,
             _ when remainingAfterData < KcpVersion.KCP_BASE.Overhead() => KcpVersion.KCP_UNKNOWN,
-            _ when cursor.Peek32LE(dataLen + KCP_EXTRA_OVERHEAD_HYV_V1) == Conv => KcpVersion.KCP_HYV_V1,
-            _ when cursor.Peek32LE(dataLen + KCP_EXTRA_OVERHEAD_DEFAULT) == Conv => KcpVersion.KCP_BASE,
+            _ when cursor.PeekU32LE(dataLen + KCP_EXTRA_OVERHEAD_HYV_V1) == Conv => KcpVersion.KCP_HYV_V1,
+            _ when cursor.PeekU32LE(dataLen + KCP_EXTRA_OVERHEAD_DEFAULT) == Conv => KcpVersion.KCP_BASE,
             _ => KcpVersion.KCP_UNKNOWN
         };
     }
@@ -361,7 +361,7 @@ public sealed class KCP
 
         while (data.Remaining >= KcpVersion.Overhead())
         {
-            var conv = data.Read32LE();
+            var conv = data.ReadU32LE();
 
             if (conv != Conv)
             {
@@ -375,7 +375,7 @@ public sealed class KCP
                 }
             }
 
-            var token = data.Read32LE();
+            var token = data.ReadU32LE();
             var cmd = data.Read8();
             var frg = data.Read8U();
             var wnd = data.Read16LE();

@@ -7,21 +7,21 @@ namespace Starlight.Kcp;
 
 public sealed class KcpConnection
 {
-    private readonly KCP _kcp;
+    private readonly Internals.Kcp _kcp;
     private readonly IKcpServerHandler _handler;
     private readonly Action<byte[], EndPoint> _send; // <-- added
 
     public EndPoint Remote { get; }
-    public int Conv => _kcp.Conv;
-    public int Token => _kcp.Token;
+    public uint Conv => _kcp.Conv;
+    public uint Token => _kcp.Token;
     public bool IsDead => _kcp.State == -1;
 
-    internal KcpConnection(int conv, int token, EndPoint remote, IKcpServerHandler handler, Action<byte[], EndPoint> send)
+    internal KcpConnection(uint conv, uint token, EndPoint remote, IKcpServerHandler handler, Action<byte[], EndPoint> send)
     {
         Remote = remote;
         _handler = handler;
         _send = send;
-        _kcp = new KCP(conv, token, stream: false, new WriterAdapter(this));
+        _kcp = new Internals.Kcp(conv, token, stream: false, new WriterAdapter(this));
         _kcp.SetNodelay(nodelay: true, interval: 10, resend: 2, nc: true);
     }
 

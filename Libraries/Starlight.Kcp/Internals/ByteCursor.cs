@@ -82,6 +82,18 @@ public sealed class ByteCursor
         return value;
     }
 
+    public uint ReadU32LE()
+    {
+        EnsureAvailable(4);
+
+        var value = (uint)_bytes[_location]
+                    | (uint)_bytes[_location + 1] << 8
+                    | (uint)_bytes[_location + 2] << 16
+                    | (uint)_bytes[_location + 3] << 24;
+        _location += 4;
+        return value;
+    }
+
     public long Read64LE()
     {
         EnsureAvailable(8);
@@ -110,6 +122,22 @@ public sealed class ByteCursor
                | _bytes[index + 1] << 8
                | _bytes[index + 2] << 16
                | _bytes[index + 3] << 24;
+    }
+
+    public uint PeekU32LE(int skipBytes)
+    {
+        if (skipBytes < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(skipBytes));
+        }
+
+        EnsureAvailable(skipBytes + 4);
+        var index = _location + skipBytes;
+
+        return (uint)_bytes[index]
+               | (uint)_bytes[index + 1] << 8
+               | (uint)_bytes[index + 2] << 16
+               | (uint)_bytes[index + 3] << 24;
     }
 
     public int Read16BE()

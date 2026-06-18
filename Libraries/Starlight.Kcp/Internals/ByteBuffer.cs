@@ -63,6 +63,16 @@ public sealed class ByteBuffer
         }
     }
 
+    public void Write32LE(uint data)
+    {
+        EnsureCapacity(4);
+
+        for (var i = 0; i < 4; i++)
+        {
+            _bytes[_location++] = (byte)(data >> i * 8 & 0xFF);
+        }
+    }
+
     public void Write64LE(long data)
     {
         EnsureCapacity(8);
