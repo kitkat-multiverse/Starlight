@@ -101,6 +101,10 @@ public abstract class RpcTunnel : IDisposable
         {
             reply = await tcs.Task.WaitAsync(timeout.Value, Closed);
         }
+        catch (OperationCanceledException) when (IsClosed)
+        {
+            throw new TunnelClosedException();
+        }
         catch (TimeoutException)
         {
             throw new TunnelRequestTimeoutException(label, timeout.Value);

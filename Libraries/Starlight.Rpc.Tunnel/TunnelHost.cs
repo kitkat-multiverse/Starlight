@@ -32,8 +32,16 @@ public sealed class TunnelHost(RpcTransport rpc, ITunnelAcceptor acceptor) : IDi
 
             // Raise event before replying so handlers are attached before the gate
             // can publish its first message.
-            if (TunnelOpened is {} handler)
-                await handler(localEnd, req);
+            try
+            {
+                if (TunnelOpened is {} handler)
+                    await handler(localEnd, req);
+            }
+            catch
+            {
+                // Avoid leaking acceptor/broker state if user code fails.
+                localEnd.Close();
+            }
 
             await raw.Reply(new NewTunnelRsp { Metadata = ByteString.CopyFrom(meta) });
         }));

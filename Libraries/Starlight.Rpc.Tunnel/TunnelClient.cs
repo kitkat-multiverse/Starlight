@@ -76,10 +76,16 @@ public sealed class TunnelClient(RpcTransport rpc, ITunnelConnector connector)
         await Task.Delay(window);
         sub.Dispose();
 
-        if (replies.Count == 0)
+        NewTunnelRsp[] snapshot;
+        lock (replies)
+        {
+            snapshot = [.. replies];
+        }
+
+        if (snapshot.Length == 0)
             throw new TunnelHandshakeException($"No server responded to tunnel subject '{req.Subject}'.");
 
-        var winner = sorter(replies.AsReadOnly());
+        var winner = sorter(Array.AsReadOnly(snapshot));
         return await connector.Connect(winner);
     }
 }

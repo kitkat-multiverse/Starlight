@@ -117,5 +117,5 @@ public sealed class DirectTunnelMessage : TunnelMessage
     public override T? TryDecode<T>() where T : class => Metadata as T;
 
     public override IMessage? TryDecode(Type type)
-        => type.IsInstanceOfType(Metadata) ? (IMessage)Metadata! : null;
+        => Metadata is IMessage msg && type.IsInstanceOfType(msg) ? msg : null;
 }
