@@ -11,6 +11,7 @@
         <Project Path="Libraries/Starlight.Sqlite/Starlight.Sqlite.csproj"/>
         <Project Path="Libraries/Starlight.Rpc/Starlight.Rpc.csproj"/>
         <Project Path="Libraries/Starlight.Kcp/Starlight.Kcp.csproj"/>
+        <Project Path="Libraries/Starlight.Ec2b/Starlight.Ec2b.csproj"/>
     </Folder>
     <Folder Name="/Libraries/Protobuf/">
         <Project Path="Libraries/Starlight.Protobuf.Compiler/Starlight.Protobuf.Compiler.csproj"/>
