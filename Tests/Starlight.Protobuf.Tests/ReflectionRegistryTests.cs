@@ -173,7 +173,7 @@ public sealed class ReflectionRegistryTests
         original.GetList("g").Add(g1);
         original.GetList("g").Add(g2);
 
-        original.Set("color", 2); // BLUE
+        original.Set("color", value: 2); // BLUE
         original.SetOneof("Choice", caseNumber: 9, value: 4567); // oneof field h (base number 9)
 
         var bytes = registry.Serialize(original);
