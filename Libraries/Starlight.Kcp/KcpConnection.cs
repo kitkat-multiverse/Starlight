@@ -1,6 +1,4 @@
-﻿// KcpConnection.cs
-
-using System.Net;
+﻿using System.Net;
 using Starlight.Kcp.Internals;
 
 namespace Starlight.Kcp;
@@ -9,7 +7,7 @@ public sealed class KcpConnection
 {
     private readonly Internals.Kcp _kcp;
     private readonly IKcpServerHandler _handler;
-    private readonly Action<byte[], EndPoint> _send; // <-- added
+    private readonly Action<byte[], EndPoint> _send;
 
     public EndPoint Remote { get; }
     public uint Conv => _kcp.Conv;
