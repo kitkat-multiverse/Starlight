@@ -23,18 +23,19 @@ public static class MessageExtensions
     }
 
     /// <summary>
-    /// Serializes <paramref name="message"/> using its own canonical serializer.
-    /// Available only for version-independent messages (<see cref="ISelfSerializable{T}"/>),
-    /// which have a single serializer; versioned messages must use the
-    /// <see cref="ToByteArray{T}(T, ISerializer{T})"/> overload.
+    /// Serializes <paramref name="message"/> using its own canonical serializer
+    /// (<see cref="ISelfSerializable{T}"/>): the single serializer for version-independent
+    /// messages, or the structural base format for base messages (server-to-server).
+    /// To encode a base message for a specific protocol version, use the
+    /// <see cref="ToByteArray{T}(T, ISerializer{T})"/> overload instead.
     /// </summary>
     public static byte[] ToByteArray<T>(this T message) where T : ISelfSerializable<T> =>
         message.ToByteArray(T.Serializer);
 
     /// <summary>
     /// Merges <paramref name="data"/> into <paramref name="message"/> using its own
-    /// canonical serializer. Available only for version-independent messages
-    /// (<see cref="ISelfSerializable{T}"/>).
+    /// canonical serializer (<see cref="ISelfSerializable{T}"/>) -- the single
+    /// version-independent serializer or the structural base format.
     /// </summary>
     public static void MergeFrom<T>(this T message, byte[] data) where T : ISelfSerializable<T> =>
         message.MergeFrom(T.Serializer, data);

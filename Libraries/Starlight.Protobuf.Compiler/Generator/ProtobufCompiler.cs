@@ -194,14 +194,32 @@ public sealed partial class ProtobufCompiler : IIncrementalGenerator
                         EmitTopLevelEnum(body, e);
                     }
 
+                    // Base messages own a canonical serializer (selfSerializable), so the
+                    // argument-free ToByteArray()/MergeFrom() encode with the structural base
+                    // field numbers -- a lossless wire format for server-to-server exchange.
                     foreach (var msg in file.MessageTypes)
                     {
                         CodeEmitter.EmitPoco(body, msg, baseNs, cmdIds.TryGetValue(msg.Name, out var id) ? id : (int?)null, baseResolver,
-                            baseCsNames);
+                            baseCsNames, selfSerializable: true);
                         body.AppendLine();
                     }
 
                     ctx.AddSource($"{Stem(file.Name)}.Poco.g.cs", Wrap(baseNs, body.ToString()));
+
+                    if (file.MessageTypes.Count == 0) continue;
+
+                    // The base serializer encodes a message with its own field numbers
+                    // (base == version), with no transforms/alts -- those are version concerns.
+                    var serializers = new StringBuilder();
+
+                    foreach (var msg in file.MessageTypes)
+                    {
+                        EmitSerializerTree(serializers, msg, msg, baseNs, baseResolver, baseCsNames,
+                            transforms: null, alts: null, CodeEmitter.StripPrefix(msg.Name));
+                        serializers.AppendLine();
+                    }
+
+                    ctx.AddSource($"{Stem(file.Name)}.Serializers.g.cs", Wrap(baseNs, serializers.ToString()));
                 }
             }
         }

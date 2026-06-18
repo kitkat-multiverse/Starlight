@@ -22,12 +22,13 @@ public interface IMessage
 public interface IMessage<T> : IMessage where T : IMessage<T>;
 
 /// <summary>
-/// A message that owns its single, canonical serializer. Implemented only by
-/// version-independent messages (<c>extra.proto</c>), which have exactly one
-/// serializer regardless of protocol version. The static member lets the
-/// argument-free <c>ToByteArray()</c> / <c>MergeFrom(byte[])</c> extensions find
-/// that serializer with no runtime lookup. Versioned messages deliberately do
-/// not implement this, so callers must keep supplying a per-version serializer.
+/// A message that owns a canonical serializer reachable with no runtime lookup,
+/// powering the argument-free <c>ToByteArray()</c> / <c>MergeFrom(byte[])</c> extensions.
+/// Implemented by version-independent messages (<c>extra.proto</c>), which have exactly
+/// one serializer, and by base messages, whose canonical serializer encodes with the
+/// structural base field numbers -- a lossless wire format for server-to-server exchange.
+/// Encoding a base message for a specific protocol version instead uses the explicit
+/// per-version <see cref="ISerializer{T}"/> overload.
 /// </summary>
 public interface ISelfSerializable<T> : IMessage<T> where T : ISelfSerializable<T>
 {
