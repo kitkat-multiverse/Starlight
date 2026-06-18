@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 using Starlight.Common;
 using Starlight.Kcp;
 
-namespace Starlight.Game;
+namespace Starlight.Gate;
 
 public sealed class GateServerService(
     ILogger<GateServerService> logger

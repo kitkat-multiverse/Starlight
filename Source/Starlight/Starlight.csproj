@@ -17,6 +17,7 @@
     <ItemGroup>
         <ProjectReference Include="..\..\Libraries\Starlight.Common\Starlight.Common.csproj"/>
         <ProjectReference Include="..\..\Libraries\Starlight.Game.Resources\Starlight.Game.Resources.csproj"/>
+        <ProjectReference Include="..\..\Starlight.Gate\Starlight.Gate.csproj" />
         <ProjectReference Include="..\Starlight.DbGate\Starlight.DbGate.csproj"/>
         <ProjectReference Include="..\..\Libraries\Starlight.Rpc\Starlight.Rpc.csproj"/>
         <ProjectReference Include="..\..\Libraries\Starlight.Rpc.Tunnel\Starlight.Rpc.Tunnel.csproj"/>
