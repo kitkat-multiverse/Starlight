@@ -28,6 +28,9 @@ public abstract class RpcTunnel : IDisposable
     /// <summary>Wraps <paramref name="message"/> in a transport-appropriate payload container.</summary>
     protected abstract TunnelMessage Serialize(IMessage message);
 
+    /// <summary>Stamps the delivering (receiving) end onto <paramref name="message"/> so <see cref="TunnelMessage.Reply"/> routes back to the original sender.</summary>
+    protected static void BindReceiver(TunnelMessage message, RpcTunnel receiver) => message.Tunnel = receiver;
+
     public abstract IDisposable Subscribe(int id, AsyncTunnelHandler handler);
     public abstract IDisposable Subscribe(string id, AsyncTunnelHandler handler);
 
@@ -100,7 +103,7 @@ public abstract class RpcTunnel : IDisposable
 
         try
         {
-            Closed.Register(() => tcs.TrySetCanceled(ct));
+            await using var reg = Closed.Register(() => tcs.TrySetCanceled(ct));
             reply = await tcs.Task.WaitAsync(timeout.Value, ct);
         }
         catch (OperationCanceledException) when (IsClosed)

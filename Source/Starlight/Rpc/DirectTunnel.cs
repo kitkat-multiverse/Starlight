@@ -26,7 +26,7 @@ public sealed class DirectTunnel : RpcTunnel
         return (a, b);
     }
 
-    protected override TunnelMessage Serialize(IMessage message) => new DirectTunnelMessage(this, message);
+    protected override TunnelMessage Serialize(IMessage message) => new DirectTunnelMessage(message);
 
     public override IDisposable Subscribe(int id, AsyncTunnelHandler handler)
         => Add(_intHandlers, id, handler);
@@ -82,6 +82,10 @@ public sealed class DirectTunnel : RpcTunnel
         TunnelMessage message
     ) where TKey : notnull
     {
+        // Stamp the receiving end so Reply() routes back to the original sender
+        // via this end's peer, rather than the sender stamped at Serialize time.
+        BindReceiver(message, this);
+
         List<AsyncTunnelHandler>? snapshot = null;
 
         lock (map)
@@ -120,10 +124,9 @@ public sealed class DirectTunnel : RpcTunnel
 /// <summary>Zero-copy message wrapper: stashes the live <see cref="IMessage"/> in <see cref="TunnelMessage.Metadata"/>.</summary>
 public sealed class DirectTunnelMessage : TunnelMessage
 {
-    public DirectTunnelMessage(RpcTunnel tunnel, IMessage message)
+    public DirectTunnelMessage(IMessage message)
     {
         Metadata = message;
-        Tunnel = tunnel;
     }
 
     public override T? TryDecode<T>() where T : class => Metadata as T;
