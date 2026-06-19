@@ -23,7 +23,7 @@
         <Project Path="Source/Starlight.Game/Starlight.Game.csproj" />
         <Project Path="Source/Starlight.SDK/Starlight.SDK.csproj" />
         <Project Path="Source/Starlight.DbGate/Starlight.DbGate.csproj" />
-        <Project Path="Starlight.Gate/Starlight.Gate.csproj" />
+        <Project Path="Source/Starlight.Gate/Starlight.Gate.csproj" />
     </Folder>
     <Folder Name="/Tests/">
         <Project Path="Tests/Starlight.Tests/Starlight.Tests.csproj" />
