@@ -12,6 +12,9 @@ public sealed class DirectTunnelBroker : ITunnelBroker
         var id = Random.Shared.NextUuid();
         while (!_pending.TryAdd(id, clientEnd))
             id = Random.Shared.NextUuid();
+
+        clientEnd.OnClosed += () => _pending.TryRemove(id, out _);
+
         return id;
     }
 

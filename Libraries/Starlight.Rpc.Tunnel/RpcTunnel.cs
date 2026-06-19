@@ -140,7 +140,15 @@ public abstract class RpcTunnel : IDisposable
         if (Interlocked.Exchange(ref _closedFlag, value: 1) != 0) return;
 
         _closed.Cancel();
-        OnClosed?.Invoke();
+
+        try
+        {
+            OnClosed?.Invoke();
+        }
+        finally
+        {
+            OnSelfClosed();
+        }
     }
 
     protected abstract void NotifyPeerClosed();
