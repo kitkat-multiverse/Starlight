@@ -74,16 +74,16 @@ internal static class Program
             .CreateLogger();
         Log.Information("Starting Starlight...");
 
-        Config.Load();
         LogLevel.MinimumLevel = Config.LogLevel;
 
         try
         {
             var builder = Host.CreateApplicationBuilder(args);
 
+            builder.AddConfig();
+
             builder.Services
                 .AddSerilog()
-                .AddSingleton(_ => Config.Instance)
                 .AddSingleton<GameData>()
                 .AddSingleton<RpcTransport, DirectRpcTransport>()
                 .AddSingleton<ITunnelBroker, DirectTunnelBroker>()

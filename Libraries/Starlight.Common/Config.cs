@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Events;
 
@@ -17,8 +18,19 @@ public static class Config
     public static ServerConfig Server => Instance.Server;
     public static DatabaseConfig Database => Instance.Database;
 
-    public static void Load(string path = "config.json")
+    private static void WriteDefaultConfig(string path)
     {
+        var json = JsonSerializer.Serialize(Instance, Constants.JsonOptions);
+        File.WriteAllText(path, json);
+    }
+
+    public static IHostApplicationBuilder AddConfig(this IHostApplicationBuilder builder, string path = "config.json")
+    {
+        builder.Configuration
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile(path, optional: true, reloadOnChange: true)
+            .AddEnvironmentVariables("SL__");
+
         // Docker containers generally want a read-only system.
         //
         // Usually we use environment variables in that context anyway,
@@ -28,10 +40,7 @@ public static class Config
             WriteDefaultConfig(path);
         }
 
-        var cfg = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile(path, optional: false, reloadOnChange: true)
-            .AddEnvironmentVariables("SL__")
+        var cfg = builder.Configuration
             .Build()
             .Get<StarlightConfig>();
 
@@ -42,12 +51,8 @@ public static class Config
         }
 
         Instance = cfg;
-    }
 
-    private static void WriteDefaultConfig(string path)
-    {
-        var json = JsonSerializer.Serialize(Instance, Constants.JsonOptions);
-        File.WriteAllText(path, json);
+        return builder;
     }
 }
 
@@ -58,6 +63,7 @@ public sealed class StarlightConfig
     public ExternalResources Resources { get; set; } = new();
     public ServerConfig Server { get; set; } = new();
     public DatabaseConfig Database { get; set; } = new();
+    public SdkConfig Sdk { get; set; } = new();
 }
 
 public sealed class ExternalResources
