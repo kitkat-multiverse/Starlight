@@ -324,6 +324,34 @@ public sealed class TunnelBrokerTests
         var broker = new DirectTunnelBroker();
         Assert.Null(broker.Claim(Guid.NewGuid()));
     }
+
+    [Fact]
+    public async Task Register_Unclaimed_ExpiresAndCloses()
+    {
+        var broker = new DirectTunnelBroker(TimeSpan.FromMilliseconds(50));
+        var (client, server) = Pair.Create();
+
+        var handle = broker.Register(client);
+        await Task.Delay(200);
+
+        Assert.Null(broker.Claim(handle));
+        Assert.True(client.IsClosed);
+        Assert.True(server.IsClosed);
+    }
+
+    [Fact]
+    public async Task Claim_DisarmsTtl()
+    {
+        var broker = new DirectTunnelBroker(TimeSpan.FromMilliseconds(50));
+        var (client, _) = Pair.Create();
+
+        var handle = broker.Register(client);
+        var claimed = broker.Claim(handle);
+        await Task.Delay(200);
+
+        Assert.Same(client, claimed);
+        Assert.False(client.IsClosed);
+    }
 }
 
 // ── Integration tests — full handshake ───────────────────────────────────────

@@ -14,7 +14,7 @@ public abstract class TunnelMessage
     /// The receiving end of the tunnel that delivered this message.
     /// Set by the transport's Deliver path; used by <see cref="Reply"/>.
     /// </summary>
-    protected RpcTunnel? Tunnel { get; init; }
+    internal RpcTunnel? Tunnel { get; set; }
 
     public object? Metadata { get; protected set; }
 
