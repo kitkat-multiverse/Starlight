@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+// Used between dispatch & game servers to announce connectability.
+package starlight.dispatch;
+
+option csharp_namespace = "Starlight.Rpc.Proto";
+
+message SessionInfo {
+  string account_id = 1;
+}
+
+message GateServerInfo {
+  // The 'public' IP address that users will connect to.
+  string external_address = 1;
+  // Usually 22101 or 22102.
+  uint32 external_port = 2;
+
+  repeated SessionInfo sessions = 3;
+}
+
+// Gateway servers send this message on a regular interval
+// so the dispatch server can keep track of usable gateways.
+//
+// Subject: `dispatch.heartbeat`
+message GateHeartbeatNotify {
+  GateServerInfo server_info = 1;
+}

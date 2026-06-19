@@ -1,3 +1,5 @@
+using System.Net.Http.Headers;
+
 namespace Starlight.Common;
 
 public enum ProviderType
@@ -22,5 +24,34 @@ public static class DatabaseHelper
         }
 
         return null;
+    }
+}
+
+public static class SystemHelper
+{
+    private const string EchoApi = "https://api.ipify.org/";
+
+    private static readonly HttpClient Client = new();
+
+    static SystemHelper()
+    {
+        Client.DefaultRequestHeaders.Add("User-Agent", "kitkat-multiverse/Starlight");
+    }
+
+    /// <summary>
+    /// Fetches the system's public IP address, even if they're behind NAT.
+    /// </summary>
+    /// <returns>The IP address fetched from an echo API, or <code>127.0.0.1</code> if it fails.</returns>
+    public static async Task<string> PublicIpAddress()
+    {
+        try
+        {
+            var result = await Client.GetStringAsync(EchoApi);
+            return result.Trim();
+        }
+        catch
+        {
+            return "127.0.0.1";
+        }
     }
 }
