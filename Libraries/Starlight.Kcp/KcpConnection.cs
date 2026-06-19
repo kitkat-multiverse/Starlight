@@ -25,6 +25,16 @@ public sealed class KcpConnection
 
     public void Send(byte[] data) => _kcp.Send(data);
 
+    public void Disconnect(DisconnectReason reason) => Disconnect((uint)reason);
+
+    public void Disconnect(uint reason = (uint)DisconnectReason.ServerKick)
+    {
+        var hs = new DisconnectHandshake(Conv, Token, reason);
+        _send(hs.ToByteArray(), Remote);
+
+        _handler.OnDisconnected(this);
+    }
+
     internal void Input(byte[] data)
     {
         var result = _kcp.Input(new ByteCursor(data));
