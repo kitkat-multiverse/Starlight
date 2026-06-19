@@ -25,10 +25,15 @@ message GateServerInfo {
 message StarlightRegionInfo {
   // The internal identifier for the region.
   string region_id = 1;
+
   // The display name for the region.
   //
   // This is the value that shows up in-game.
   string region_name = 2;
+
+  // Used by the client to derive the initial key with an
+  // algorithm called "EC2B".
+  bytes client_secret_key = 3;
 }
 
 // Gateway servers send this message on a regular interval
@@ -38,5 +43,4 @@ message StarlightRegionInfo {
 message GateHeartbeatNotify {
   GateServerInfo server_info = 1;
   StarlightRegionInfo region_info = 2;
-  bytes client_secret_key = 3;
 }
