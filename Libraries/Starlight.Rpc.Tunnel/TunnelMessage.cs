@@ -14,9 +14,8 @@ public abstract class TunnelMessage
     /// The receiving end of the tunnel that delivered this message.
     /// Set by the transport's Deliver path; used by <see cref="Reply"/>.
     /// </summary>
-    public RpcTunnel? Tunnel { get; set; }
+    protected RpcTunnel? Tunnel { get; init; }
 
-    /// <summary>Zero-copy stash slot for in-memory transports.</summary>
     public object? Metadata { get; protected set; }
 
     public abstract T? TryDecode<T>() where T : class, IMessage;

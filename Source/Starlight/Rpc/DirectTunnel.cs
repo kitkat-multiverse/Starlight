@@ -26,16 +26,7 @@ public sealed class DirectTunnel : RpcTunnel
         return (a, b);
     }
 
-    public override void Close()
-    {
-        base.Close();
-
-        _intHandlers.Clear();
-        _stringHandlers.Clear();
-        _peer = null!;
-    }
-
-    protected override TunnelMessage Serialize(IMessage message) => new DirectTunnelMessage(message);
+    protected override TunnelMessage Serialize(IMessage message) => new DirectTunnelMessage(this, message);
 
     public override IDisposable Subscribe(int id, AsyncTunnelHandler handler)
         => Add(_intHandlers, id, handler);
@@ -61,6 +52,13 @@ public sealed class DirectTunnel : RpcTunnel
         return peer.Deliver(peer._stringHandlers, id, message);
     }
 
+    protected override void OnSelfClosed()
+    {
+        _intHandlers.Clear();
+        _stringHandlers.Clear();
+        _peer = null!;
+    }
+
     protected override void NotifyPeerClosed() => _peer.MarkClosedFromPeer();
 
     private static IDisposable Add<TKey>(
@@ -84,8 +82,6 @@ public sealed class DirectTunnel : RpcTunnel
         TunnelMessage message
     ) where TKey : notnull
     {
-        message.Tunnel = this;
-
         List<AsyncTunnelHandler>? snapshot = null;
 
         lock (map)
@@ -124,9 +120,10 @@ public sealed class DirectTunnel : RpcTunnel
 /// <summary>Zero-copy message wrapper: stashes the live <see cref="IMessage"/> in <see cref="TunnelMessage.Metadata"/>.</summary>
 public sealed class DirectTunnelMessage : TunnelMessage
 {
-    public DirectTunnelMessage(IMessage message)
+    public DirectTunnelMessage(RpcTunnel tunnel, IMessage message)
     {
         Metadata = message;
+        Tunnel = tunnel;
     }
 
     public override T? TryDecode<T>() where T : class => Metadata as T;

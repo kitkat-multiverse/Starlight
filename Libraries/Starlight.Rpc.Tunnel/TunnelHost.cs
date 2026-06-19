@@ -41,10 +41,12 @@ public sealed class TunnelHost(RpcTransport rpc, ITunnelAcceptor acceptor) : IDi
                 if (TunnelOpened is {} handler)
                     await handler(localEnd, req);
             }
-            catch
+            catch (Exception ex)
             {
                 // Avoid leaking acceptor/broker state if user code fails.
                 localEnd.Close();
+                await raw.Reply(new NewTunnelRsp { Error = $"An exception occurred: {ex.Message}" });
+                return;
             }
 
             await raw.Reply(new NewTunnelRsp { Metadata = ByteString.CopyFrom(meta) });
