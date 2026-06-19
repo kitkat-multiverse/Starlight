@@ -53,7 +53,7 @@ public sealed class GateServerService(
 
     public void OnConnected(KcpConnection conn)
     {
-        Sessions[conn] = new NetworkSession(conn);
+        Sessions[conn] = new StarlightSession(conn);
 
         logger.LogDebug("Client connected: {Remote} (conv={Conv})", conn.Remote, conn.Conv);
     }
