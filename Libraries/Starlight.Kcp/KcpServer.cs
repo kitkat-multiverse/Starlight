@@ -24,11 +24,18 @@ public sealed class KcpServer : IDisposable
 
     public async Task RunAsync(CancellationToken ct = default)
     {
-        ct.Register(() => _cts.Cancel());
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token, ct);
 
-        var receiveLoop = ReceiveLoopAsync(_cts.Token);
-        var updateLoop = UpdateLoopAsync(_cts.Token);
-        await Task.WhenAll(receiveLoop, updateLoop);
+        try
+        {
+            await Task.WhenAll(
+                ReceiveLoopAsync(linked.Token),
+                UpdateLoopAsync(linked.Token));
+        }
+        catch (OperationCanceledException)
+        {
+            // Cancellation is the normal shutdown path.
+        }
     }
 
     public void Stop() => _cts.Cancel();
