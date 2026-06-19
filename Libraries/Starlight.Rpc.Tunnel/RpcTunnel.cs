@@ -59,23 +59,24 @@ public abstract class RpcTunnel : IDisposable
     /// Publishes <paramref name="request"/> on the numeric <paramref name="id"/>,
     /// then awaits a single reply on an ephemeral string id.
     /// </summary>
-    public Task<TRsp> Request<TRsp>(int id, IMessage request, TimeSpan? timeout = null)
+    public Task<TRsp> Request<TRsp>(int id, IMessage request, TimeSpan? timeout = null, CancellationToken ct = default)
         where TRsp : class, IMessage
-        => RequestCore<TRsp>(request, m => Publish(id, m), id.ToString(), timeout);
+        => RequestCore<TRsp>(request, m => Publish(id, m), id.ToString(), timeout, ct);
 
     /// <summary>
     /// Publishes <paramref name="request"/> on the string <paramref name="id"/>,
     /// then awaits a single reply on an ephemeral string id.
     /// </summary>
-    public Task<TRsp> Request<TRsp>(string id, IMessage request, TimeSpan? timeout = null)
+    public Task<TRsp> Request<TRsp>(string id, IMessage request, TimeSpan? timeout = null, CancellationToken ct = default)
         where TRsp : class, IMessage
-        => RequestCore<TRsp>(request, m => Publish(id, m), id, timeout);
+        => RequestCore<TRsp>(request, m => Publish(id, m), id, timeout, ct);
 
     private async Task<TRsp> RequestCore<TRsp>(
         IMessage request,
         Func<TunnelMessage, Task> publish,
         string label,
-        TimeSpan? timeout
+        TimeSpan? timeout,
+        CancellationToken ct = default
     )
         where TRsp : class, IMessage
     {
@@ -99,7 +100,8 @@ public abstract class RpcTunnel : IDisposable
 
         try
         {
-            reply = await tcs.Task.WaitAsync(timeout.Value, Closed);
+            Closed.Register(() => tcs.TrySetCanceled(ct));
+            reply = await tcs.Task.WaitAsync(timeout.Value, ct);
         }
         catch (OperationCanceledException) when (IsClosed)
         {
