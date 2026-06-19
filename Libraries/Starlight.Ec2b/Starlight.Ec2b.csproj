@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <!-- Derived ec2b dispatch key from version OSRELWin6.6.0 -->
+    <ItemGroup>
+        <EmbeddedResource Include="Properties\ec2b.bytes"
+                          LogicalName="Starlight.Ec2b.ec2b.bytes" />
+    </ItemGroup>
+    
+</Project>

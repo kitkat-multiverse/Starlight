@@ -20,7 +20,7 @@ public sealed class TunnelClient(RpcTransport rpc, ITunnelConnector connector)
     /// <param name="reqTimeout">For the first-reply path: how long to wait before giving up.</param>
     /// <param name="collectWindow">For the sorted path: how long to collect replies before picking the winner.</param>
     /// <param name="sorter">
-    ///   Optional. When provided, all replies received within <paramref name="reqTimeout"/> are
+    ///   Optional. When provided, all replies received within <paramref name="collectWindow"/> are
     ///   collected, then <paramref name="sorter"/> selects the winner. The list is never empty
     ///   when <paramref name="sorter"/> is called.<br/>
     ///   When null, first-reply-wins semantics apply (faster; stops waiting immediately).
@@ -40,8 +40,15 @@ public sealed class TunnelClient(RpcTransport rpc, ITunnelConnector connector)
             Metadata = ByteString.CopyFrom(metadata ?? [])
         };
 
-        if (sorter is not null && collectWindow is not null)
-            return await OpenWithSorter(req, sorter, (TimeSpan)collectWindow, ct);
+        if (sorter is not null)
+        {
+            if (collectWindow is not { } collectWd)
+            {
+                throw new ArgumentNullException(nameof(collectWindow), "A collect window must be provided when using a sorter.");
+            }
+
+            return await OpenWithSorter(req, sorter, collectWd, ct);
+        }
 
         var rsp = await rpc.Request<NewTunnelReq, NewTunnelRsp>(
             TunnelSubjects.NewTunnel, req, reqTimeout, ct);

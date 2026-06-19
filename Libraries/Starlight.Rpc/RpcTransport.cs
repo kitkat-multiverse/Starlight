@@ -79,6 +79,7 @@ public abstract class RpcTransport : IHostedService
     /// <param name="ct">The cancellation token to use for the request.</param>
     /// <typeparam name="TRequest">The protobuf message type for the request.</typeparam>
     /// <typeparam name="TResponse">The protobuf message type for the response.</typeparam>
+    /// <exception cref="OperationCanceledException">If the request is canceled with <see cref="ct"/> instead of by timeout.</exception>
     /// <returns>The response data, deserialized.</returns>
     public virtual async Task<TResponse> Request<TRequest, TResponse>(
         string subject,
