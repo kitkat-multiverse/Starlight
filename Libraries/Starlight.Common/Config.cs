@@ -63,7 +63,6 @@ public sealed class StarlightConfig
     public ExternalResources Resources { get; set; } = new();
     public ServerConfig Server { get; set; } = new();
     public DatabaseConfig Database { get; set; } = new();
-    public SdkConfig Sdk { get; set; } = new();
 }
 
 public sealed class ExternalResources
