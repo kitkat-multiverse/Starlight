@@ -106,7 +106,7 @@ public sealed class KcpServer : IDisposable
                 if (_connections.TryGetValue((hs.ConvId, hs.Token), out var existing) && existing.Remote.Equals(remote))
                 {
                     _connections.Remove((hs.ConvId, hs.Token));
-                    _handler.OnDisconnected(existing);
+                    _handler.OnDisconnected(existing, (uint)hs.Reason);
                 }
                 break;
             case ExchangeHandshake:

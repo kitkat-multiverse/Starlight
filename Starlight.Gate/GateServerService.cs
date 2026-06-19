@@ -1,6 +1,8 @@
+using System.Collections.Concurrent;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Starlight.Common;
+using Starlight.Gate.Session;
 using Starlight.Kcp;
 using KcpLogLevel = Starlight.Kcp.LogLevel;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
@@ -11,6 +13,8 @@ public sealed class GateServerService(
     ILogger<GateServerService> logger
 ) : BackgroundService, IKcpServerHandler
 {
+    public readonly ConcurrentDictionary<KcpConnection, INetworkSession> Sessions = new();
+
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
         try
@@ -49,11 +53,18 @@ public sealed class GateServerService(
 
     public void OnConnected(KcpConnection conn)
     {
-        logger.LogInformation("Client connected: {Remote} (conv={Conv})", conn.Remote, conn.Conv);
+        Sessions[conn] = new NetworkSession(conn);
+
+        logger.LogDebug("Client connected: {Remote} (conv={Conv})", conn.Remote, conn.Conv);
     }
 
-    public void OnDisconnected(KcpConnection conn)
+    public void OnDisconnected(KcpConnection conn, uint reason)
     {
+        if (Sessions.TryRemove(conn, out var session))
+        {
+            session.OnClose(reason);
+        }
+
         logger.LogInformation("Client disconnected: {Remote} (conv={Conv})", conn.Remote, conn.Conv);
     }
 

@@ -32,7 +32,7 @@ public sealed class KcpConnection
         var hs = new DisconnectHandshake(Conv, Token, reason);
         _send(hs.ToByteArray(), Remote);
 
-        _handler.OnDisconnected(this);
+        _handler.OnDisconnected(this, reason);
     }
 
     internal void Input(byte[] data)
@@ -54,7 +54,7 @@ public sealed class KcpConnection
     internal void Update(long timestamp)
     {
         _kcp.Update(timestamp);
-        if (IsDead) _handler.OnDisconnected(this);
+        if (IsDead) _handler.OnDisconnected(this, (uint)DisconnectReason.ServerKillClient);
     }
 
     private sealed class WriterAdapter(KcpConnection conn) : IWriter
