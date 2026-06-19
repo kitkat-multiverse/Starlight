@@ -9,6 +9,7 @@ The next-generation of *a certain anime game*'s reimplementation.
 - https://github.com/wkavenger/hk4e-api - Reference source code for `Starlight.SDK`.
 - https://github.com/Grasscutters/Grasscutter - Reference source code for `Starlight.Game`.
 - https://github.com/Anime-Game-Servers/AGS_KCP - Another useful reference of modified KCP for *a certain anime game*.
+- https://github.com/GrownNed/ec2b.py - Mero's python bindings for Ec2b.
 
 ---
 
