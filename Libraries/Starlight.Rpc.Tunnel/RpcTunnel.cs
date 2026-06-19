@@ -137,7 +137,9 @@ public abstract class RpcTunnel : IDisposable
         }
     }
 
-    protected virtual void OnSelfClosed() { }
+    protected virtual void OnSelfClosed()
+    {
+    }
 
     /// <summary>Called by the peer's <see cref="Close"/>; cancels without re-notifying.</summary>
     protected void MarkClosedFromPeer()

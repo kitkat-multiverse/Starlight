@@ -34,9 +34,6 @@ jobs:
 
     inspect-code:
         name: Code Quality
-        # Only gate pull requests on formatting; runs on Windows so CRLF line
-        # endings and Rider/ReSharper formatting match the committed .editorconfig.
-        if: github.event_name == 'pull_request'
         runs-on: windows-latest
         timeout-minutes: 60
         steps:
@@ -57,13 +54,13 @@ jobs:
               run: echo "$env:USERPROFILE\.dotnet\tools" >> $env:GITHUB_PATH
 
             - name: Clean up code with .editorconfig
-              run: jb cleanupcode Starlight.slnx --profile="Built-in: Full Cleanup" --verbosity=WARN
+              run: 'jb cleanupcode Starlight.slnx --profile="Built-in: Reformat & Apply Syntax Style" --verbosity=WARN'
 
             - name: Verify code matches .editorconfig
               shell: pwsh
               run: |
                   if (git status --porcelain) {
-                      Write-Host "::error::Code does not match .editorconfig. Run 'Code Cleanup' (Full Cleanup) in Rider and push the result."
+                      Write-Host "::error::Code does not match .editorconfig. Run 'Code Cleanup' (Reformat & Apply Syntax Style) in Rider and push the result."
                       git diff --stat
                       git diff
                       exit 1

@@ -72,7 +72,8 @@ public sealed class TunnelHost(RpcTransport rpc, ITunnelAcceptor acceptor) : IDi
 
         public void Dispose()
         {
-            if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
+            if (Interlocked.Exchange(ref _disposed, value: 1) != 0) return;
+
             host._subs.TryRemove(sub, out _);
             sub.Dispose();
         }

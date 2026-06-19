@@ -42,7 +42,7 @@ public sealed class TunnelClient(RpcTransport rpc, ITunnelConnector connector)
 
         if (sorter is not null)
         {
-            if (collectWindow is not { } collectWd)
+            if (collectWindow is not {} collectWd)
             {
                 throw new ArgumentNullException(nameof(collectWindow), "A collect window must be provided when using a sorter.");
             }
@@ -56,6 +56,7 @@ public sealed class TunnelClient(RpcTransport rpc, ITunnelConnector connector)
         if (rsp.HasError)
         {
             Log.Debug("Tunnel request for subject '{Subject}' was rejected: {Error}", req.Subject, rsp.Error);
+
             throw new TunnelHandshakeException(
                 $"Tunnel request for subject '{req.Subject}' was rejected: {rsp.Error}");
         }

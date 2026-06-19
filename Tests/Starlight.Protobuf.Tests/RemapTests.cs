@@ -196,7 +196,7 @@ public sealed class RemapTests
                 {
                     failures.Enqueue(e);
                 }
-            }, token)).ToArray();
+            })).ToArray();
 
             await Task.WhenAll(tasks);
         }

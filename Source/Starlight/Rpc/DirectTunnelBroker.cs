@@ -16,19 +16,22 @@ public sealed class DirectTunnelBroker : ITunnelBroker
     /// otherwise the winning end can be reaped before it is claimed.
     /// </param>
     public DirectTunnelBroker(TimeSpan? ttl = null)
-        => _ttl = ttl ?? DefaultTtl;
+    {
+        _ttl = ttl ?? DefaultTtl;
+    }
 
     public Guid Register(RpcTunnel clientEnd)
     {
         var id = Random.Shared.NextUuid();
         var entry = new Pending(clientEnd);
+
         while (!_pending.TryAdd(id, entry))
             id = Random.Shared.NextUuid();
 
         clientEnd.OnClosed += () => Evict(id);
 
         // Armed last so the timer callback never observes a half-built entry.
-        entry.Timer = new Timer(_ => Expire(id), null, _ttl, Timeout.InfiniteTimeSpan);
+        entry.Timer = new Timer(_ => Expire(id), state: null, _ttl, Timeout.InfiniteTimeSpan);
 
         return id;
     }
@@ -36,6 +39,7 @@ public sealed class DirectTunnelBroker : ITunnelBroker
     public RpcTunnel? Claim(Guid handle)
     {
         if (!_pending.TryRemove(handle, out var entry)) return null;
+
         entry.Timer?.Dispose();
         return entry.Tunnel;
     }
@@ -45,6 +49,7 @@ public sealed class DirectTunnelBroker : ITunnelBroker
     private void Expire(Guid id)
     {
         if (!_pending.TryRemove(id, out var entry)) return;
+
         entry.Timer?.Dispose();
         // Closing cascades to the peer; the OnClosed handler's Evict then no-ops (already removed).
         entry.Tunnel.Close();
