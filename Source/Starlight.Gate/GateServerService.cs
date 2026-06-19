@@ -20,7 +20,7 @@ public sealed class GateServerService(
 {
     private static readonly TimeSpan HeartbeatInterval = TimeSpan.FromSeconds(15);
 
-    private readonly ConcurrentDictionary<KcpConnection, INetworkSession> Sessions = new();
+    private readonly ConcurrentDictionary<KcpConnection, INetworkSession> _sessions = new();
     private readonly Lazy<GateConfig> _config = new(() => config.GetSection("Gate").Get<GateConfig>() ?? new GateConfig());
 
     private GateConfig Config => _config.Value;
@@ -50,13 +50,20 @@ public sealed class GateServerService(
         {
             try
             {
-                var info = new GateServerInfo {
+                var serverInfo = new GateServerInfo {
                     ExternalAddress = Config.ServingLocal ? "127.0.0.1" : await SystemHelper.PublicIpAddress(),
                     ExternalPort = Config.ServePort,
                     Sessions = { /* TODO: Add all connected sessions here. */ }
                 };
-                var heartbeat = new GateHeartbeatNotify { ServerInfo = info };
-                await rpc.Publish(GateSubjects.ServerHeartbeat, heartbeat);
+
+                var regionInfo = new StarlightRegionInfo {
+                    RegionId = Config.Region.Identifier,
+                    RegionName = Config.Region.DisplayName
+                };
+
+                await rpc.Publish(GateSubjects.ServerHeartbeat, new GateHeartbeatNotify {
+                    ServerInfo = serverInfo, RegionInfo = regionInfo
+                });
             }
             catch (Exception ex)
             {
@@ -83,14 +90,14 @@ public sealed class GateServerService(
 
     public void OnConnected(KcpConnection conn)
     {
-        Sessions[conn] = new StarlightSession(conn);
+        _sessions[conn] = new StarlightSession(conn);
 
         logger.LogDebug("Client connected: {Remote} (conv={Conv})", conn.Remote, conn.Conv);
     }
 
     public void OnDisconnected(KcpConnection conn, uint reason)
     {
-        if (Sessions.TryRemove(conn, out var session))
+        if (_sessions.TryRemove(conn, out var session))
         {
             session.OnClose(reason);
         }

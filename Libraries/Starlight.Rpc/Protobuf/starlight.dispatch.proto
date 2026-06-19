@@ -18,10 +18,24 @@ message GateServerInfo {
   repeated SessionInfo sessions = 3;
 }
 
+// Named this way instead of just `RegionInfo` to avoid conflicts
+// with the appropriately named `RegionInfo` message in `dispatch.proto`.
+//
+// Values specified here are used exclusively in the dispatch server.
+message StarlightRegionInfo {
+  // The internal identifier for the region.
+  string region_id = 1;
+  // The display name for the region.
+  //
+  // This is the value that shows up in-game.
+  string region_name = 2;
+}
+
 // Gateway servers send this message on a regular interval
 // so the dispatch server can keep track of usable gateways.
 //
 // Subject: `dispatch.heartbeat`
 message GateHeartbeatNotify {
   GateServerInfo server_info = 1;
+  StarlightRegionInfo region_info = 2;
 }
