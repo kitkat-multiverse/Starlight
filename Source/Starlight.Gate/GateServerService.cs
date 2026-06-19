@@ -1,8 +1,10 @@
 using System.Collections.Concurrent;
+using Google.Protobuf;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Starlight.Common;
+using Starlight.Gate.Crypto;
 using Starlight.Gate.Session;
 using Starlight.Kcp;
 using Starlight.Rpc;
@@ -23,10 +25,21 @@ public sealed class GateServerService(
     private readonly ConcurrentDictionary<KcpConnection, INetworkSession> _sessions = new();
     private readonly Lazy<GateConfig> _config = new(() => config.GetSection("Gate").Get<GateConfig>() ?? new GateConfig());
 
+    private CancellationToken _ct = CancellationToken.None;
+    private byte[] _clientSecret = [];
+
     private GateConfig Config => _config.Value;
+
+    public byte[] ServerKey = [];
 
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
+        _ct = ct;
+
+        // From the region ID, derive the client secret & XOR key.
+        _clientSecret = Ec2bHelper.DeriveSecret(Config.Region.Identifier);
+        ServerKey = Ec2b.Ec2b.Derive(_clientSecret);
+
         _ = Task.Run(() => HeartbeatTask(ct), ct);
 
         try
@@ -46,6 +59,8 @@ public sealed class GateServerService(
 
     private async Task HeartbeatTask(CancellationToken ct)
     {
+        var clientSecret = ByteString.CopyFrom(_clientSecret);
+
         while (!ct.IsCancellationRequested)
         {
             try
@@ -58,7 +73,8 @@ public sealed class GateServerService(
 
                 var regionInfo = new StarlightRegionInfo {
                     RegionId = Config.Region.Identifier,
-                    RegionName = Config.Region.DisplayName
+                    RegionName = Config.Region.DisplayName,
+                    ClientSecretKey = clientSecret
                 };
 
                 await rpc.Publish(GateSubjects.ServerHeartbeat, new GateHeartbeatNotify {
@@ -90,7 +106,7 @@ public sealed class GateServerService(
 
     public void OnConnected(KcpConnection conn)
     {
-        _sessions[conn] = new StarlightSession(conn);
+        _sessions[conn] = new StarlightSession(this, conn);
 
         logger.LogDebug("Client connected: {Remote} (conv={Conv})", conn.Remote, conn.Conv);
     }
@@ -102,11 +118,16 @@ public sealed class GateServerService(
             session.OnClose(reason);
         }
 
-        logger.LogInformation("Client disconnected: {Remote} (conv={Conv})", conn.Remote, conn.Conv);
+        logger.LogDebug("Client disconnected: {Remote} (conv={Conv})", conn.Remote, conn.Conv);
     }
 
     public void OnReceive(KcpConnection conn, byte[] data)
     {
-        logger.LogDebug("Received {Length} bytes from {Remote}", data.Length, conn.Remote);
+        if (_sessions.TryGetValue(conn, out var session))
+        {
+            Task.Run(async () => await session.HandlePacket(data), _ct);
+        }
+
+        logger.LogTrace("Received {Length} bytes from {Remote}", data.Length, conn.Remote);
     }
 }

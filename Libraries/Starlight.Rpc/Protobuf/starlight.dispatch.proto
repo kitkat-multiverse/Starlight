@@ -38,4 +38,5 @@ message StarlightRegionInfo {
 message GateHeartbeatNotify {
   GateServerInfo server_info = 1;
   StarlightRegionInfo region_info = 2;
+  bytes client_secret_key = 3;
 }
