@@ -9,19 +9,17 @@ namespace Starlight.Gate;
 
 public sealed class GateServerService(
     ILogger<GateServerService> logger
-) : BackgroundService
+) : BackgroundService, IKcpServerHandler
 {
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
         try
         {
-            var handler = new GateServerHandler(logger);
-
             var server = new KcpServer(
                 Config.Server.Game.BindAddress,
                 Config.Server.Game.BindPort,
                 LogMessage,
-                handler);
+                this);
 
             logger.LogInformation("Starting GameServer at {Address}:{Port}",
                 Config.Server.Game.BindAddress,
@@ -48,10 +46,7 @@ public sealed class GateServerService(
         }, message, args);
 #pragma warning restore CA2254
     }
-}
 
-public sealed class GateServerHandler(ILogger logger) : IKcpServerHandler
-{
     public void OnConnected(KcpConnection conn)
     {
         logger.LogInformation("Client connected: {Remote} (conv={Conv})", conn.Remote, conn.Conv);
