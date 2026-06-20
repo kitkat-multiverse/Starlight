@@ -7,6 +7,7 @@ using Starlight.Common;
 using Starlight.Gate.Crypto;
 using Starlight.Gate.Session;
 using Starlight.Kcp;
+using Starlight.Protobuf.Registry;
 using Starlight.Rpc;
 using Starlight.Rpc.Proto;
 using KcpLogLevel = Starlight.Kcp.LogLevel;
@@ -16,6 +17,7 @@ namespace Starlight.Gate;
 
 public sealed class GateServerService(
     RpcTransport rpc,
+    ProtocolRegistryProvider registryProvider,
     IConfiguration config,
     ILogger<GateServerService> logger
 ) : BackgroundService, IKcpServerHandler
@@ -25,10 +27,12 @@ public sealed class GateServerService(
     private readonly ConcurrentDictionary<KcpConnection, INetworkSession> _sessions = new();
     private readonly Lazy<GateConfig> _config = new(() => config.GetSection("Gate").Get<GateConfig>() ?? new GateConfig());
 
+    public GateConfig Config => _config.Value;
+
     private CancellationToken _ct = CancellationToken.None;
     private byte[] _clientSecret = [];
 
-    private GateConfig Config => _config.Value;
+    public ProtocolRegistryProvider Registry => registryProvider;
 
     public byte[] ServerKey = [];
 

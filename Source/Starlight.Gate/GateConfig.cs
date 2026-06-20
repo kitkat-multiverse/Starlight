@@ -14,6 +14,8 @@ public sealed class GateConfig
     public bool ServingLocal { get; set; }
 
     public ushort ServePort { get; set; } = 22102;
+
+    public ConnectionConfig Connections { get; set; } = new();
 }
 
 public sealed class RegionConfig
@@ -28,3 +30,13 @@ public sealed class RegionConfig
     public string DisplayName { get; set; } = "Starlight (local)";
 }
 
+public sealed class ConnectionConfig
+{
+    /// Adds a debug log which logs:
+    /// <ul>
+    ///     <li>the client's remote address</li>
+    ///     <li>the packet's ID</li>
+    ///     <li>the packet's size</li>
+    /// </ul>
+    public bool LogPackets { get; set; } = false;
+}
