@@ -70,7 +70,7 @@ public sealed class GateServerService(
             try
             {
                 var serverInfo = new GateServerInfo {
-                    ExternalAddress = Config.ServingLocal ? "127.0.0.1" : await SystemHelper.PublicIpAddress(),
+                    ExternalAddress = Config.ServingLocal ? "127.0.0.1" : await SystemHelper.PublicIpAddress(ct),
                     ExternalPort = Config.ServePort,
                     Sessions = {
                         /* TODO: Add all connected sessions here. */
