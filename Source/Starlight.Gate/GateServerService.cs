@@ -34,8 +34,7 @@ public sealed class GateServerService(
     private byte[] _clientSecret = [];
 
     public ProtocolRegistryProvider Registry => registryProvider;
-
-    public byte[] ServerKey = [];
+    public byte[] ServerKey { get; private set; } = [];
 
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
@@ -132,7 +131,16 @@ public sealed class GateServerService(
     {
         if (_sessions.TryGetValue(conn, out var session))
         {
-            Task.Run(async () => await session.HandlePacket(data), _ct);
+            Task.Run(async () => {
+                try
+                {
+                    await session.HandlePacket(data);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Failed to handle packet for {Remote}", conn.Remote);
+                }
+            }, _ct);
         }
 
         logger.LogTrace("Received {Length} bytes from {Remote}", data.Length, conn.Remote);

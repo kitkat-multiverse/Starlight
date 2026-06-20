@@ -30,9 +30,12 @@ public sealed class GamePacket
         var metadataLen = data.ReadBe<ushort>(ref offset);
         var bodyLen = data.ReadBe<uint>(ref offset);
 
-        if (metadataLen > data.Length || bodyLen > data.Length)
+        // Header(2) + CmdId(2) + metadataLen(2) + bodyLen(4) = 10 already read bytes
+        var remaining = data.Length - 10;
+        var needed = metadataLen + bodyLen + sizeof(ushort);
+        if (remaining != needed)
         {
-            throw new PacketParseException($"Invalid metadata or body length received in game packet");
+            throw new PacketParseException("Invalid game packet length; expected " + needed + " bytes but got " + remaining);
         }
 
         Metadata = new PacketHead();
@@ -63,7 +66,8 @@ public sealed class GamePacket
         var metadata = Metadata.ToByteArray();
 
         var offset = 0;
-        var payload = new byte[sizeof(ushort) * 4 + metadata.Length + Body.Length];
+        // Header(2) + CmdId(2) + metadataLen(2) + bodyLen(4) + Footer(2) = 12 fixed bytes
+        var payload = new byte[12 + metadata.Length + Body.Length];
 
         payload.WriteBe(ref offset, Header);
         payload.WriteBe(ref offset, CmdId);

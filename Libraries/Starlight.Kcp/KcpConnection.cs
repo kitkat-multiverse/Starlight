@@ -8,17 +8,20 @@ public sealed class KcpConnection
     private readonly Internals.Kcp _kcp;
     private readonly IKcpServerHandler _handler;
     private readonly Action<byte[], EndPoint> _send;
+    private readonly Action<KcpConnection, uint> _onDisconnect;
 
     public EndPoint Remote { get; }
     public uint Conv => _kcp.Conv;
     public uint Token => _kcp.Token;
     public bool IsDead => _kcp.State == -1;
 
-    internal KcpConnection(uint conv, uint token, EndPoint remote, IKcpServerHandler handler, Action<byte[], EndPoint> send)
+    internal KcpConnection(uint conv, uint token, EndPoint remote, IKcpServerHandler handler, Action<byte[], EndPoint> send,
+        Action<KcpConnection, uint> onDisconnect)
     {
         Remote = remote;
         _handler = handler;
         _send = send;
+        _onDisconnect = onDisconnect;
         _kcp = new Internals.Kcp(conv, token, stream: false, new WriterAdapter(this));
         _kcp.SetNodelay(nodelay: true, interval: 10, resend: 2, nc: true);
     }
@@ -31,8 +34,7 @@ public sealed class KcpConnection
     {
         var hs = new DisconnectHandshake(Conv, Token, reason);
         _send(hs.ToByteArray(), Remote);
-
-        _handler.OnDisconnected(this, reason);
+        _onDisconnect(this, reason);
     }
 
     internal void Input(byte[] data)

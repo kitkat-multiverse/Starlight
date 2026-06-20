@@ -40,7 +40,7 @@ public sealed class StarlightSession : INetworkSession
         _registry ??= _server.Registry.ResolveByFirstPacket(packet.CmdId)
                       ?? throw new MissingRegistryException(packet.CmdId);
 
-        using var stream = new CodedInputStream(data);
+        using var stream = new CodedInputStream(packet.Body);
         var message = _registry.Deserialize(packet.CmdId, stream);
 
         #endregion

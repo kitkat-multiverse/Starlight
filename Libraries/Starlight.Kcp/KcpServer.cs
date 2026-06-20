@@ -1,3 +1,5 @@
+using System.Buffers.Binary;
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 
@@ -7,7 +9,7 @@ public sealed class KcpServer : IDisposable
 {
     private readonly UdpClient _socket;
     private readonly IKcpServerHandler _handler;
-    private readonly Dictionary<(uint Conv, uint Token), KcpConnection> _connections = new();
+    private readonly ConcurrentDictionary<(uint Conv, uint Token), KcpConnection> _connections = new();
     private readonly CancellationTokenSource _cts = new();
     private readonly LogDelegate _logger;
 
@@ -60,7 +62,7 @@ public sealed class KcpServer : IDisposable
             foreach (var (key, conn) in _connections)
             {
                 conn.Update(now);
-                if (conn.IsDead) _connections.Remove(key);
+                if (conn.IsDead) _connections.TryRemove(key, out _);
             }
         }
     }
@@ -76,14 +78,14 @@ public sealed class KcpServer : IDisposable
                 return;
         }
 
-        var conv = BitConverter.ToUInt32(data, startIndex: 0);
-        var token = BitConverter.ToUInt32(data, startIndex: 4);
+        var conv = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan()[..4]);
+        var token =  BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(4));
         var key = (conv, token);
 
         if (!_connections.TryGetValue(key, out var conn))
         {
-            _logger(LogLevel.Verbose, "Received packet from {Remote} before establishing connection. (conv={ConvId}, token={Token})", conv,
-                token);
+            _logger(LogLevel.Verbose, "Received packet from {Remote} before establishing connection. (conv={ConvId}, token={Token})",
+                remote, conv, token);
             return;
         }
 
@@ -103,8 +105,8 @@ public sealed class KcpServer : IDisposable
                     token = (uint)Random.Shared.Next(minValue: 0, int.MaxValue);
                 } while (_connections.ContainsKey((convId, token)));
 
-                var conn = new KcpConnection(convId, token, remote, _handler, SendTo);
-                _connections[(convId, token)] = conn;
+                var conn = new KcpConnection(convId, token, remote, _handler, SendTo, FinalizeDisconnect);
+                _connections.TryAdd((convId, token), conn);
 
                 var reply = new ExchangeHandshake(convId, token);
                 SendTo(reply.ToByteArray(), remote);
@@ -113,10 +115,7 @@ public sealed class KcpServer : IDisposable
                 break;
             case DisconnectHandshake hs:
                 if (_connections.TryGetValue((hs.ConvId, hs.Token), out var existing) && existing.Remote.Equals(remote))
-                {
-                    _connections.Remove((hs.ConvId, hs.Token));
-                    _handler.OnDisconnected(existing, (uint)hs.Reason);
-                }
+                    FinalizeDisconnect(existing, (uint)hs.Reason);
                 break;
             case ExchangeHandshake:
                 _logger(LogLevel.Verbose, "Received unexpected 'Exchange' type handshake from {Remote}.", remote);
@@ -125,6 +124,12 @@ public sealed class KcpServer : IDisposable
                 _logger(LogLevel.Verbose, "Received invalid handshake from {Remote}.", remote);
                 return;
         }
+    }
+
+    private void FinalizeDisconnect(KcpConnection conn, uint reason)
+    {
+        _connections.TryRemove((conn.Conv, conn.Token), out _);
+        _handler.OnDisconnected(conn, reason);
     }
 
     private void SendTo(byte[] data, EndPoint remote)
