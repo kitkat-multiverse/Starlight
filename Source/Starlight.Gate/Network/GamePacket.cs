@@ -70,9 +70,9 @@ public sealed class GamePacket
         payload.WriteBe(ref offset, (ushort)metadata.Length);
         payload.WriteBe(ref offset, (uint)Body.Length);
 
-        Array.Copy(metadata, 0, payload, offset, metadata.Length);
+        Array.Copy(metadata, sourceIndex: 0, payload, offset, metadata.Length);
         offset += metadata.Length;
-        Array.Copy(Body, 0, payload, offset, Body.Length);
+        Array.Copy(Body, sourceIndex: 0, payload, offset, Body.Length);
         offset += Body.Length;
 
         payload.WriteBe(ref offset, Footer);

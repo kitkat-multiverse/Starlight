@@ -82,7 +82,8 @@ public sealed class KcpServer : IDisposable
 
         if (!_connections.TryGetValue(key, out var conn))
         {
-            _logger(LogLevel.Verbose, "Received packet from {Remote} before establishing connection. (conv={ConvId}, token={Token})", conv, token);
+            _logger(LogLevel.Verbose, "Received packet from {Remote} before establishing connection. (conv={ConvId}, token={Token})", conv,
+                token);
             return;
         }
 
@@ -95,10 +96,11 @@ public sealed class KcpServer : IDisposable
         {
             case ConnectHandshake:
                 uint convId, token;
+
                 do
                 {
-                    convId = (uint)Random.Shared.Next(0, int.MaxValue);
-                    token = (uint)Random.Shared.Next(0, int.MaxValue);
+                    convId = (uint)Random.Shared.Next(minValue: 0, int.MaxValue);
+                    token = (uint)Random.Shared.Next(minValue: 0, int.MaxValue);
                 } while (_connections.ContainsKey((convId, token)));
 
                 var conn = new KcpConnection(convId, token, remote, _handler, SendTo);

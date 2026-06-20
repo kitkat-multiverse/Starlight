@@ -1,10 +1,10 @@
 <Solution>
     <Folder Name="/Game/">
-        <Project Path="Libraries/Starlight.Game.Resources/Starlight.Game.Resources.csproj" />
+        <Project Path="Libraries/Starlight.Game.Resources/Starlight.Game.Resources.csproj"/>
     </Folder>
     <Folder Name="/Game/Protocol/">
-        <Project Path="Protocol/Starlight.Game.Protocol.Base/Starlight.Game.Protocol.Base.csproj" />
-        <Project Path="Protocol/Starlight.Game.Protocol.V66/Starlight.Game.Protocol.V66.csproj" />
+        <Project Path="Protocol/Starlight.Game.Protocol.Base/Starlight.Game.Protocol.Base.csproj"/>
+        <Project Path="Protocol/Starlight.Game.Protocol.V66/Starlight.Game.Protocol.V66.csproj"/>
     </Folder>
     <Folder Name="/Libraries/">
         <Project Path="Libraries/Starlight.Common/Starlight.Common.csproj"/>
@@ -16,24 +16,24 @@
         <Project Path="Libraries/Starlight.Ec2b/Starlight.Ec2b.csproj"/>
     </Folder>
     <Folder Name="/Libraries/Protobuf/">
-        <Project Path="Libraries/Starlight.Protobuf.Compiler/Starlight.Protobuf.Compiler.csproj" />
-        <Project Path="Libraries/Starlight.Protobuf/Starlight.Protobuf.csproj" />
-        <Project Path="Libraries/Starlight.Protobuf.Reflection/Starlight.Protobuf.Reflection.csproj" />
+        <Project Path="Libraries/Starlight.Protobuf.Compiler/Starlight.Protobuf.Compiler.csproj"/>
+        <Project Path="Libraries/Starlight.Protobuf/Starlight.Protobuf.csproj"/>
+        <Project Path="Libraries/Starlight.Protobuf.Reflection/Starlight.Protobuf.Reflection.csproj"/>
     </Folder>
     <Folder Name="/Servers/">
-        <Project Path="Source/Starlight.Game/Starlight.Game.csproj" />
-        <Project Path="Source/Starlight.SDK/Starlight.SDK.csproj" />
-        <Project Path="Source/Starlight.DbGate/Starlight.DbGate.csproj" />
-        <Project Path="Source/Starlight.Gate/Starlight.Gate.csproj" />
+        <Project Path="Source/Starlight.Game/Starlight.Game.csproj"/>
+        <Project Path="Source/Starlight.SDK/Starlight.SDK.csproj"/>
+        <Project Path="Source/Starlight.DbGate/Starlight.DbGate.csproj"/>
+        <Project Path="Source/Starlight.Gate/Starlight.Gate.csproj"/>
     </Folder>
     <Folder Name="/Tests/">
-        <Project Path="Tests/Starlight.Tests/Starlight.Tests.csproj" />
-        <Project Path="Tests/Starlight.Protobuf.Tests/Starlight.Protobuf.Tests.csproj" />
+        <Project Path="Tests/Starlight.Tests/Starlight.Tests.csproj"/>
+        <Project Path="Tests/Starlight.Protobuf.Tests/Starlight.Protobuf.Tests.csproj"/>
     </Folder>
     <Folder Name="/Tests/Protobuf/">
-        <Project Path="Tests/Starlight.Protobuf.Benchmarks/Starlight.Protobuf.Benchmarks.csproj" />
-        <Project Path="Tests/Starlight.Protobuf.Compiler.Host/Starlight.Protobuf.Compiler.Host.csproj" />
-        <Project Path="Tests/Starlight.Protobuf.Fixtures/Starlight.Protobuf.Fixtures.csproj" />
+        <Project Path="Tests/Starlight.Protobuf.Benchmarks/Starlight.Protobuf.Benchmarks.csproj"/>
+        <Project Path="Tests/Starlight.Protobuf.Compiler.Host/Starlight.Protobuf.Compiler.Host.csproj"/>
+        <Project Path="Tests/Starlight.Protobuf.Fixtures/Starlight.Protobuf.Fixtures.csproj"/>
     </Folder>
-    <Project Path="Source/Starlight/Starlight.csproj" />
+    <Project Path="Source/Starlight/Starlight.csproj"/>
 </Solution>

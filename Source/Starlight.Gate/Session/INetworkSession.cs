@@ -6,7 +6,9 @@ public interface INetworkSession
 
     Task HandlePacket(byte[] data);
 
-    void OnClose(uint reason) { }
+    void OnClose(uint reason)
+    {
+    }
 
     #endregion
 }

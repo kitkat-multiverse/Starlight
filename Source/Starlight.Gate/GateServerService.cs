@@ -72,7 +72,9 @@ public sealed class GateServerService(
                 var serverInfo = new GateServerInfo {
                     ExternalAddress = Config.ServingLocal ? "127.0.0.1" : await SystemHelper.PublicIpAddress(),
                     ExternalPort = Config.ServePort,
-                    Sessions = { /* TODO: Add all connected sessions here. */ }
+                    Sessions = {
+                        /* TODO: Add all connected sessions here. */
+                    }
                 };
 
                 var regionInfo = new StarlightRegionInfo {

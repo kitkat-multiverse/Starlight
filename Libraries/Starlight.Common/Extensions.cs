@@ -54,11 +54,11 @@ public static class SpanExtensions
         where T : struct
     {
         var size = sizeof(T);
+
         if (!BitConverter.IsLittleEndian)
         {
             MemoryMarshal.Write(b.Slice(offset, size), in value);
-        }
-        else
+        } else
         {
             Span<byte> reversed = stackalloc byte[size];
             MemoryMarshal.Write(reversed, in value);

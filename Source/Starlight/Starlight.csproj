@@ -22,7 +22,7 @@
         <ProjectReference Include="..\Starlight.DbGate\Starlight.DbGate.csproj"/>
         <ProjectReference Include="..\Starlight.Game\Starlight.Game.csproj"/>
         <ProjectReference Include="..\Starlight.SDK\Starlight.SDK.csproj"/>
-        <ProjectReference Include="..\Starlight.Gate\Starlight.Gate.csproj" />
+        <ProjectReference Include="..\Starlight.Gate\Starlight.Gate.csproj"/>
     </ItemGroup>
 
 </Project>

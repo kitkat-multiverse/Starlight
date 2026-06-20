@@ -23,7 +23,8 @@ public static class Ec2bHelper
         var mt = new Mt19937_64(seed);
         var result = new byte[2076];
 
-        var qwords = MemoryMarshal.Cast<byte, ulong>(result.AsSpan(0, 2072));
+        var qwords = MemoryMarshal.Cast<byte, ulong>(result.AsSpan(start: 0, length: 2072));
+
         for (var i = 0; i < qwords.Length; i++)
             qwords[i] = mt.NextULong();
 

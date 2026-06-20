@@ -89,5 +89,5 @@ public enum DisconnectReason : uint
     PacketCostTime = 18,
     PacketUnionFreq = 19,
     WaitSndMax = 20,
-    AccountTypeBlockLogin = 21,
+    AccountTypeBlockLogin = 21
 }
