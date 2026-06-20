@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
@@ -75,6 +74,8 @@ internal static class Program
             .CreateLogger();
         Log.Information("Starting Starlight...");
 
+        Config.SaveDefaultConfig();
+
         try
         {
             var builder = WebApplication.CreateBuilder(args);
@@ -85,7 +86,7 @@ internal static class Program
                 .AddEnvironmentVariables("SL__");
 
             LogLevel.MinimumLevel = builder.Configuration
-                .GetValue<LogEventLevel>("LogLevel");
+                .GetValue("LogLevel", LogEventLevel.Information);
 
             builder.Services
                 .AddSerilog()
