@@ -9,6 +9,7 @@ using Serilog.Events;
 using Serilog.Sinks.SystemConsole.Themes;
 using Starlight.DbGate;
 using Starlight.Console;
+using Starlight.Game.Protocol.V66;
 using Starlight.Gate;
 using Starlight.Game.Resources;
 using Starlight.Rpc;
@@ -98,10 +99,11 @@ internal static class Program
             builder.Services
                 .AddCommands()
                 .AddHostedService(s => s.GetRequiredService<RpcTransport>())
-                .AddDbGate(Config.Instance)
-                .AddHostedService<GateServerService>();
+                .AddDbGate(Config.Instance);
 
-            builder.AddSdkServer();
+            builder
+                .AddSdkServer()
+                .AddGateServer(new V66ProtocolRegistry());
 
             // Prepare the application.
             var app = builder.Build();

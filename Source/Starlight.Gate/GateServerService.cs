@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using Google.Protobuf;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Starlight.Common;
@@ -135,5 +136,16 @@ public sealed class GateServerService(
         }
 
         logger.LogTrace("Received {Length} bytes from {Remote}", data.Length, conn.Remote);
+    }
+}
+
+public static class GateServerExtensions
+{
+    public static IHostApplicationBuilder AddGateServer(this IHostApplicationBuilder builder, params ProtocolRegistry[] registries)
+    {
+        builder.Services
+            .AddSingleton(new ProtocolRegistryProvider(registries))
+            .AddHostedService<GateServerService>();
+        return builder;
     }
 }
