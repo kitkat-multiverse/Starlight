@@ -43,6 +43,7 @@ public static partial class ServiceExtensions
             if (string.IsNullOrWhiteSpace(config.PasswordRsaKeyPath))
             {
                 Log.Warning("SDK password RSA key path is not configured; is_crypto=true logins will be rejected");
+
                 if (!config.SkipRsaDecryption)
                 {
                     Log.Warning("Set PasswordRsaKeyPath, or set SkipRsaDecryption=true to accept passwords as plaintext.");

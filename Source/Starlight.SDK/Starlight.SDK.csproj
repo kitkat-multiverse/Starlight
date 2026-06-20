@@ -34,7 +34,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Protobuf Include="Resources\Protobuf\define.proto" GrpcServices="None" />
+        <Protobuf Include="Resources\Protobuf\define.proto" GrpcServices="None"/>
     </ItemGroup>
 
 </Project>
