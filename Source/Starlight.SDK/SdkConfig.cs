@@ -440,7 +440,7 @@ public sealed class SdkMaPassportLoginConfig
     /// configuration JSON stays numeric; cast to
     /// <see cref="MaPassportTokenType"/> at the call site.
     /// </summary>
-    public int AppLoginTokenType { get; set; } = (int)MaPassportTokenType.GameToken;
+    public int AppLoginTokenType { get; set; } = (int)MaPassportTokenType.Stoken;
 
     /// <summary>
     /// Token type reported in the response of <c>appLoginByAuthTicket</c>

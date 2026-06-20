@@ -38,7 +38,7 @@ public sealed class DispatchConfig
     /// <summary>
     /// Configured game regions returned by <c>/query_region_list</c>.
     /// </summary>
-    public List<DispatchRegionConfig> Regions { get; set; } = [new()];
+    public List<DispatchRegionConfig> Regions { get; set; } = [];
 
     /// <summary>
     /// Length, in bytes, of the random seed used to generate the process-local
@@ -126,10 +126,10 @@ public sealed class DispatchClientCustomConfig
     public string DownloadMode { get; set; } = "0";
 
     [JsonPropertyName("codeSwitch")]
-    public List<int> CodeSwitch { get; set; } = [3201, 3237, 3248, 3628, 4334];
+    public List<int> CodeSwitch { get; set; } = [];
 
     [JsonPropertyName("coverSwitch")]
-    public List<int> CoverSwitch { get; set; } = [40];
+    public List<int> CoverSwitch { get; set; } = [];
 
     [JsonPropertyName("debugmenu")]
     public string DebugMenu { get; set; } = "true";
