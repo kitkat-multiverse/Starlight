@@ -54,12 +54,9 @@ public static class Ec2bKeyGen
     /// Creates a valid Ec2b buffer from UTF-8 text.
     /// For hex input, prefer CreateFromHexSeed or prefix the seed with "hex:" and call CreateFromSeedString.
     /// </summary>
-    public static byte[] Create(string utf8Seed)
-    {
-        return string.IsNullOrEmpty(utf8Seed) ?
-            throw new ArgumentException("Seed must not be empty.", nameof(utf8Seed)) :
-            Create(Encoding.UTF8.GetBytes(utf8Seed));
-    }
+    public static byte[] Create(string utf8Seed) => string.IsNullOrEmpty(utf8Seed) ?
+        throw new ArgumentException("Seed must not be empty.", nameof(utf8Seed)) :
+        Create(Encoding.UTF8.GetBytes(utf8Seed));
 
     /// <summary>
     /// Creates a valid Ec2b buffer from a 64-bit integer seed.

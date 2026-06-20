@@ -40,6 +40,7 @@ internal static class RsaKeyLoader
                 && !contents.Contains(EncryptedPrivatePemBegin, StringComparison.Ordinal))
             {
                 rsa.Dispose();
+
                 throw new ArgumentException(
                     $"'{path}' is not a private-key PEM (expected PKCS#8, PKCS#1, or encrypted private key).",
                     nameof(path));
