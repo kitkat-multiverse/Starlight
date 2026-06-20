@@ -79,7 +79,7 @@ public sealed class KcpServer : IDisposable
         }
 
         var conv = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan()[..4]);
-        var token =  BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(4));
+        var token = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(4));
         var key = (conv, token);
 
         if (!_connections.TryGetValue(key, out var conn))

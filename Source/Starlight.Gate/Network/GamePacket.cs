@@ -33,6 +33,7 @@ public sealed class GamePacket
         // Header(2) + CmdId(2) + metadataLen(2) + bodyLen(4) = 10 already read bytes
         var remaining = data.Length - 10;
         var needed = metadataLen + bodyLen + sizeof(ushort);
+
         if (remaining != needed)
         {
             throw new PacketParseException("Invalid game packet length; expected " + needed + " bytes but got " + remaining);

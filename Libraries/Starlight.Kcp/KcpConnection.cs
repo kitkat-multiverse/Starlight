@@ -15,8 +15,14 @@ public sealed class KcpConnection
     public uint Token => _kcp.Token;
     public bool IsDead => _kcp.State == -1;
 
-    internal KcpConnection(uint conv, uint token, EndPoint remote, IKcpServerHandler handler, Action<byte[], EndPoint> send,
-        Action<KcpConnection, uint> onDisconnect)
+    internal KcpConnection(
+        uint conv,
+        uint token,
+        EndPoint remote,
+        IKcpServerHandler handler,
+        Action<byte[], EndPoint> send,
+        Action<KcpConnection, uint> onDisconnect
+    )
     {
         Remote = remote;
         _handler = handler;
