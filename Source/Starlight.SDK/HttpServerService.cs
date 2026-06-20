@@ -1,5 +1,3 @@
-using System.Diagnostics;
-using Starlight.Common;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -22,21 +20,18 @@ public static class ServiceExtensions
     public static WebApplicationBuilder AddSdkServer(this WebApplicationBuilder builder)
     {
         // TODO: Isolate database configuration to be per-service.
-        var dbConfig = builder.Configuration.GetSection("Database").Get<DatabaseConfig>() ?? new DatabaseConfig();
         var config = builder.Configuration.GetSection("Sdk").Get<SdkConfig>() ?? new SdkConfig();
 
-        var provider = DatabaseHelper.ParseProvider(dbConfig.ConnectionString, out var connString);
-
-        switch (provider)
+        switch (config.Database.Provider)
         {
             case ProviderType.Sqlite: {
                 builder.Services
-                    .AddStarlightDatabase(connString, dbConfig.Sqlite, typeof(ServiceExtensions).Assembly)
+                    .AddStarlightDatabase(config.Database.Sqlite, typeof(ServiceExtensions).Assembly)
                     .AddSingleton<IAccountRepository, SqliteAccountRepository>();
                 break;
             }
             default:
-                throw new NotSupportedException($"Unsupported or missing database provider '{provider?.ToString() ?? "<null>"}'.");
+                throw new NotSupportedException($"Unsupported or missing database provider '{config.Database.Provider.ToString()}'.");
         }
 
         // Load the password decryption key lazily, it's only needed when a

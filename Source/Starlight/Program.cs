@@ -1,8 +1,7 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Builder;
-using Starlight.Common;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
@@ -76,15 +75,19 @@ internal static class Program
             .CreateLogger();
         Log.Information("Starting Starlight...");
 
-        LogLevel.MinimumLevel = Config.LogLevel;
-
         try
         {
+            Config.SaveDefaultConfig();
+
             var builder = WebApplication.CreateBuilder(args);
 
-            builder.AddConfig();
+            builder.Configuration
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("config.json", optional: true, reloadOnChange: true)
+                .AddEnvironmentVariables("SL__");
 
-            builder.AddConfig();
+            LogLevel.MinimumLevel = builder.Configuration
+                .GetValue("LogLevel", LogEventLevel.Information);
 
             builder.Services
                 .AddSerilog()
@@ -99,14 +102,17 @@ internal static class Program
             builder.Services
                 .AddCommands()
                 .AddHostedService(s => s.GetRequiredService<RpcTransport>())
-                .AddDbGate(Config.Instance);
+                .AddHostedService<GateServerService>();
 
             builder
                 .AddSdkServer()
+                .AddDbGate()
                 .AddGateServer(new V66ProtocolRegistry());
 
             // Prepare the application.
             var app = builder.Build();
+
+            // Map HTTP endpoints (SDK & dispatch).
 #if DEBUG
             app.UseSerilogRequestLogging();
 #endif
