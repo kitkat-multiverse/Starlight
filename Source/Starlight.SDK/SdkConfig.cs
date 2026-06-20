@@ -585,14 +585,6 @@ public sealed class SdkDispatchConfig
     /// JSON custom config embedded into <c>client_custom_config_encrypted</c>.
     /// </summary>
     public SdkDispatchClientCustomConfig ClientCustomConfig { get; set; } = new();
-
-    /// <summary>
-    /// Optional Weedwacker-style XOR encryption settings for
-    /// <c>client_custom_config_encrypted</c>. Disabled by default so existing
-    /// Starlight clients that expect plaintext continue to work until a key is
-    /// provided.
-    /// </summary>
-    public SdkDispatchPayloadEncryptionConfig ClientCustomConfigEncryption { get; set; } = new();
 }
 
 /// <summary>
@@ -669,15 +661,3 @@ public sealed class SdkDispatchClientCustomConfig
     [JsonPropertyName("debuglog")]
     public string DebugLog { get; set; } = "false";
 }
-
-/// <summary>
-/// Simple repeating-key XOR payload encryption used by several dispatch
-/// implementations for client custom config blobs.
-/// </summary>
-public sealed class SdkDispatchPayloadEncryptionConfig
-{
-    public bool Enabled { get; set; }
-    public string? XorKeyBase64 { get; set; }
-    public string? XorKeyUtf8 { get; set; }
-}
-
