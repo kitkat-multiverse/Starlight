@@ -34,31 +34,6 @@ public static class Ec2bHelper
         return xorpad;
     }
 
-    /// <summary>
-    /// Derives a secret key (<see cref="Derive"/>'s <c>ec2b</c> parameter) from a seed phrase.
-    /// <br/>
-    /// This is a custom algorithm reused by the dispatch server & gate servers to derive the same secret.
-    /// </summary>
-    public static byte[] DeriveSecret(string seedPhrase)
-    {
-        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(seedPhrase));
-        var seed = BinaryPrimitives.ReadUInt64LittleEndian(hash);
-
-        var mt = new Mt19937_64(seed);
-        var result = new byte[2076];
-
-        var qwords = MemoryMarshal.Cast<byte, ulong>(result.AsSpan(start: 0, length: 2072));
-
-        for (var i = 0; i < qwords.Length; i++)
-            qwords[i] = mt.NextULong();
-
-        Span<byte> tail = stackalloc byte[8];
-        BinaryPrimitives.WriteUInt64LittleEndian(tail, mt.NextULong());
-        tail[..4].CopyTo(result.AsSpan(2072));
-
-        return result;
-    }
-
     private static void KeyScramble(Span<byte> key)
     {
         Span<byte> roundKeys = stackalloc byte[16 * 11];

@@ -1,7 +1,4 @@
-using Starlight.Ec2b;
-using System;
 using System.Buffers.Binary;
-using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -19,9 +16,9 @@ namespace Starlight.Ec2b;
 /// </summary>
 public static class Ec2bKeyGen
 {
-    public const int KeySize = 0x10;
-    public const int DataSize = 0x800;
-    public const int HeaderSize = 4 + 4 + KeySize + 4;
+    private const int KeySize = 0x10;
+    private const int DataSize = 0x800;
+    private const int HeaderSize = 4 + 4 + KeySize + 4;
     public const int Ec2bSize = HeaderSize + DataSize;
 
     private static readonly byte[] Domain = "Starlight-Ec2b"u8.ToArray();
@@ -59,10 +56,9 @@ public static class Ec2bKeyGen
     /// </summary>
     public static byte[] Create(string utf8Seed)
     {
-        if (string.IsNullOrEmpty(utf8Seed))
-            throw new ArgumentException("Seed must not be empty.", nameof(utf8Seed));
-
-        return Create(Encoding.UTF8.GetBytes(utf8Seed));
+        return string.IsNullOrEmpty(utf8Seed) ?
+            throw new ArgumentException("Seed must not be empty.", nameof(utf8Seed)) :
+            Create(Encoding.UTF8.GetBytes(utf8Seed));
     }
 
     /// <summary>
@@ -73,59 +69,6 @@ public static class Ec2bKeyGen
         Span<byte> seedBytes = stackalloc byte[8];
         BinaryPrimitives.WriteUInt64LittleEndian(seedBytes, seed);
         return Create(seedBytes);
-    }
-
-    /// <summary>
-    /// Creates a valid Ec2b buffer from either UTF-8 text or hex prefixed with "hex:".
-    /// Examples: "kazusa", "hex:DE AD BE EF", "hex:0xdeadbeef".
-    /// </summary>
-    public static byte[] CreateFromSeedString(string seed)
-    {
-        if (string.IsNullOrEmpty(seed))
-            throw new ArgumentException("Seed must not be empty.", nameof(seed));
-
-        if (seed.StartsWith("hex:", StringComparison.OrdinalIgnoreCase))
-            return Create(ParseHex(seed.Substring(4)));
-
-        return Create(seed);
-    }
-
-    /// <summary>
-    /// Creates a valid Ec2b buffer from hex bytes.
-    /// Accepts whitespace, underscores, dashes, and an optional leading 0x.
-    /// </summary>
-    public static byte[] CreateFromHexSeed(string hexSeed) => Create(ParseHex(hexSeed));
-
-    /// <summary>
-    /// Writes a valid Ec2b file from arbitrary seed bytes.
-    /// </summary>
-    public static void Write(ReadOnlySpan<byte> seed, string outputPath)
-    {
-        if (string.IsNullOrWhiteSpace(outputPath))
-            throw new ArgumentException("Output path must not be empty.", nameof(outputPath));
-
-        File.WriteAllBytes(outputPath, Create(seed));
-    }
-
-    /// <summary>
-    /// Writes a valid Ec2b file from either UTF-8 text or hex prefixed with "hex:".
-    /// </summary>
-    public static void WriteFromSeedString(string seed, string outputPath)
-    {
-        if (string.IsNullOrWhiteSpace(outputPath))
-            throw new ArgumentException("Output path must not be empty.", nameof(outputPath));
-
-        File.WriteAllBytes(outputPath, CreateFromSeedString(seed));
-    }
-
-    /// <summary>
-    /// Convenience helper: creates Ec2b and immediately derives its 4096-byte xorpad using the existing Ec2b.Derive method.
-    /// </summary>
-    public static (byte[] Ec2b, byte[] Xorpad) CreateWithXorpad(ReadOnlySpan<byte> seed)
-    {
-        var ec2b = Create(seed);
-        var xorpad = Ec2bHelper.Derive(ec2b);
-        return (ec2b, xorpad);
     }
 
     /// <summary>
@@ -166,41 +109,5 @@ public static class Ec2bKeyGen
         CryptographicOperations.ZeroMemory(seedBytes);
         CryptographicOperations.ZeroMemory(input);
         return output;
-    }
-
-    private static byte[] ParseHex(string text)
-    {
-        if (string.IsNullOrWhiteSpace(text))
-            throw new ArgumentException("Hex seed must not be empty.", nameof(text));
-
-        var trimmed = text.Trim();
-
-        if (trimmed.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-            trimmed = trimmed.Substring(2);
-
-        var clean = new StringBuilder(trimmed.Length);
-
-        for (var i = 0; i < trimmed.Length; i++)
-        {
-            var c = trimmed[i];
-
-            if (char.IsWhiteSpace(c) || c == '_' || c == '-')
-                continue;
-
-            if (!Uri.IsHexDigit(c))
-                throw new FormatException($"Invalid hex character '{c}' at position {i}.");
-
-            clean.Append(c);
-        }
-
-        if (clean.Length == 0 || clean.Length % 2 != 0)
-            throw new FormatException("Hex seed must contain an even number of hex digits.");
-
-        var bytes = new byte[clean.Length / 2];
-
-        for (var i = 0; i < bytes.Length; i++)
-            bytes[i] = Convert.ToByte(clean.ToString(i * 2, length: 2), fromBase: 16);
-
-        return bytes;
     }
 }

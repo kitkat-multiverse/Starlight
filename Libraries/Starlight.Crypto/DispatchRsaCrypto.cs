@@ -33,11 +33,31 @@ public sealed class DispatchRsaCrypto : IDisposable
         {
             var map = new Dictionary<int, RSA>(encryptKeyPems.Count);
 
-            foreach (var (id, pem) in encryptKeyPems)
+            try
             {
-                var rsa = RSA.Create();
-                rsa.ImportFromPem(pem);
-                map[id] = rsa;
+                foreach (var (id, pem) in encryptKeyPems)
+                {
+                    var rsa = RSA.Create();
+                    try
+                    {
+                        rsa.ImportFromPem(pem);
+                    }
+                    catch
+                    {
+                        rsa.Dispose();
+                        throw;
+                    }
+                    map[id] = rsa;
+                }
+            }
+            catch
+            {
+                foreach (var key in map.Values)
+                {
+                    key.Dispose();
+                }
+                _signingKey?.Dispose();
+                throw;
             }
             _encryptKeys = map;
         } else

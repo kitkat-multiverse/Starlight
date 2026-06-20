@@ -47,7 +47,7 @@ public sealed class StarlightSession : INetworkSession
 
         if (_server.Config.Connections.LogPackets)
         {
-            Logger.Debug("C→S | Packet: {Message} [{CmdId}] ({Length} bytes)",
+            Logger.Debug("C>S | Packet: {Message} [{CmdId}] ({Length} bytes)",
                 message.GetType().Name, packet.CmdId, packet.Body.Length);
         }
     }

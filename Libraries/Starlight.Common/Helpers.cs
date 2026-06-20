@@ -6,6 +6,8 @@ public static class SystemHelper
 
     private static readonly HttpClient Client = new();
 
+    private static string? _ipAddress;
+
     static SystemHelper()
     {
         Client.Timeout = TimeSpan.FromSeconds(5);
@@ -19,7 +21,9 @@ public static class SystemHelper
     /// <exception cref="HttpRequestException">Thrown when IP discovery fails.</exception>
     public static async Task<string> PublicIpAddress(CancellationToken ct = default)
     {
+        if (_ipAddress is not null) return _ipAddress;
+
         var result = await Client.GetStringAsync(EchoApi, ct);
-        return result.Trim();
+        return _ipAddress = result.Trim();
     }
 }

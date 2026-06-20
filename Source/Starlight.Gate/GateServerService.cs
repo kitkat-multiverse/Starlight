@@ -39,8 +39,7 @@ public sealed class GateServerService(
         _ct = ct;
 
         // From the region ID, derive the client secret & XOR key.
-        var seed = Ec2bHelper.DeriveSecret(Config.RegionId);
-        var secret = Ec2bKeyGen.Create(seed);
+        var secret = Ec2bKeyGen.Create(Config.RegionId);
         ServerKey = Ec2bHelper.Derive(secret);
 
         _ = Task.Run(() => HeartbeatTask(ct), ct);

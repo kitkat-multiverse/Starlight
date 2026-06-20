@@ -84,7 +84,6 @@ public static partial class ServiceExtensions
         builder.Services
             .AddSingleton(config)
             .AddSingleton<DispatchRegionCache>()
-            .AddSingleton<DispatchRegionCache>()
             .AddHostedService<DispatchService>();
 
         return builder;

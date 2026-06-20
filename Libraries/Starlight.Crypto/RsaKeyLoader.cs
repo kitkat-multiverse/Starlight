@@ -11,6 +11,8 @@ internal static class RsaKeyLoader
     private const string PrivatePemBegin = "-----BEGIN PRIVATE KEY-----";
     private const string PrivatePemEnd = "-----END PRIVATE KEY-----";
     private const string PemBeginPrefix = "-----BEGIN";
+    private const string Pkcs1PrivatePemBegin = "-----BEGIN RSA PRIVATE KEY-----";
+    private const string EncryptedPrivatePemBegin = "-----BEGIN ENCRYPTED PRIVATE KEY-----";
 
     /// <summary>Reads PKCS#8 private-key bytes from a file (DER or PEM).</summary>
     public static byte[] ReadPkcs8File(string path)
@@ -33,6 +35,16 @@ internal static class RsaKeyLoader
 
         if (contents.Contains(PemBeginPrefix, StringComparison.Ordinal))
         {
+            if (!contents.Contains(PrivatePemBegin, StringComparison.Ordinal)
+                && !contents.Contains(Pkcs1PrivatePemBegin, StringComparison.Ordinal)
+                && !contents.Contains(EncryptedPrivatePemBegin, StringComparison.Ordinal))
+            {
+                rsa.Dispose();
+                throw new ArgumentException(
+                    $"'{path}' is not a private-key PEM (expected PKCS#8, PKCS#1, or encrypted private key).",
+                    nameof(path));
+            }
+
             rsa.ImportFromPem(contents);
         } else
         {

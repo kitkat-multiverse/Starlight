@@ -34,15 +34,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Protobuf Include="Resources\Protobuf\define.proto">
-            <GrpcServices>None</GrpcServices>
-            <Access>Public</Access>
-            <ProtoCompile>True</ProtoCompile>
-            <ProtoRoot>Resources/Protobuf</ProtoRoot>
-            <CompileOutputs>True</CompileOutputs>
-            <OutputDir>obj\Debug\net10.0\</OutputDir>
-            <Generator>MSBuild:Compile</Generator>
-        </Protobuf>
+        <Protobuf Include="Resources\Protobuf\define.proto" GrpcServices="None" />
     </ItemGroup>
 
 </Project>
