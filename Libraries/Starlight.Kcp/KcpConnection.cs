@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using Starlight.Kcp.Internals;
 
 namespace Starlight.Kcp;

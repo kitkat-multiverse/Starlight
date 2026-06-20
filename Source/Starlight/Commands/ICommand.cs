@@ -1,4 +1,4 @@
-﻿namespace Starlight.Commands;
+namespace Starlight.Commands;
 
 public interface ICommand
 {

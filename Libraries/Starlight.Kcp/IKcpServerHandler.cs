@@ -1,4 +1,4 @@
-﻿namespace Starlight.Kcp;
+namespace Starlight.Kcp;
 
 public interface IKcpServerHandler
 {

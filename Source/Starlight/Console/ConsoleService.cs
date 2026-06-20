@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Hosting;
 using Serilog;
 
 namespace Starlight.Console;
@@ -60,6 +60,7 @@ public sealed class ConsoleService(
         var readTask = Task.Run(System.Console.ReadLine, CancellationToken.None);
 
         var cancelled = new TaskCompletionSource();
+
         await using (cancellationToken.Register(() => cancelled.TrySetResult()))
         {
             if (await Task.WhenAny(readTask, cancelled.Task) != readTask)

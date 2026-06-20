@@ -1,4 +1,4 @@
-﻿using static Starlight.Kcp.Internals.KcpConstants;
+using static Starlight.Kcp.Internals.KcpConstants;
 
 namespace Starlight.Kcp.Internals;
 

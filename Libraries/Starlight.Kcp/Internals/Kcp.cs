@@ -1,4 +1,4 @@
-﻿using System.IO.Hashing;
+using System.IO.Hashing;
 using static Starlight.Kcp.Internals.KcpConstants;
 
 namespace Starlight.Kcp.Internals;
@@ -393,7 +393,6 @@ public sealed class Kcp
             {
                 KcpVersion = DetermineKcpVersion(data, len);
             }
-            Console.WriteLine($"Determined KCP version: {KcpVersion}");
 
             if (KcpVersion == KcpVersion.KCP_UNKNOWN)
             {

@@ -61,7 +61,7 @@ internal static class Samples
         ChoiceMsg = new CoverageSub { Value = 99 }
     };
 
-    /// <summary>Builds an array of <paramref name="count"/> items from a factory —
+    /// <summary>Builds an array of <paramref name="count"/> items from a factory,
     /// the "bunch of data" a bulk benchmark serializes/deserializes per op.</summary>
     public static T[] Batch<T>(int count, Func<T> factory)
     {

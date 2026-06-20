@@ -8,7 +8,8 @@ namespace Starlight.DbGate.Models;
 
 public sealed class PlayerProfile : IRpcSerializable<NetPlayerProfile>
 {
-    [Key] [ForeignKey(nameof(Player))]
+    [Key]
+    [ForeignKey(nameof(Player))]
     public uint PlayerId { get; set; }
 
     [MaxLength(16)] public string Nickname { get; set; } = "Traveler";

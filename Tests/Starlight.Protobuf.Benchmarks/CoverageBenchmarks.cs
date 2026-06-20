@@ -34,7 +34,8 @@ public class CoverageBenchmarks
         _starlightBytes = Array.ConvertAll(_starlight, m => m.ToByteArray(Serializer));
     }
 
-    [BenchmarkCategory("Serialize")] [Benchmark(Baseline = true)]
+    [BenchmarkCategory("Serialize")]
+    [Benchmark(Baseline = true)]
     public long Google_Serialize()
     {
         long total = 0;
@@ -46,7 +47,8 @@ public class CoverageBenchmarks
         return total;
     }
 
-    [BenchmarkCategory("Serialize")] [Benchmark]
+    [BenchmarkCategory("Serialize")]
+    [Benchmark]
     public long Starlight_Serialize()
     {
         long total = 0;
@@ -58,7 +60,8 @@ public class CoverageBenchmarks
         return total;
     }
 
-    [BenchmarkCategory("Deserialize")] [Benchmark(Baseline = true)]
+    [BenchmarkCategory("Deserialize")]
+    [Benchmark(Baseline = true)]
     public long Google_Deserialize()
     {
         long total = 0;
@@ -70,7 +73,8 @@ public class CoverageBenchmarks
         return total;
     }
 
-    [BenchmarkCategory("Deserialize")] [Benchmark]
+    [BenchmarkCategory("Deserialize")]
+    [Benchmark]
     public long Starlight_Deserialize()
     {
         long total = 0;

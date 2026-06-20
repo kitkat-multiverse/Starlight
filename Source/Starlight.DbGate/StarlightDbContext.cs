@@ -10,7 +10,7 @@ namespace Starlight.DbGate;
 [AttributeUsage(AttributeTargets.Property)]
 public sealed class JsonColumnAttribute : Attribute;
 
-public sealed class StarlightDbContext : DbContext
+public sealed class StarlightDbContext(DbContextOptions options) : DbContext(options)
 {
     public DbSet<Player> Players { get; set; } = null!;
     public DbSet<PlayerProfile> Profiles { get; set; } = null!;

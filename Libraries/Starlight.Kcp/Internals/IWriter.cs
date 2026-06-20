@@ -1,4 +1,4 @@
-﻿namespace Starlight.Kcp.Internals;
+namespace Starlight.Kcp.Internals;
 
 public interface IWriter
 {

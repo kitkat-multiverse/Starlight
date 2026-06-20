@@ -12,7 +12,12 @@
 
     <ItemGroup>
         <ProjectReference Include="..\..\Libraries\Starlight.Common\Starlight.Common.csproj"/>
+        <ProjectReference Include="..\..\Libraries\Starlight.Crypto\Starlight.Crypto.csproj"/>
         <ProjectReference Include="..\..\Libraries\Starlight.Sqlite\Starlight.Sqlite.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
     </ItemGroup>
 
 </Project>
