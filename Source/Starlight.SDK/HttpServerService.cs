@@ -12,6 +12,7 @@ using Starlight.SDK.Database;
 using Starlight.SDK.Database.Impl;
 using Starlight.SDK.Http.Endpoints;
 using Starlight.SDK.Services;
+using Starlight.Game;
 
 namespace Starlight.SDK;
 
@@ -21,6 +22,7 @@ public static class ServiceExtensions
     {
         // TODO: Isolate database configuration to be per-service.
         var config = builder.Configuration.GetSection("Sdk").Get<SdkConfig>() ?? new SdkConfig();
+        var gateConfig = builder.Configuration.GetSection("Game").Get<GateConfig>() ?? new GateConfig();
 
         switch (config.Database.Provider)
         {
@@ -83,6 +85,8 @@ public static class ServiceExtensions
 
         builder.Services
             .AddSingleton(config)
+            .AddSingleton(gateConfig)
+            .AddSingleton<DispatchRegionCache>()
             .AddSingleton<IAuthService, AuthService>();
 
         builder.WebHost.UseUrls($"http://{config.BindAddress}:{config.BindPort}");
@@ -93,6 +97,7 @@ public static class ServiceExtensions
     public static IEndpointRouteBuilder MapSdkServer(this IEndpointRouteBuilder app)
     {
         app.MapGet("/", () => Results.Ok("Starlight"));
+        app.MapRegionEndpoints();
         app.MapShieldEndpoints();
         app.MapComboGranterEndpoints();
         app.MapWebstaticEndpoints();

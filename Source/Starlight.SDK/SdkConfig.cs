@@ -1,4 +1,5 @@
 using Starlight.Database;
+using System.Text.Json.Serialization;
 
 namespace Starlight.SDK;
 
@@ -97,6 +98,14 @@ public sealed class SdkConfig
     /// <see cref="WebstaticConfig.ResourceRoot"/> when set.
     /// </summary>
     public WebstaticConfig Webstatic { get; set; } = new();
+
+    /// <summary>
+    /// Configuration for the game dispatch endpoints (<c>/query_region_list</c>
+    /// and <c>/query_cur_region/{name}</c>). The dispatch service builds and
+    /// caches protobuf payloads from this section instead of creating hard-coded
+    /// responses per request.
+    /// </summary>
+    public SdkDispatchConfig Dispatch { get; set; } = new();
 
     /// <summary>
     /// Configuration returned by <c>/hk4e_global/mdk/shield/api/loadConfig</c>
@@ -527,4 +536,128 @@ public sealed class SdkDeviceExt
     public List<string> Ext { get; set; } = new();
     public List<string> Pkgs { get; set; } = new();
     public string PkgStr { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Configuration for the dispatch endpoints that provide the game region list
+/// and the selected region's connection metadata.
+/// </summary>
+public sealed class SdkDispatchConfig
+{
+    /// <summary>
+    /// Public base URL used to build region dispatch URLs. Leave empty to derive
+    /// the URL from the incoming request Host/Scheme, including common
+    /// X-Forwarded-* reverse-proxy headers.
+    /// </summary>
+    public string? PublicBaseUrl { get; set; }
+
+    /// <summary>
+    /// Whether the PC login flow is enabled in <c>QueryRegionListHttpRsp</c>.
+    /// </summary>
+    public bool EnableLoginPc { get; set; } = true;
+
+    /// <summary>
+    /// Default name applied when the region list is empty or a region omits a
+    /// name. Region names must be unique because they are used in the
+    /// <c>/query_cur_region/{name}</c> route.
+    /// </summary>
+    public string DefaultRegionName { get; set; } = "Starlight";
+
+    /// <summary>
+    /// Default region type surfaced in <see cref="RegionSimpleInfo.Type"/>.
+    /// </summary>
+    public string RegionType { get; set; } = "DEV_PUBLIC";
+
+    /// <summary>
+    /// Configured game regions returned by <c>/query_region_list</c>.
+    /// </summary>
+    public List<SdkDispatchRegionConfig> Regions { get; set; } = [new()];
+
+    /// <summary>
+    /// Length, in bytes, of the random seed used to generate the process-local
+    /// EC2B client secret at startup. The EC2B payload itself is always 2076
+    /// bytes, and the matching 4096-byte xorpad is derived and cached in memory.
+    /// No dispatch key material is read from or written to disk.
+    /// </summary>
+    public int GeneratedEc2bSeedLength { get; set; } = 32;
+
+    /// <summary>
+    /// JSON custom config embedded into <c>client_custom_config_encrypted</c>.
+    /// </summary>
+    public SdkDispatchClientCustomConfig ClientCustomConfig { get; set; } = new();
+}
+
+/// <summary>
+/// One game region advertised by the dispatch service.
+/// </summary>
+public sealed class SdkDispatchRegionConfig
+{
+    public string Name { get; set; } = "Starlight";
+    public string Title { get; set; } = "Private Server for a certain anime game";
+    public string? Type { get; set; }
+    public string? DispatchUrl { get; set; }
+
+    public bool UseGateserverDomainName { get; set; }
+    public string? GateserverDomainName { get; set; }
+    public string GameBiz { get; set; } = "hk4e_global";
+
+    public string? PayCallbackUrl { get; set; }
+    public string? AreaType { get; set; }
+    public string? ResourceUrl { get; set; }
+    public string? DataUrl { get; set; }
+    public string? FeedbackUrl { get; set; }
+    public string? BulletinUrl { get; set; }
+    public string? ResourceUrlBak { get; set; }
+    public string? DataUrlBak { get; set; }
+    public uint ClientDataVersion { get; set; }
+    public string? HandbookUrl { get; set; }
+    public uint ClientSilenceDataVersion { get; set; }
+    public string? ClientDataMd5 { get; set; }
+    public string? ClientSilenceDataMd5 { get; set; }
+    public string? OfficialCommunityUrl { get; set; }
+    public string? ClientVersionSuffix { get; set; }
+    public string? ClientSilenceVersionSuffix { get; set; }
+    public string? UserCenterUrl { get; set; }
+    public string? AccountBindUrl { get; set; }
+    public string? CdkeyUrl { get; set; }
+    public string? PrivacyPolicyUrl { get; set; }
+    public string? NextResourceUrl { get; set; }
+    public string? ConnectGateTicket { get; set; }
+}
+
+/// <summary>
+/// Custom config object serialized into the dispatch region-list response.
+/// Property names intentionally match the client's lower-case wire keys.
+/// </summary>
+public sealed class SdkDispatchClientCustomConfig
+{
+    [JsonPropertyName("sdkenv")]
+    public string SdkEnv { get; set; } = "2";
+
+    [JsonPropertyName("checkdevice")]
+    public string CheckDevice { get; set; } = "false";
+
+    [JsonPropertyName("loadPatch")]
+    public string LoadPatch { get; set; } = "false";
+
+    [JsonPropertyName("showexception")]
+    public bool ShowException { get; set; } = true;
+
+    [JsonPropertyName("regionConfig")]
+    public string RegionConfig { get; set; } = "pm|fk|add";
+
+    [JsonPropertyName("downloadMode")]
+    public string DownloadMode { get; set; } = "0";
+
+    [JsonPropertyName("codeSwitch")]
+    public List<int> CodeSwitch { get; set; } = [3201, 3237, 3248, 3628, 4334];
+
+    [JsonPropertyName("coverSwitch")]
+    public List<int> CoverSwitch { get; set; } = [40];
+
+    [JsonPropertyName("debugmenu")]
+    public string DebugMenu { get; set; } = "true";
+
+    [JsonPropertyName("debuglog")]
+    public string DebugLog { get; set; } = "false";
 }

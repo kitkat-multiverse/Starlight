@@ -11,9 +11,12 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\Starlight.Game\Starlight.Game.csproj"/>
         <ProjectReference Include="..\..\Libraries\Starlight.Common\Starlight.Common.csproj"/>
         <ProjectReference Include="..\..\Libraries\Starlight.Crypto\Starlight.Crypto.csproj"/>
+        <ProjectReference Include="..\..\Libraries\Starlight.Ec2b\Starlight.Ec2b.csproj"/>
         <ProjectReference Include="..\..\Libraries\Starlight.Sqlite\Starlight.Sqlite.csproj"/>
+        <ProjectReference Include="..\..\Protocol\Starlight.Game.Protocol.Base\Starlight.Game.Protocol.Base.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
