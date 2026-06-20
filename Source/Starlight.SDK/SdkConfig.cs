@@ -32,6 +32,13 @@ public sealed class SdkConfig
     public bool SkipSignatureCheck { get; set; }
 
     /// <summary>
+    /// When true, skip decrypting the client's password when logging in.
+    /// <br/>
+    /// Useful for when the client does not have RSA patched with the server's matching key.
+    /// </summary>
+    public bool SkipRsaDecryption { get; set; }
+
+    /// <summary>
     /// Filesystem path to the PKCS#8 RSA private key the shield login
     /// endpoint uses to decrypt passwords sent with <c>is_crypto=true</c>.
     /// Leave empty to disable RSA password decryption.

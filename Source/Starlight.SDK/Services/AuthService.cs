@@ -42,7 +42,7 @@ public sealed class AuthService(
             return AuthResult.Fail(Retcode.ParameterError);
 
         // client wraps the password with our RSA public key before sending it
-        if (isCryptoEncrypted)
+        if (isCryptoEncrypted && !sdkConfig.SkipRsaDecryption)
         {
             if (passwordCrypto is null)
             {
