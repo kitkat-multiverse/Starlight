@@ -2,7 +2,7 @@ using System.Text.Json;
 using Serilog.Events;
 using Starlight.Common;
 using Starlight.DbGate;
-using Starlight.Game;
+using Starlight.Gate;
 using Starlight.SDK;
 
 // ReSharper disable UnusedType.Global
@@ -18,7 +18,7 @@ namespace Starlight;
 public sealed class Config
 {
     public LogEventLevel LogLevel { get; set; } = LogEventLevel.Information;
-    public GateConfig Game { get; set; } = new();
+    public GateConfig Gate { get; set; } = new();
     public DbGateConfig DbGate { get; set; } = new();
     public SdkConfig Sdk { get; set; } = new();
 
