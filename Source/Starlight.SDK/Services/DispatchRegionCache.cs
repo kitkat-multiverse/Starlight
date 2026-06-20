@@ -90,9 +90,11 @@ public sealed class DispatchRegionCache
             _regionInfo[region.Name] = region;
             _regions[region.Name] = new ConcurrentDictionary<string, GateServerInfo>();
 
-            var regionKey = Ec2bHelper.DeriveSecret(region.Name);
-            _regionKeys[region.Name] = ByteString.CopyFrom(regionKey);
-            CryptographicOperations.ZeroMemory(regionKey);
+            var seed = Ec2bHelper.DeriveSecret(region.Name);
+            var secret = Ec2bKeyGen.Create(seed);
+            _regionKeys[region.Name] = ByteString.CopyFrom(secret);
+            CryptographicOperations.ZeroMemory(seed);
+            CryptographicOperations.ZeroMemory(secret);
         }
     }
 

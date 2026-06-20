@@ -15,21 +15,21 @@ public sealed class StarlightSession : INetworkSession
     private readonly KcpConnection _connection;
 
     private ProtocolRegistry? _registry;
-    private byte[] _xorKey;
+    private byte[] _xorpad;
 
     public StarlightSession(GateServerService server, KcpConnection connection)
     {
         _server = server;
         _connection = connection;
 
-        _xorKey = server.ServerKey;
+        _xorpad = server.ServerKey;
     }
 
     public async Task HandlePacket(byte[] data)
     {
         #region Pre-process the packet
 
-        CryptoHelper.Xor(data, _xorKey);
+        CryptoHelper.Xor(data, _xorpad);
 
         var packet = new GamePacket(data);
 

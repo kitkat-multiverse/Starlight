@@ -24,7 +24,7 @@ public static class Ec2bKeyGen
     public const int HeaderSize = 4 + 4 + KeySize + 4;
     public const int Ec2bSize = HeaderSize + DataSize;
 
-    private static readonly byte[] Domain = Encoding.ASCII.GetBytes("Starlight-Ec2b");
+    private static readonly byte[] Domain = "Starlight-Ec2b"u8.ToArray();
 
     /// <summary>
     /// Creates a valid Ec2b buffer from arbitrary seed bytes.
