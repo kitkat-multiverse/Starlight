@@ -36,20 +36,14 @@ public static class RegionEndpoints
         [FromQuery] string? time,
         [FromQuery(Name = "channel_id")] string? channelId,
         [FromQuery(Name = "sub_channel_id")] string? subChannelId
-    )
-    {
-        return Results.Text(dispatchCache.GetRegionListBase64(httpContext), PlainTextContentType);
-    }
+    ) => Results.Text(dispatchCache.GetRegionListBase64(httpContext), PlainTextContentType);
 
     private static IResult HandleQueryCurrentRegion(
         string name,
         [FromServices] DispatchRegionCache dispatchCache
-    )
-    {
-        return dispatchCache.TryGetCurrentRegionBase64(name, out string? payload)
-            ? Results.Text("{\"content\":" + payload + ",\"sign\":\"TW9yZSBsb3ZlIGZvciBVQSBQYXRjaCBwbGF5ZXJz\"}", PlainTextContentType)
-            : Results.NotFound($"Unknown dispatch region '{name}'.");
-    }
+    ) => dispatchCache.TryGetCurrentRegionBase64(name, out var payload) ?
+        Results.Text("{\"content\":" + payload + ",\"sign\":\"TW9yZSBsb3ZlIGZvciBVQSBQYXRjaCBwbGF5ZXJz\"}", PlainTextContentType) :
+        Results.NotFound($"Unknown dispatch region '{name}'.");
 }
 
 /// <summary>
@@ -81,10 +75,10 @@ public sealed class DispatchRegionCache
     private readonly GateConfig _gateConfig;
 
     public DispatchRegionCache(
-            SdkConfig sdkConfig,
-            GateConfig gateConfig,
-            ILogger<DispatchRegionCache> logger
-        )
+        SdkConfig sdkConfig,
+        GateConfig gateConfig,
+        ILogger<DispatchRegionCache> logger
+    )
     {
         _sdkConfig = sdkConfig;
         _dispatchConfig = sdkConfig.Dispatch ?? new SdkDispatchConfig();
@@ -94,6 +88,7 @@ public sealed class DispatchRegionCache
         _regions = NormalizeRegions(_dispatchConfig);
 
         var clientSecretKey = CreateClientSecretKey(_dispatchConfig);
+
         try
         {
             _clientSecretKey = ByteString.CopyFrom(clientSecretKey);
@@ -224,9 +219,7 @@ public sealed class DispatchRegionCache
 
         if (string.IsNullOrWhiteSpace(host))
         {
-            var bindAddress = _sdkConfig.BindAddress is "0.0.0.0" or "::" or "[::]"
-                ? "127.0.0.1"
-                : _sdkConfig.BindAddress;
+            var bindAddress = _sdkConfig.BindAddress is "0.0.0.0" or "::" or "[::]" ? "127.0.0.1" : _sdkConfig.BindAddress;
 
             host = $"{bindAddress}:{_sdkConfig.BindPort}";
         }
@@ -240,6 +233,7 @@ public sealed class DispatchRegionCache
             return null;
 
         var value = values.ToString();
+
         if (string.IsNullOrWhiteSpace(value))
             return null;
 
@@ -265,9 +259,9 @@ public sealed class DispatchRegionCache
 
     private static IReadOnlyList<SdkDispatchRegionConfig> NormalizeRegions(SdkDispatchConfig config)
     {
-        var sourceRegions = config.Regions is { Count: > 0 }
-            ? config.Regions
-            : new List<SdkDispatchRegionConfig> { new() { Name = config.DefaultRegionName } };
+        var sourceRegions = config.Regions is { Count: > 0 } ?
+            config.Regions :
+            new List<SdkDispatchRegionConfig> { new() { Name = config.DefaultRegionName } };
 
         var normalized = new List<SdkDispatchRegionConfig>(sourceRegions.Count);
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -276,9 +270,10 @@ public sealed class DispatchRegionCache
         {
             region.Name = NormalizeRequired(region.Name, nameof(region.Name), config.DefaultRegionName);
             region.Title = string.IsNullOrWhiteSpace(region.Title) ? region.Name : region.Title.Trim();
-            region.Type = string.IsNullOrWhiteSpace(region.Type)
-                ? (string.IsNullOrWhiteSpace(config.RegionType) ? "DEV_PUBLIC" : config.RegionType.Trim())
-                : region.Type.Trim();
+
+            region.Type = string.IsNullOrWhiteSpace(region.Type) ?
+                string.IsNullOrWhiteSpace(config.RegionType) ? "DEV_PUBLIC" : config.RegionType.Trim() :
+                region.Type.Trim();
 
             if (!names.Add(region.Name))
                 throw new InvalidOperationException($"Duplicate dispatch region name '{region.Name}'. Region names must be unique.");
@@ -301,7 +296,8 @@ public sealed class DispatchRegionCache
 
     private static byte[] CreateClientSecretKey(SdkDispatchConfig config)
     {
-        byte[] seed = CreateEc2bSeed(config);
+        var seed = CreateEc2bSeed(config);
+
         try
         {
             var clientSecretKey = Ec2bKeyGen.Create(seed);
@@ -317,6 +313,7 @@ public sealed class DispatchRegionCache
     private static byte[] DeriveXorpadFromClientSecretKey(ByteString clientSecretKey)
     {
         var clientSecretKeyBytes = clientSecretKey.ToByteArray();
+
         try
         {
             ValidateEc2b(clientSecretKeyBytes, "clientSecretKey");
@@ -333,9 +330,7 @@ public sealed class DispatchRegionCache
 
     private static byte[] CreateEc2bSeed(SdkDispatchConfig config)
     {
-        var seedLength = config.GeneratedEc2bSeedLength <= 0
-            ? DispatchEc2bSeedLength
-            : config.GeneratedEc2bSeedLength;
+        var seedLength = config.GeneratedEc2bSeedLength <= 0 ? DispatchEc2bSeedLength : config.GeneratedEc2bSeedLength;
 
         if (seedLength is < MinimumEc2bSeedLength or > MaximumEc2bSeedLength)
         {

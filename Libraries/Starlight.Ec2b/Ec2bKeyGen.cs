@@ -34,20 +34,20 @@ public static class Ec2bKeyGen
         if (seed.IsEmpty)
             throw new ArgumentException("Seed must not be empty.", nameof(seed));
 
-        byte[] ec2b = new byte[Ec2bSize];
-        Span<byte> dst = ec2b.AsSpan();
+        var ec2b = new byte[Ec2bSize];
+        var dst = ec2b.AsSpan();
 
         dst[0] = (byte)'E';
         dst[1] = (byte)'c';
         dst[2] = (byte)'2';
         dst[3] = (byte)'b';
 
-        BinaryPrimitives.WriteUInt32LittleEndian(dst.Slice(4, 4), KeySize);
-        BinaryPrimitives.WriteUInt32LittleEndian(dst.Slice(24, 4), DataSize);
+        BinaryPrimitives.WriteUInt32LittleEndian(dst.Slice(start: 4, length: 4), KeySize);
+        BinaryPrimitives.WriteUInt32LittleEndian(dst.Slice(start: 24, length: 4), DataSize);
 
-        byte[] generated = ExpandSeed(seed, KeySize + DataSize);
-        generated.AsSpan(0, KeySize).CopyTo(dst.Slice(8, KeySize));
-        generated.AsSpan(KeySize, DataSize).CopyTo(dst.Slice(28, DataSize));
+        var generated = ExpandSeed(seed, KeySize + DataSize);
+        generated.AsSpan(start: 0, KeySize).CopyTo(dst.Slice(start: 8, KeySize));
+        generated.AsSpan(KeySize, DataSize).CopyTo(dst.Slice(start: 28, DataSize));
 
         CryptographicOperations.ZeroMemory(generated);
         return ec2b;
@@ -94,10 +94,7 @@ public static class Ec2bKeyGen
     /// Creates a valid Ec2b buffer from hex bytes.
     /// Accepts whitespace, underscores, dashes, and an optional leading 0x.
     /// </summary>
-    public static byte[] CreateFromHexSeed(string hexSeed)
-    {
-        return Create(ParseHex(hexSeed));
-    }
+    public static byte[] CreateFromHexSeed(string hexSeed) => Create(ParseHex(hexSeed));
 
     /// <summary>
     /// Writes a valid Ec2b file from arbitrary seed bytes.
@@ -126,43 +123,43 @@ public static class Ec2bKeyGen
     /// </summary>
     public static (byte[] Ec2b, byte[] Xorpad) CreateWithXorpad(ReadOnlySpan<byte> seed)
     {
-        byte[] ec2b = Create(seed);
-        byte[] xorpad = Ec2b.Derive(ec2b);
+        var ec2b = Create(seed);
+        var xorpad = Ec2b.Derive(ec2b);
         return (ec2b, xorpad);
     }
 
     /// <summary>
     /// Checks only the structural fields this project uses before deriving.
     /// </summary>
-    public static bool HasValidLayout(ReadOnlySpan<byte> ec2b)
-    {
-        return ec2b.Length == Ec2bSize
-            && ec2b[0] == (byte)'E'
-            && ec2b[1] == (byte)'c'
-            && ec2b[2] == (byte)'2'
-            && ec2b[3] == (byte)'b'
-            && BinaryPrimitives.ReadUInt32LittleEndian(ec2b.Slice(4, 4)) == KeySize
-            && BinaryPrimitives.ReadUInt32LittleEndian(ec2b.Slice(24, 4)) == DataSize;
-    }
+    public static bool HasValidLayout(ReadOnlySpan<byte> ec2b) => ec2b.Length == Ec2bSize
+                                                                  && ec2b[0] == (byte)'E'
+                                                                  && ec2b[1] == (byte)'c'
+                                                                  && ec2b[2] == (byte)'2'
+                                                                  && ec2b[3] == (byte)'b'
+                                                                  && BinaryPrimitives.ReadUInt32LittleEndian(ec2b.Slice(start: 4,
+                                                                      length: 4)) == KeySize
+                                                                  && BinaryPrimitives.ReadUInt32LittleEndian(ec2b.Slice(start: 24,
+                                                                      length: 4)) == DataSize;
 
     private static byte[] ExpandSeed(ReadOnlySpan<byte> seed, int outputLength)
     {
-        byte[] output = new byte[outputLength];
-        byte[] seedBytes = seed.ToArray();
-        byte[] input = new byte[Domain.Length + 4 + seedBytes.Length];
+        var output = new byte[outputLength];
+        var seedBytes = seed.ToArray();
+        var input = new byte[Domain.Length + 4 + seedBytes.Length];
 
-        Buffer.BlockCopy(Domain, 0, input, 0, Domain.Length);
-        Buffer.BlockCopy(seedBytes, 0, input, Domain.Length + 4, seedBytes.Length);
+        Buffer.BlockCopy(Domain, srcOffset: 0, input, dstOffset: 0, Domain.Length);
+        Buffer.BlockCopy(seedBytes, srcOffset: 0, input, Domain.Length + 4, seedBytes.Length);
 
-        int written = 0;
+        var written = 0;
         uint counter = 0;
+
         while (written < output.Length)
         {
-            BinaryPrimitives.WriteUInt32LittleEndian(input.AsSpan(Domain.Length, 4), counter++);
-            byte[] block = SHA256.HashData(input);
+            BinaryPrimitives.WriteUInt32LittleEndian(input.AsSpan(Domain.Length, length: 4), counter++);
+            var block = SHA256.HashData(input);
 
-            int take = Math.Min(block.Length, output.Length - written);
-            Buffer.BlockCopy(block, 0, output, written, take);
+            var take = Math.Min(block.Length, output.Length - written);
+            Buffer.BlockCopy(block, srcOffset: 0, output, written, take);
             written += take;
         }
 
@@ -176,14 +173,17 @@ public static class Ec2bKeyGen
         if (string.IsNullOrWhiteSpace(text))
             throw new ArgumentException("Hex seed must not be empty.", nameof(text));
 
-        string trimmed = text.Trim();
+        var trimmed = text.Trim();
+
         if (trimmed.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
             trimmed = trimmed.Substring(2);
 
-        StringBuilder clean = new StringBuilder(trimmed.Length);
-        for (int i = 0; i < trimmed.Length; i++)
+        var clean = new StringBuilder(trimmed.Length);
+
+        for (var i = 0; i < trimmed.Length; i++)
         {
-            char c = trimmed[i];
+            var c = trimmed[i];
+
             if (char.IsWhiteSpace(c) || c == '_' || c == '-')
                 continue;
 
@@ -193,12 +193,13 @@ public static class Ec2bKeyGen
             clean.Append(c);
         }
 
-        if (clean.Length == 0 || (clean.Length % 2) != 0)
+        if (clean.Length == 0 || clean.Length % 2 != 0)
             throw new FormatException("Hex seed must contain an even number of hex digits.");
 
-        byte[] bytes = new byte[clean.Length / 2];
-        for (int i = 0; i < bytes.Length; i++)
-            bytes[i] = Convert.ToByte(clean.ToString(i * 2, 2), 16);
+        var bytes = new byte[clean.Length / 2];
+
+        for (var i = 0; i < bytes.Length; i++)
+            bytes[i] = Convert.ToByte(clean.ToString(i * 2, length: 2), fromBase: 16);
 
         return bytes;
     }
