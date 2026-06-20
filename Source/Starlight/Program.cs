@@ -91,18 +91,15 @@ internal static class Program
 
             builder.Services
                 .AddSerilog()
+                .AddCommands()
                 .AddSingleton<GameData>()
                 .AddSingleton<RpcTransport, DirectRpcTransport>()
                 .AddSingleton<ITunnelBroker, DirectTunnelBroker>()
                 .AddSingleton<ITunnelConnector, DirectTunnelConnector>()
                 .AddSingleton<ITunnelAcceptor, DirectTunnelAcceptor>()
                 .AddSingleton<TunnelClient>()
-                .AddSingleton<TunnelHost>();
-
-            builder.Services
-                .AddCommands()
-                .AddHostedService(s => s.GetRequiredService<RpcTransport>())
-                .AddHostedService<GateServerService>();
+                .AddSingleton<TunnelHost>()
+                .AddHostedService(s => s.GetRequiredService<RpcTransport>());
 
             builder
                 .AddSdkServer()
