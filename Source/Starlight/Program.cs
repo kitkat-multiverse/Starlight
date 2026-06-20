@@ -74,10 +74,10 @@ internal static class Program
             .CreateLogger();
         Log.Information("Starting Starlight...");
 
-        Config.SaveDefaultConfig();
-
         try
         {
+            Config.SaveDefaultConfig();
+
             var builder = WebApplication.CreateBuilder(args);
 
             builder.Configuration
