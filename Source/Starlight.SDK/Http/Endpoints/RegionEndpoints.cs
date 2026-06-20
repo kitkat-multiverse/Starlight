@@ -46,20 +46,18 @@ public static class RegionEndpoints
             return Results.Text(EmptyRegion, PlainTextContentType);
         }
 
-        if (dispatchCache.GetRegion(name) is not { } region)
+        if (dispatchCache.GetRegion(name) is not {} region)
         {
             return Results.NotFound($"Unknown dispatch region '{name}'.");
         }
 
         var payload = rsa is not null
                       && int.TryParse(keyId, out var id)
-                      && rsa.TryEncryptPayload(region, id, out var encrypted)
-            ? encrypted
-            : Convert.ToBase64String(region);
+                      && rsa.TryEncryptPayload(region, id, out var encrypted) ?
+            encrypted :
+            Convert.ToBase64String(region);
 
-        var signature = rsa is { CanSign: true }
-            ? rsa.GenerateSignature(region)
-            : DefaultHash;
+        var signature = rsa is { CanSign: true } ? rsa.GenerateSignature(region) : DefaultHash;
 
         return Results.Text($"{{\"content\":\"{payload}\",\"sign\":\"{signature}\"}}", PlainTextContentType);
     }

@@ -58,7 +58,8 @@ public sealed class DispatchRegionCache
     public DispatchRegionCache(
         SdkConfig sdkConfig,
         DispatchConfig config,
-        ILogger<DispatchRegionCache> logger)
+        ILogger<DispatchRegionCache> logger
+    )
     {
         _config = config;
         _logger = logger;
@@ -140,6 +141,7 @@ public sealed class DispatchRegionCache
         ValidateEc2b(clientSecretKey, "clientSecretKey");
 
         var xorpad = Ec2bHelper.Derive(clientSecretKey);
+
         if (xorpad.Length != DerivedXorpadSize)
         {
             throw new InvalidOperationException(
@@ -205,12 +207,9 @@ public sealed class DispatchRegionCache
         return (commaIndex >= 0 ? value[..commaIndex] : value).Trim();
     }
 
-    private static string NormalizeBaseUrl(string value)
-    {
-        return string.IsNullOrWhiteSpace(value) ?
-            throw new InvalidOperationException("Dispatch public base URL cannot be empty.") :
-            value.Trim().TrimEnd('/');
-    }
+    private static string NormalizeBaseUrl(string value) => string.IsNullOrWhiteSpace(value) ?
+        throw new InvalidOperationException("Dispatch public base URL cannot be empty.") :
+        value.Trim().TrimEnd('/');
 
     #endregion
 
@@ -244,9 +243,11 @@ public sealed class DispatchRegionCache
                 Name = regionInfo.Name,
                 Title = regionInfo.Title,
                 Type = string.IsNullOrEmpty(regionInfo.Type) ?
-                    _config.RegionType : regionInfo.Type,
+                    _config.RegionType :
+                    regionInfo.Type,
                 DispatchUrl = string.IsNullOrEmpty(regionInfo.DispatchUrl) ?
-                    BuildDispatchUrl(host, regionInfo.Name) : regionInfo.DispatchUrl
+                    BuildDispatchUrl(host, regionInfo.Name) :
+                    regionInfo.DispatchUrl
             });
         }
 
@@ -279,18 +280,18 @@ public sealed class DispatchRegionCache
             .OrderBy(s => s.Sessions.Count)
             .FirstOrDefault();
 
-        if (target is null)
+        if (target is not null)
         {
-            _logger.LogWarning("Region {RegionName} is registered, but has no available servers.", regionName);
-            return null;
+            return new QueryCurrRegionHttpRsp {
+                RegionInfo = BuildRegionInfo(config, key, target),
+                ClientSecretKey = key,
+                // TODO: Add some kind of authentication ticket based on account ID which expires.
+                ConnectGateTicket = ""
+            }.ToByteArray();
         }
 
-        return new QueryCurrRegionHttpRsp {
-            RegionInfo = BuildRegionInfo(config, key, target),
-            ClientSecretKey = key,
-            // TODO: Add some kind of authentication ticket based on account ID which expires.
-            ConnectGateTicket = ""
-        }.ToByteArray();
+        _logger.LogWarning("Region {RegionName} is registered, but has no available servers.", regionName);
+        return null;
     }
 
     private static RegionInfo BuildRegionInfo(DispatchRegionConfig region, ByteString secretKey, GateServerInfo server) => new() {

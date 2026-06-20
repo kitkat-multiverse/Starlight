@@ -15,10 +15,10 @@
         <ProjectReference Include="..\..\Libraries\Starlight.Common\Starlight.Common.csproj"/>
         <ProjectReference Include="..\..\Libraries\Starlight.Crypto\Starlight.Crypto.csproj"/>
         <ProjectReference Include="..\..\Libraries\Starlight.Ec2b\Starlight.Ec2b.csproj"/>
-        <ProjectReference Include="..\..\Libraries\Starlight.Rpc\Starlight.Rpc.csproj" />
+        <ProjectReference Include="..\..\Libraries\Starlight.Rpc\Starlight.Rpc.csproj"/>
         <ProjectReference Include="..\..\Libraries\Starlight.Sqlite\Starlight.Sqlite.csproj"/>
     </ItemGroup>
-    
+
 
     <ItemGroup>
         <PackageReference Include="Serilog.AspNetCore" Version="9.0.0"/>
@@ -34,15 +34,15 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Protobuf Include="Resources\Protobuf\define.proto">
-        <GrpcServices>None</GrpcServices>
-        <Access>Public</Access>
-        <ProtoCompile>True</ProtoCompile>
-        <ProtoRoot>Resources/Protobuf</ProtoRoot>
-        <CompileOutputs>True</CompileOutputs>
-        <OutputDir>obj\Debug\net10.0\</OutputDir>
-        <Generator>MSBuild:Compile</Generator>
-      </Protobuf>
+        <Protobuf Include="Resources\Protobuf\define.proto">
+            <GrpcServices>None</GrpcServices>
+            <Access>Public</Access>
+            <ProtoCompile>True</ProtoCompile>
+            <ProtoRoot>Resources/Protobuf</ProtoRoot>
+            <CompileOutputs>True</CompileOutputs>
+            <OutputDir>obj\Debug\net10.0\</OutputDir>
+            <Generator>MSBuild:Compile</Generator>
+        </Protobuf>
     </ItemGroup>
 
 </Project>

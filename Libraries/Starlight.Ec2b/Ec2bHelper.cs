@@ -96,7 +96,9 @@ public static class Ec2bHelper
         var qwords = MemoryMarshal.Cast<byte, ulong>(crypt[..^(crypt.Length % 8)]);
 
         foreach (var t in qwords)
+        {
             val ^= t;
+        }
 
         if (key.Length < 16) throw new ArgumentException("key must be 16 bytes");
 

@@ -20,10 +20,8 @@ public sealed class DispatchService(
 {
     private readonly HashSet<IDisposable> _subs = [];
 
-    public async Task StartAsync(CancellationToken ct)
-    {
+    public async Task StartAsync(CancellationToken ct) =>
         _subs.Add(await rpc.Subscribe<GateHeartbeatNotify>(GateSubjects.ServerHeartbeat, OnServerHeartbeat));
-    }
 
     public Task StopAsync(CancellationToken ct)
     {
@@ -116,6 +114,7 @@ public static partial class ServiceExtensions
             }
 
             var idText = name[ContentKeyResourcePrefix.Length..^ContentKeyResourceSuffix.Length];
+
             if (!int.TryParse(idText, out var keyId))
             {
                 Log.Warning("Skipping content key resource with non-numeric id: {Resource}", name);

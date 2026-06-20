@@ -32,6 +32,7 @@ public sealed class DispatchRsaCrypto : IDisposable
         if (encryptKeyPems is { Count: > 0 })
         {
             var map = new Dictionary<int, RSA>(encryptKeyPems.Count);
+
             foreach (var (id, pem) in encryptKeyPems)
             {
                 var rsa = RSA.Create();
@@ -39,8 +40,7 @@ public sealed class DispatchRsaCrypto : IDisposable
                 map[id] = rsa;
             }
             _encryptKeys = map;
-        }
-        else
+        } else
         {
             _encryptKeys = new Dictionary<int, RSA>();
         }
@@ -53,9 +53,7 @@ public sealed class DispatchRsaCrypto : IDisposable
     /// </summary>
     public static DispatchRsaCrypto Create(string? signingKeyPath, IReadOnlyDictionary<int, string>? encryptKeyPems = null)
     {
-        var signing = string.IsNullOrWhiteSpace(signingKeyPath)
-            ? null
-            : RsaKeyLoader.LoadPrivateKeyFile(signingKeyPath);
+        var signing = string.IsNullOrWhiteSpace(signingKeyPath) ? null : RsaKeyLoader.LoadPrivateKeyFile(signingKeyPath);
         return new DispatchRsaCrypto(signing, encryptKeyPems);
     }
 
@@ -78,13 +76,15 @@ public sealed class DispatchRsaCrypto : IDisposable
         var chunkSize = key.KeySize / 8 - 11;
 
         using var output = new MemoryStream();
+
         for (var offset = 0; offset < data.Length; offset += chunkSize)
         {
             var length = Math.Min(chunkSize, data.Length - offset);
+
             var encrypted = key.Encrypt(
                 data.AsSpan(offset, length).ToArray(),
                 RSAEncryptionPadding.Pkcs1);
-            output.Write(encrypted, 0, encrypted.Length);
+            output.Write(encrypted, offset: 0, encrypted.Length);
         }
 
         payload = Convert.ToBase64String(output.ToArray());
@@ -109,6 +109,7 @@ public sealed class DispatchRsaCrypto : IDisposable
     public void Dispose()
     {
         _signingKey?.Dispose();
+
         foreach (var key in _encryptKeys.Values)
         {
             key.Dispose();

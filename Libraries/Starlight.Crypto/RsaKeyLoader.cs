@@ -16,9 +16,10 @@ internal static class RsaKeyLoader
     public static byte[] ReadPkcs8File(string path)
     {
         var contents = File.ReadAllText(path);
-        return contents.Contains(PrivatePemBegin, StringComparison.Ordinal)
-            ? Convert.FromBase64String(StripPem(contents, PrivatePemBegin, PrivatePemEnd))
-            : File.ReadAllBytes(path);
+
+        return contents.Contains(PrivatePemBegin, StringComparison.Ordinal) ?
+            Convert.FromBase64String(StripPem(contents, PrivatePemBegin, PrivatePemEnd)) :
+            File.ReadAllBytes(path);
     }
 
     /// <summary>
@@ -33,8 +34,7 @@ internal static class RsaKeyLoader
         if (contents.Contains(PemBeginPrefix, StringComparison.Ordinal))
         {
             rsa.ImportFromPem(contents);
-        }
-        else
+        } else
         {
             rsa.ImportPkcs8PrivateKey(File.ReadAllBytes(path), out _);
         }
