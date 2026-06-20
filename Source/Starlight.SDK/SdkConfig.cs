@@ -1,3 +1,5 @@
+using Starlight.Database;
+
 namespace Starlight.SDK;
 
 /// <summary>
@@ -72,6 +74,11 @@ public sealed class SdkConfig
     public int MinPasswordLength { get; set; } = 8;
 
     /// <summary>
+    /// Configuration for the database. Defaults to SQLite.
+    /// </summary>
+    public DatabaseConfig Database { get; set; } = new();
+
+    /// <summary>
     /// Configuration for the real ip-api.com GeoIP lookup. When
     /// <see cref="IpApiGeoIpConfig.Enabled"/> is <c>true</c> the SDK
     /// registers <see cref="Services.IpApiGeoIpLookup"/>
@@ -124,6 +131,17 @@ public sealed class SdkConfig
     /// extension lists; the response is built from this static table.
     /// </summary>
     public SdkDeviceFpConfig DeviceFp { get; set; } = new();
+}
+
+public enum ProviderType
+{
+    Sqlite
+}
+
+public sealed class DatabaseConfig
+{
+    public ProviderType Provider { get; set; } = ProviderType.Sqlite;
+    public StarlightDatabaseOptions Sqlite { get; set; } = new();
 }
 
 /// <summary>

@@ -1,5 +1,6 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Starlight.Common;
@@ -31,30 +32,26 @@ public sealed class DbGateService(
 
 public static class ServiceExtensions
 {
-    public static IServiceCollection AddDbGate(this IServiceCollection collection, StarlightConfig config)
+    public static IHostApplicationBuilder AddDbGate(this IHostApplicationBuilder builder)
     {
-        collection.AddDbContext<StarlightDbContext>(opts => {
-            var provider = DatabaseHelper.ParseProvider(config.Database.ConnectionString, out var connString);
+        var config = builder.Configuration.GetSection("DbGate").Get<DbGateConfig>() ?? new DbGateConfig();
 
-            switch (provider)
+        builder.Services.AddDbContext<StarlightDbContext>(opts => {
+            switch (config.Provider)
             {
                 case ProviderType.Sqlite: {
-                    connString = new SqliteConnectionStringBuilder {
-                        DataSource = connString
-                    }.ToString();
-
-                    opts.UseSqlite(connString);
+                    opts.UseSqlite(config.ConnectionString);
                     break;
                 }
                 default:
-                    throw new NotSupportedException($"Unsupported or missing database provider '{provider?.ToString() ?? "<null>"}'.");
+                    throw new NotSupportedException($"Unsupported or missing database provider '{config.Provider.ToString()}'.");
             }
         });
 
-        collection
-            .AddSingleton<PlayerService>();
-        collection.AddHostedService<DbGateService>();
+        builder.Services
+            .AddSingleton<PlayerService>()
+            .AddHostedService<DbGateService>();
 
-        return collection;
+        return builder;
     }
 }

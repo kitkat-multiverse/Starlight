@@ -14,10 +14,8 @@ public static class Resources
     /// <summary>
     /// Sets the resource base path.
     /// </summary>
-    public static void Initialize()
+    public static void Initialize(string path)
     {
-        var path = Config.Resources.ResourcesPath;
-
         // Check if the path exists.
         if (!File.Exists(path) && !Directory.Exists(path))
         {

@@ -7,11 +7,8 @@ namespace Starlight.Database.DependencyInjection;
 
 public static class DatabaseServiceCollectionExtensions
 {
-    public static IServiceCollection AddStarlightDatabase(this IServiceCollection services, Action<StarlightDatabaseOptions>? configure = null)
+    public static IServiceCollection AddStarlightDatabase(this IServiceCollection services, StarlightDatabaseOptions options)
     {
-        var options = new StarlightDatabaseOptions();
-        configure?.Invoke(options);
-
         services.AddSingleton(options);
         services.AddSingleton<StarlightDatabase>();
 
@@ -27,24 +24,16 @@ public static class DatabaseServiceCollectionExtensions
 
     public static IServiceCollection AddStarlightDatabase(
         this IServiceCollection services,
-        string path,
-        SqliteConfig config,
+        StarlightDatabaseOptions config,
         params Assembly[] modelAssemblies
     )
     {
-        return services.AddStarlightDatabase(options => {
-            options.Path = path;
-            options.CreateIfMissing = config.CreateIfMissing;
-            options.UseWal = config.UseWal;
-            options.Synchronous = config.Synchronous;
-            options.BusyTimeoutMilliseconds = config.BusyTimeoutMilliseconds;
-            options.AllowClientEvaluation = config.AllowClientEvaluation;
+        foreach (var assembly in modelAssemblies.Distinct())
+        {
+            config.ModelAssemblies.Add(assembly);
+        }
 
-            foreach (var assembly in modelAssemblies.Distinct())
-            {
-                options.ModelAssemblies.Add(assembly);
-            }
-        });
+        return services.AddStarlightDatabase(config);
     }
 }
 

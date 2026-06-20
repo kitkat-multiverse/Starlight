@@ -1,15 +1,14 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Builder;
-using Starlight.Common;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
 using Serilog.Sinks.SystemConsole.Themes;
 using Starlight.DbGate;
 using Starlight.Console;
-using Starlight.Database.DependencyInjection;
 using Starlight.Game;
 using Starlight.Game.Resources;
 using Starlight.Rpc;
@@ -76,13 +75,17 @@ internal static class Program
             .CreateLogger();
         Log.Information("Starting Starlight...");
 
-        LogLevel.MinimumLevel = Config.LogLevel;
-
         try
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            builder.AddConfig();
+            builder.Configuration
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("config.json", optional: true, reloadOnChange: true)
+                .AddEnvironmentVariables("SL__");
+
+            LogLevel.MinimumLevel = builder.Configuration
+                .GetValue<LogEventLevel>("LogLevel");
 
             builder.Services
                 .AddSerilog()
@@ -97,13 +100,16 @@ internal static class Program
             builder.Services
                 .AddCommands()
                 .AddHostedService(s => s.GetRequiredService<RpcTransport>())
-                .AddDbGate(Config.Instance)
                 .AddHostedService<GateServerService>();
 
-            builder.AddSdkServer();
+            builder
+                .AddSdkServer()
+                .AddDbGate();
 
             // Prepare the application.
             var app = builder.Build();
+
+            // Map HTTP endpoints (SDK & dispatch).
 #if DEBUG
             app.UseSerilogRequestLogging();
 #endif
