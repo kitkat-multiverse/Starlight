@@ -10,7 +10,7 @@ public sealed class GateServerService(
     ILogger<GateServerService> logger
 ) : BackgroundService
 {
-    private GateConfig Config => config.GetSection("Game").Get<GateConfig>() ?? new GateConfig();
+    private readonly GateConfig _config = config.GetSection("Game").Get<GateConfig>() ?? new GateConfig();
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -18,8 +18,8 @@ public sealed class GateServerService(
         {
             var handler = new GateServerHandler(logger);
 
-            var server = new KcpServer(Config.BindAddress, Config.BindPort, handler);
-            logger.LogInformation("Starting GameServer at {Address}:{Port}", Config.BindAddress, Config.BindPort);
+            var server = new KcpServer(_config.BindAddress, _config.BindPort, handler);
+            logger.LogInformation("Starting GameServer at {Address}:{Port}", _config.BindAddress, _config.BindPort);
 
             await server.RunAsync(stoppingToken);
         }
