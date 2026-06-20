@@ -124,7 +124,7 @@ public static class Ec2bKeyGen
     public static (byte[] Ec2b, byte[] Xorpad) CreateWithXorpad(ReadOnlySpan<byte> seed)
     {
         var ec2b = Create(seed);
-        var xorpad = Ec2b.Derive(ec2b);
+        var xorpad = Ec2bHelper.Derive(ec2b);
         return (ec2b, xorpad);
     }
 

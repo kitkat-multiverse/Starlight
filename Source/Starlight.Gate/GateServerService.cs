@@ -1,11 +1,10 @@
 using System.Collections.Concurrent;
-using Google.Protobuf;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Starlight.Common;
-using Starlight.Gate.Crypto;
+using Starlight.Ec2b;
 using Starlight.Gate.Session;
 using Starlight.Kcp;
 using Starlight.Protobuf.Registry;
@@ -31,7 +30,6 @@ public sealed class GateServerService(
     public GateConfig Config => _config.Value;
 
     private CancellationToken _ct = CancellationToken.None;
-    private byte[] _clientSecret = [];
 
     public ProtocolRegistryProvider Registry => registryProvider;
     public byte[] ServerKey { get; private set; } = [];
@@ -41,8 +39,8 @@ public sealed class GateServerService(
         _ct = ct;
 
         // From the region ID, derive the client secret & XOR key.
-        _clientSecret = Ec2bHelper.DeriveSecret(Config.Region.Identifier);
-        ServerKey = Ec2b.Ec2b.Derive(_clientSecret);
+        var secret = Ec2bHelper.DeriveSecret(Config.RegionId);
+        ServerKey = Ec2bHelper.Derive(secret);
 
         _ = Task.Run(() => HeartbeatTask(ct), ct);
 
@@ -63,13 +61,12 @@ public sealed class GateServerService(
 
     private async Task HeartbeatTask(CancellationToken ct)
     {
-        var clientSecret = ByteString.CopyFrom(_clientSecret);
-
         while (!ct.IsCancellationRequested)
         {
             try
             {
                 var serverInfo = new GateServerInfo {
+                    ServerId = Config.ServerId,
                     ExternalAddress = Config.ServingLocal ? "127.0.0.1" : await SystemHelper.PublicIpAddress(ct),
                     ExternalPort = Config.ServePort,
                     Sessions = {
@@ -77,14 +74,8 @@ public sealed class GateServerService(
                     }
                 };
 
-                var regionInfo = new StarlightRegionInfo {
-                    RegionId = Config.Region.Identifier,
-                    RegionName = Config.Region.DisplayName,
-                    ClientSecretKey = clientSecret
-                };
-
                 await rpc.Publish(GateSubjects.ServerHeartbeat, new GateHeartbeatNotify {
-                    ServerInfo = serverInfo, RegionInfo = regionInfo
+                    ServerInfo = serverInfo, RegionId = Config.RegionId
                 });
             }
             catch (Exception ex)

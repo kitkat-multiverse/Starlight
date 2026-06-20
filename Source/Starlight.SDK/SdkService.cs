@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,17 +13,14 @@ using Starlight.SDK.Database;
 using Starlight.SDK.Database.Impl;
 using Starlight.SDK.Http.Endpoints;
 using Starlight.SDK.Services;
-using Starlight.Game;
 
 namespace Starlight.SDK;
 
-public static class ServiceExtensions
+public static partial class ServiceExtensions
 {
     public static WebApplicationBuilder AddSdkServer(this WebApplicationBuilder builder)
     {
-        // TODO: Isolate database configuration to be per-service.
         var config = builder.Configuration.GetSection("Sdk").Get<SdkConfig>() ?? new SdkConfig();
-        var gateConfig = builder.Configuration.GetSection("Game").Get<GateConfig>() ?? new GateConfig();
 
         switch (config.Database.Provider)
         {
@@ -85,8 +83,6 @@ public static class ServiceExtensions
 
         builder.Services
             .AddSingleton(config)
-            .AddSingleton(gateConfig)
-            .AddSingleton<DispatchRegionCache>()
             .AddSingleton<IAuthService, AuthService>();
 
         builder.WebHost.UseUrls($"http://{config.BindAddress}:{config.BindPort}");
@@ -94,17 +90,16 @@ public static class ServiceExtensions
         return builder;
     }
 
-    public static IEndpointRouteBuilder MapSdkServer(this IEndpointRouteBuilder app)
+    public static IEndpointRouteBuilder MapSdkServer(this IEndpointRouteBuilder builder)
     {
-        app.MapGet("/", () => Results.Ok("Starlight"));
-        app.MapRegionEndpoints();
-        app.MapShieldEndpoints();
-        app.MapComboGranterEndpoints();
-        app.MapWebstaticEndpoints();
-        app.MapDeviceFingerprintEndpoints();
-        app.MapComboBoxEndpoints();
-        app.MapAbTestEndpoints();
-        app.MapPassportEndpoints();
-        return app;
+        builder.MapGet("/", () => Results.Ok("Starlight"));
+        builder.MapShieldEndpoints();
+        builder.MapComboGranterEndpoints();
+        builder.MapWebstaticEndpoints();
+        builder.MapDeviceFingerprintEndpoints();
+        builder.MapComboBoxEndpoints();
+        builder.MapAbTestEndpoints();
+        builder.MapPassportEndpoints();
+        return builder;
     }
 }

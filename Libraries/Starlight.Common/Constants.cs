@@ -10,7 +10,8 @@ public static class Constants
         WriteIndented = true,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.PascalCase) }
+        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.PascalCase) },
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 }
 

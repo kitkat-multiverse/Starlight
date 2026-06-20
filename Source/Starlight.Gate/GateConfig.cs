@@ -2,9 +2,8 @@ namespace Starlight.Gate;
 
 public sealed class GateConfig
 {
-    /// All gateway servers must belong to a region, in which they all agree
-    /// upon the values in the <see cref="RegionConfig"/>.
-    public RegionConfig Region { get; set; } = new();
+    public string ServerId { get; set; } = "localhost";
+    public string RegionId { get; set; } = "sl_local";
 
     public string BindAddress { get; set; } = "0.0.0.0";
     public ushort BindPort { get; set; } = 22102;
@@ -16,18 +15,6 @@ public sealed class GateConfig
     public ushort ServePort { get; set; } = 22102;
 
     public ConnectionConfig Connections { get; set; } = new();
-}
-
-public sealed class RegionConfig
-{
-    /// The internal identifier used by the dispatch server for denoting
-    /// this region.
-    public string Identifier { get; set; } = "sl_local";
-
-    /// The name of the region this gateway belongs to.
-    /// <br/>
-    /// This is the name which shows up in-game.
-    public string DisplayName { get; set; } = "Starlight (local)";
 }
 
 public sealed class ConnectionConfig

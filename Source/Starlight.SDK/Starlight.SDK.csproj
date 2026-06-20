@@ -4,6 +4,7 @@
         <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <RootNamespace>Starlight.SDK</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
@@ -11,16 +12,29 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Starlight.Game\Starlight.Game.csproj"/>
         <ProjectReference Include="..\..\Libraries\Starlight.Common\Starlight.Common.csproj"/>
         <ProjectReference Include="..\..\Libraries\Starlight.Crypto\Starlight.Crypto.csproj"/>
         <ProjectReference Include="..\..\Libraries\Starlight.Ec2b\Starlight.Ec2b.csproj"/>
+        <ProjectReference Include="..\..\Libraries\Starlight.Rpc\Starlight.Rpc.csproj" />
         <ProjectReference Include="..\..\Libraries\Starlight.Sqlite\Starlight.Sqlite.csproj"/>
-        <ProjectReference Include="..\..\Protocol\Starlight.Game.Protocol.Base\Starlight.Game.Protocol.Base.csproj"/>
     </ItemGroup>
+    
 
     <ItemGroup>
         <PackageReference Include="Serilog.AspNetCore" Version="9.0.0"/>
+        <PackageReference Include="Grpc.Tools" Version="2.51.0">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Google.Protobuf" Version="3.35.1"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Protobuf Include="define.proto" ProtoRoot="." GrpcServices="None"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <EmbeddedResource Include="Resources\Keys\*.pem"/>
     </ItemGroup>
 
 </Project>

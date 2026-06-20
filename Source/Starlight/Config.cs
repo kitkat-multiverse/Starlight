@@ -20,6 +20,7 @@ public sealed class Config
     public LogEventLevel LogLevel { get; set; } = LogEventLevel.Information;
     public GateConfig Gate { get; set; } = new();
     public DbGateConfig DbGate { get; set; } = new();
+    public DispatchConfig Dispatch { get; set; } = new();
     public SdkConfig Sdk { get; set; } = new();
 
     public static void SaveDefaultConfig()

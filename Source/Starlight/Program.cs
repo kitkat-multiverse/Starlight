@@ -103,6 +103,7 @@ internal static class Program
 
             builder
                 .AddSdkServer()
+                .AddDispatchServer()
                 .AddDbGate()
                 .AddGateServer(new V66ProtocolRegistry());
 
@@ -113,7 +114,9 @@ internal static class Program
 #if DEBUG
             app.UseSerilogRequestLogging();
 #endif
-            app.MapSdkServer();
+            app
+                .MapSdkServer()
+                .MapDispatchServer();
 
             StartTime.Stop();
             Log.Information("Done! Finished starting in {Elapsed}ms.", StartTime.ElapsedMilliseconds);

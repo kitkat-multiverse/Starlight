@@ -13,8 +13,13 @@ namespace Starlight.SDK.Http.Endpoints;
 
 public static class ComboGranterEndpoints
 {
-    private static readonly string[] PathPrefixes =
-        ["/hk4e_global/combo/granter/api", "/hk4e_cn/combo/granter/api", "/combo/granter/api"];
+    private static readonly string[] PathPrefixes = [
+        "/hk4e_global/combo/granter/api",
+        "/hk4e_global/combo/granter/login",
+        "/hk4e_cn/combo/granter/api",
+        "/hk4e_cn/combo/granter/login",
+        "/combo/granter/api"
+    ];
 
     public static void MapComboGranterEndpoints(this IEndpointRouteBuilder routes)
     {
