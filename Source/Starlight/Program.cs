@@ -9,6 +9,7 @@ using Serilog.Sinks.SystemConsole.Themes;
 using Starlight.DbGate;
 using Starlight.Console;
 using Starlight.Crypto.Client;
+using Starlight.Game;
 using Starlight.Protocol.V66;
 using Starlight.Gate;
 using Starlight.Game.Resources;
@@ -94,7 +95,9 @@ internal static class Program
                 .AddSdkServer()
                 .AddDispatchServer()
                 .AddDbGate()
-                .AddGateServer(new V66ProtocolRegistry());
+                .AddGateServer(new V66ProtocolRegistry())
+                .Services
+                .AddHostedService<GameServerService>();
 
             var clientCryptoOptions = builder.GetClientCryptoOptions();
 

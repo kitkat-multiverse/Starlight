@@ -1,7 +1,7 @@
 using System.Buffers.Binary;
-using Serilog;
 using Starlight.Gate.Crypto;
 using Starlight.Protocol;
+using Starlight.Rpc;
 
 namespace Starlight.Gate.Session.Modules;
 
@@ -13,7 +13,7 @@ public sealed class LoginModule(INetworkSession session)
     private static readonly TimeSpan ReplyTimeout = TimeSpan.FromSeconds(5);
 
     [Opcode]
-    public void OnGetPlayerTokenReq(GetPlayerTokenReq msg)
+    public async Task OnGetPlayerTokenReq(GetPlayerTokenReq msg)
     {
         // TODO: Authenticate the user. Check if their account token matches.
 
@@ -22,7 +22,7 @@ public sealed class LoginModule(INetworkSession session)
         //       logged in elsewhere.
 
         // TODO: Pick better server based on population and load.
-        // session.GameTunnel = await session.Server.Tunnel.Open(GameSubjects.GateConnection, reqTimeout: ReplyTimeout);
+        session.GameTunnel = await session.Server.Tunnel.Open(GameSubjects.GateConnection, reqTimeout: ReplyTimeout);
 
         var crypto = session.Server.ClientCrypto;
 

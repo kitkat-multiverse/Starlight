@@ -5,6 +5,7 @@ using Starlight.Gate.Crypto;
 using Starlight.Gate.Session.Modules;
 using Starlight.Kcp;
 using Starlight.Protobuf.Registry;
+using Starlight.Rpc;
 using Starlight.Rpc.Tunnel;
 using IMessage = Starlight.Protobuf.Core.IMessage;
 
@@ -71,7 +72,7 @@ public sealed class StarlightSession : INetworkSession
         // lazily, without the gate parsing it for packets it only forwards.
         if (GameTunnel is { } tunnel)
         {
-            await tunnel.Publish(packet.CmdId, message, packet.RawMetadata);
+            await tunnel.Publish(GameSubjects.InboundPacket, message, packet.RawMetadata);
         }
     }
 
