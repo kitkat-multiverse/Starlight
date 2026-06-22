@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Starlight.SDK.Common;
 using Starlight.Crypto;
+using Starlight.Crypto.Client;
 using Starlight.SDK.Database;
 using Starlight.SDK.Database.Models;
 using Starlight.SDK.Http.Models;
@@ -116,16 +117,10 @@ public static class PassportEndpoints
             password = body.Password!;
         } else
         {
-            var passwordCrypto = httpContext.RequestServices.GetService<RsaCrypto>();
+            var clientCrypto = httpContext.RequestServices.GetRequiredService<ClientCrypto>();
 
-            if (passwordCrypto is null)
-            {
-                logger.LogDebug("appLoginByPassword: no RSA key configured but SkipRsaDecryption=false");
-                return Results.Ok(ApiResponse.From(Retcode.MaPassportSystemError));
-            }
-
-            if (!passwordCrypto.TryDecryptPassword(body.Account!, out account)
-                || !passwordCrypto.TryDecryptPassword(body.Password!, out password))
+            if (!clientCrypto.TryDecryptPassword(body.Account!, out account)
+                || !clientCrypto.TryDecryptPassword(body.Password!, out password))
             {
                 return Results.Ok(ApiResponse.From(Retcode.MaPassportSystemError));
             }

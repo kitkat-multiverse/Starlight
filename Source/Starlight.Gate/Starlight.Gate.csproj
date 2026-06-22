@@ -13,6 +13,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\..\Libraries\Starlight.Common\Starlight.Common.csproj"/>
+        <ProjectReference Include="..\..\Libraries\Starlight.Crypto.Client\Starlight.Crypto.Client.csproj" />
         <ProjectReference Include="..\..\Libraries\Starlight.Ec2b\Starlight.Ec2b.csproj"/>
         <ProjectReference Include="..\..\Libraries\Starlight.Kcp\Starlight.Kcp.csproj"/>
         <ProjectReference Include="..\..\Libraries\Starlight.Protocol\Starlight.Protocol.csproj"/>

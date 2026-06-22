@@ -83,6 +83,12 @@ public sealed class StarlightSession : INetworkSession
         var packet = new GamePacket(registry, message, metadata);
         var bytes = packet.ToBytes();
 
+        if (Server.Config.Connections.LogPackets)
+        {
+            Logger.Debug("C>S | Packet: {Message} [{CmdId}] ({Length} bytes)",
+                message.GetType().Name, packet.CmdId, packet.Body.Length);
+        }
+
         CryptoHelper.Xor(bytes, XorPad);
         _connection.Send(bytes);
     }

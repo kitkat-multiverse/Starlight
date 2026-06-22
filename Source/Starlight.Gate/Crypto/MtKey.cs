@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 using Starlight.Ec2b;
 
@@ -16,12 +17,13 @@ public static class MtKey
 
         var mt = new Mt19937_64(seed);
         mt.Init(mt.NextULong());
-        _ = mt.NextULong();
+        mt.NextULong();
 
         for (var i = 0; i < Length; i += sizeof(ulong))
         {
             var bytes = key.Slice(i, sizeof(ulong));
-            MemoryMarshal.Write(bytes, mt.NextULong());
+            var value = BinaryPrimitives.ReverseEndianness(mt.NextULong());
+            MemoryMarshal.Write(bytes, in value);
         }
 
         return key.ToArray();

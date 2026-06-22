@@ -1,16 +1,19 @@
-using System.Net;
+using System.Buffers.Binary;
+using Serilog;
 using Starlight.Gate.Crypto;
 using Starlight.Protocol;
-using Starlight.Rpc;
 
 namespace Starlight.Gate.Session.Modules;
 
 public sealed class LoginModule(INetworkSession session)
 {
+    /// Used when computing the <c>client_version_hash</c>.
+    /// We use a hardcoded value existing since the Grasscutter days.
+    private const string VersionKey = "c25-314dd05b0b5f";
     private static readonly TimeSpan ReplyTimeout = TimeSpan.FromSeconds(5);
 
-    [Opcode(typeof(GetPlayerTokenReq))]
-    public async Task<GetPlayerTokenRsp> OnGetPlayerTokenReq(GetPlayerTokenReq msg)
+    [Opcode]
+    public void OnGetPlayerTokenReq(GetPlayerTokenReq msg)
     {
         // TODO: Authenticate the user. Check if their account token matches.
 
@@ -19,32 +22,48 @@ public sealed class LoginModule(INetworkSession session)
         //       logged in elsewhere.
 
         // TODO: Pick better server based on population and load.
-        session.GameTunnel = await session.Server.Tunnel.Open(GameSubjects.GateConnection, reqTimeout: ReplyTimeout);
+        // session.GameTunnel = await session.Server.Tunnel.Open(GameSubjects.GateConnection, reqTimeout: ReplyTimeout);
 
-        // Determine client seed.
-        var keyId = msg.KeyId;
-        var clientKey = Convert.FromBase64String(msg.ClientRandKey);
-        // TODO: Decrypt client key.
-        var clientSeed = IPAddress.NetworkToHostOrder(BitConverter.ToInt64(clientKey));
+        var crypto = session.Server.ClientCrypto;
 
-        // Generate server seed.
+        // Recover the client's seed by decrypting client_rand_key with the
+        // signing ('cur') key. The plaintext is a big-endian 64-bit seed.
+        var keyId = (int)msg.KeyId;
+        var clientKeyCipher = Convert.FromBase64String(msg.ClientRandKey);
+        var clientSeed = BinaryPrimitives.ReadInt64BigEndian(crypto.DecryptWithSigningKey(clientKeyCipher));
+
+        // Combine it with a freshly generated server seed.
         var serverSeed = Random.Shared.NextInt64();
-        var encryptedSeed = IPAddress.HostToNetworkOrder(serverSeed);
-        // TODO: Encrypt server seed.
-        var serverKey = Convert.ToBase64String(BitConverter.GetBytes(serverSeed));
+        var combinedSeed = serverSeed ^ clientSeed;
 
-        // Generate the new XOR-pad from MTKey.
-        var seed = clientSeed ^ serverSeed;
-        session.XorPad = MtKey.Generate((ulong)seed);
+        var seedBytes = new byte[sizeof(long)];
+        BinaryPrimitives.WriteInt64BigEndian(seedBytes, combinedSeed);
 
-        // Sign the seed's bytes.
-        var seedBytes = BitConverter.GetBytes(seed);
-        // TODO: Sign the combined seed bytes.
+        // Encrypt the combined seed with the client's content (key_id) key and
+        // sign it with the signing key.
+        if (!crypto.TryEncryptPayload(seedBytes, keyId, out var serverRandKey))
+        {
+            throw new InvalidOperationException($"No content key registered for key_id {keyId}.");
+        }
 
-        // ... do whatever
-        return new GetPlayerTokenRsp {
-            ServerRandKey = serverKey,
-            Sign = Convert.ToBase64String(seedBytes)
-        };
+        var sign = crypto.GenerateSignature(seedBytes);
+
+        session.Send(new GetPlayerTokenRsp {
+            ServerRandKey = serverRandKey,
+            Sign = sign,
+            // TODO: Replace with dynamic variables.
+            Uid = 10001,
+            Token = "somethingreallylong",
+            PlatformType = msg.PlatformType,
+            CountryCode = "US",
+            ClientIpStr = "127.0.0.1",
+            ClientVersionRandomKey = VersionKey,
+            KeyId = msg.KeyId
+        });
+
+        // Derive the session XOR-pad from the server seed. The client recovers
+        // this same value as (clientSeed ^ server_rand_key); server_rand_key
+        // carries the combined seed so only the holder of clientSeed can extract it.
+        session.XorPad = MtKey.Generate((ulong)serverSeed);
     }
 }

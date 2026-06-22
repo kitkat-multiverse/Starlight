@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Serilog;
 using Starlight.Database.DependencyInjection;
-using Starlight.Crypto;
+using Starlight.Crypto.Client;
 using Starlight.SDK.Database;
 using Starlight.SDK.Database.Impl;
 using Starlight.SDK.Http.Endpoints;
@@ -22,6 +22,8 @@ public static partial class ServiceExtensions
     {
         var config = builder.Configuration.GetSection("Sdk").Get<SdkConfig>() ?? new SdkConfig();
 
+        builder.TrySetSdkKeyPath("SDK server", config.PasswordRsaKeyPath);
+
         switch (config.Database.Provider)
         {
             case ProviderType.Sqlite: {
@@ -33,41 +35,6 @@ public static partial class ServiceExtensions
             default:
                 throw new NotSupportedException($"Unsupported or missing database provider '{config.Database.Provider.ToString()}'.");
         }
-
-        // Load the password decryption key lazily, it's only needed when a
-        // client sends is_crypto=true. Absence/invalidity is reported as
-        // an explicit null so AuthService can distinguish "no key configured"
-        // from "key loaded" and reject is_crypto=true requests up-front
-        // rather than attempting decryption with a no-op instance.
-        builder.Services.AddSingleton<RsaCrypto>(_ => {
-            if (string.IsNullOrWhiteSpace(config.PasswordRsaKeyPath))
-            {
-                Log.Warning("SDK password RSA key path is not configured; is_crypto=true logins will be rejected");
-
-                if (!config.SkipRsaDecryption)
-                {
-                    Log.Warning("Set PasswordRsaKeyPath, or set SkipRsaDecryption=true to accept passwords as plaintext.");
-                }
-
-                return null!;
-            }
-
-            if (!File.Exists(config.PasswordRsaKeyPath))
-            {
-                Log.Warning("Configured SDK password RSA key not found at {Path}", config.PasswordRsaKeyPath);
-                return null!;
-            }
-
-            try
-            {
-                return RsaCrypto.FromPkcs8File(config.PasswordRsaKeyPath);
-            }
-            catch (Exception ex)
-            {
-                Log.Warning(ex, "Failed to load SDK password RSA key");
-                return null!;
-            }
-        });
 
         if (!config.SkipSignatureCheck && string.IsNullOrEmpty(config.HmacKey))
         {
@@ -106,6 +73,7 @@ public static partial class ServiceExtensions
         builder.MapComboBoxEndpoints();
         builder.MapAbTestEndpoints();
         builder.MapPassportEndpoints();
+        builder.MapLogEndpoints();
         return builder;
     }
 }

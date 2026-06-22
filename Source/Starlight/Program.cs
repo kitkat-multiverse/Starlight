@@ -8,6 +8,7 @@ using Serilog.Events;
 using Serilog.Sinks.SystemConsole.Themes;
 using Starlight.DbGate;
 using Starlight.Console;
+using Starlight.Crypto.Client;
 using Starlight.Protocol.V66;
 using Starlight.Gate;
 using Starlight.Game.Resources;
@@ -89,10 +90,19 @@ internal static class Program
             LogLevel.MinimumLevel = builder.Configuration
                 .GetValue("LogLevel", LogEventLevel.Information);
 
+            builder
+                .AddSdkServer()
+                .AddDispatchServer()
+                .AddDbGate()
+                .AddGateServer(new V66ProtocolRegistry());
+
+            var clientCryptoOptions = builder.GetClientCryptoOptions();
+
             builder.Services
                 .AddSerilog()
                 .AddCommands()
                 .AddSingleton<GameData>()
+                .AddSingleton(_ => ClientCrypto.Create(clientCryptoOptions))
                 .AddSingleton<RpcTransport, DirectRpcTransport>()
                 .AddSingleton<ITunnelBroker, DirectTunnelBroker>()
                 .AddSingleton<ITunnelConnector, DirectTunnelConnector>()
@@ -100,12 +110,6 @@ internal static class Program
                 .AddSingleton<TunnelClient>()
                 .AddSingleton<TunnelHost>()
                 .AddHostedService(s => s.GetRequiredService<RpcTransport>());
-
-            builder
-                .AddSdkServer()
-                .AddDispatchServer()
-                .AddDbGate()
-                .AddGateServer(new V66ProtocolRegistry());
 
             // Prepare the application.
             var app = builder.Build();

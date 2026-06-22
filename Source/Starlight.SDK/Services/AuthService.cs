@@ -2,6 +2,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 using Starlight.SDK.Common;
 using Starlight.Crypto;
+using Starlight.Crypto.Client;
 using Starlight.SDK.Database;
 using Starlight.SDK.Http;
 
@@ -14,7 +15,7 @@ namespace Starlight.SDK.Services;
 /// </summary>
 public sealed class AuthService(
     IAccountRepository accounts,
-    RsaCrypto? passwordCrypto,
+    ClientCrypto clientCrypto,
     SdkConfig sdkConfig,
     ILogger<AuthService> logger
 )
@@ -44,13 +45,7 @@ public sealed class AuthService(
         // client wraps the password with our RSA public key before sending it
         if (isCryptoEncrypted && !sdkConfig.SkipRsaDecryption)
         {
-            if (passwordCrypto is null)
-            {
-                logger.LogError("Client sent is_crypto=true but no RSA key is configured");
-                return AuthResult.Fail(Retcode.SystemError);
-            }
-
-            if (!passwordCrypto.TryDecryptPassword(password, out var decrypted))
+            if (!clientCrypto.TryDecryptPassword(password, out var decrypted))
             {
                 logger.LogWarning("Failed to RSA-decrypt password for incoming login request");
                 return AuthResult.Fail(Retcode.LoginFailed);

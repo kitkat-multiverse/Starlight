@@ -11,6 +11,9 @@ public sealed class RsaCrypto : IDisposable
 {
     private readonly RSA _privateKey;
 
+    /// <summary>The underlying RSA private key.</summary>
+    public RSA PrivateKey => _privateKey;
+
     public RsaCrypto(byte[] pkcs8PrivateKey)
     {
         _privateKey = RSA.Create();
@@ -39,7 +42,7 @@ public sealed class RsaCrypto : IDisposable
     /// Decrypts a base64-encoded password that the client encrypted with
     /// PKCS#1 v1.5 padding under the matching public key.
     /// </summary>
-    public string DecryptPassword(string base64Cipher)
+    public string Decrypt(string base64Cipher)
     {
         var cipher = Convert.FromBase64String(base64Cipher);
         var plain = _privateKey.Decrypt(cipher, RSAEncryptionPadding.Pkcs1);
@@ -50,11 +53,11 @@ public sealed class RsaCrypto : IDisposable
     /// Tries to decrypt the supplied cipher. Returns <c>false</c> if the
     /// padding is invalid or the input is not valid base64.
     /// </summary>
-    public bool TryDecryptPassword(string base64Cipher, out string plain)
+    public bool TryDecrypt(string base64Cipher, out string plain)
     {
         try
         {
-            plain = DecryptPassword(base64Cipher);
+            plain = Decrypt(base64Cipher);
             return true;
         }
         catch

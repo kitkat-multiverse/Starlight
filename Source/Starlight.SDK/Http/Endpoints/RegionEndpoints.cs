@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
-using Starlight.Crypto;
+using Starlight.Crypto.Client;
 using Starlight.SDK.Services;
 
 namespace Starlight.SDK.Http.Endpoints;
@@ -37,7 +37,7 @@ public static class RegionEndpoints
         string name,
         [FromQuery(Name = "version")] string? version,
         [FromQuery(Name = "key_id")] string? keyId,
-        [FromServices] DispatchRsaCrypto? rsa,
+        [FromServices] ClientCrypto rsa,
         [FromServices] DispatchRegionCache dispatchCache
     )
     {
@@ -51,13 +51,12 @@ public static class RegionEndpoints
             return Results.NotFound($"Unknown dispatch region '{name}'.");
         }
 
-        var payload = rsa is not null
-                      && int.TryParse(keyId, out var id)
+        var payload = int.TryParse(keyId, out var id)
                       && rsa.TryEncryptPayload(region, id, out var encrypted) ?
             encrypted :
             Convert.ToBase64String(region);
 
-        var signature = rsa is { CanSign: true } ? rsa.GenerateSignature(region) : DefaultHash;
+        var signature = rsa.CanSign ? rsa.GenerateSignature(region) : DefaultHash;
 
         return Results.Text($"{{\"content\":\"{payload}\",\"sign\":\"{signature}\"}}", PlainTextContentType);
     }

@@ -41,6 +41,11 @@ public sealed class PacketHandlerGenerator : IIncrementalGenerator
         "Packet handler '{0}' parameter '{1}' has unsupported type '{2}'; allowed: the session type, GamePacket, PacketHead, or a message type",
         "Starlight.PacketHandlers", DiagnosticSeverity.Error, true);
 
+    private static readonly DiagnosticDescriptor UninferableMessage = new(
+        "SLNET004", "Cannot infer packet handler message type",
+        "Packet handler '{0}' has no single message-typed parameter to infer the opcode from; declare exactly one message parameter or pass the type explicitly as [Opcode(typeof(...))]",
+        "Starlight.PacketHandlers", DiagnosticSeverity.Error, true);
+
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var sessionName = context.AnalyzerConfigOptionsProvider.Select((provider, _) =>
@@ -81,9 +86,14 @@ public sealed class PacketHandlerGenerator : IIncrementalGenerator
 
             var attribute = method.GetAttributes().First(a =>
                 SymbolEqualityComparer.Default.Equals(a.AttributeClass, opcodeAttr));
-            if (attribute.ConstructorArguments.Length == 0 ||
-                attribute.ConstructorArguments[0].Value is not INamedTypeSymbol messageType)
+
+            var messageType = ResolveMessageType(attribute, method, iMessage);
+            if (messageType is null)
+            {
+                spc.ReportDiagnostic(Diagnostic.Create(UninferableMessage,
+                    method.Locations.FirstOrDefault(), method.Name));
                 continue;
+            }
 
             var access = FindAccessPath(sessionType, method.ContainingType);
             if (access is null)
@@ -209,6 +219,34 @@ public sealed class PacketHandlerGenerator : IIncrementalGenerator
         return async
             ? $"return {literal};"
             : $"return new global::System.Threading.Tasks.ValueTask<bool>({literal});";
+    }
+
+    /// <summary>
+    /// Determines the message type a handler is keyed on: the explicit <c>[Opcode(typeof(T))]</c>
+    /// argument when present, otherwise the handler's single message-typed parameter. Returns
+    /// <c>null</c> when neither yields an unambiguous message type.
+    /// </summary>
+    private static INamedTypeSymbol? ResolveMessageType(
+        AttributeData attribute, IMethodSymbol method, INamedTypeSymbol iMessage)
+    {
+        if (attribute.ConstructorArguments.Length > 0 &&
+            attribute.ConstructorArguments[0].Value is INamedTypeSymbol explicitType)
+            return explicitType;
+
+        INamedTypeSymbol? inferred = null;
+        foreach (var parameter in method.Parameters)
+        {
+            if (parameter.Type is not INamedTypeSymbol named ||
+                SymbolEqualityComparer.Default.Equals(named, iMessage) ||
+                !IsAssignable(named, iMessage))
+                continue;
+
+            if (inferred is not null)
+                return null; // ambiguous: more than one message-typed parameter
+            inferred = named;
+        }
+
+        return inferred;
     }
 
     private static void CollectHandlers(INamespaceSymbol ns, INamedTypeSymbol attribute, List<IMethodSymbol> output)

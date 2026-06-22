@@ -17,6 +17,12 @@ public sealed class DispatchRsaCrypto : IDisposable
     /// <summary>Whether a signing key was loaded and <see cref="GenerateSignature"/> can be used.</summary>
     public bool CanSign => _signingKey is not null;
 
+    /// <summary>The signing ('cur') private key, or <c>null</c> if none was loaded.</summary>
+    public RSA? SigningKey => _signingKey;
+
+    /// <summary>The content encryption keys indexed by <c>key_id</c>.</summary>
+    public IReadOnlyDictionary<int, RSA> ContentKeys => _encryptKeys;
+
     /// <summary>
     /// </summary>
     /// <param name="signingKey">Signing private key; pass <c>null</c> to disable signing.</param>
@@ -110,6 +116,67 @@ public sealed class DispatchRsaCrypto : IDisposable
 
         payload = Convert.ToBase64String(output.ToArray());
         return true;
+    }
+
+    /// <summary>
+    /// Decrypts a single RSA block with the signing ('cur') private key
+    /// (PKCS#1 v1.5). Used to recover the client's random seed from
+    /// <c>client_rand_key</c>.
+    /// </summary>
+    public byte[] DecryptWithSigningKey(byte[] cipher)
+    {
+        if (_signingKey is null)
+        {
+            throw new InvalidOperationException("No signing key was loaded; DecryptWithSigningKey is unavailable.");
+        }
+
+        return _signingKey.Decrypt(cipher, RSAEncryptionPadding.Pkcs1);
+    }
+
+    /// <summary>
+    /// Tries to decrypt a single RSA block with the signing ('cur') private key.
+    /// Returns <c>false</c> if no signing key is loaded or the padding/input is
+    /// invalid.
+    /// </summary>
+    public bool TryDecryptWithSigningKey(byte[] cipher, out byte[] plain)
+    {
+        if (_signingKey is not null)
+        {
+            try
+            {
+                plain = _signingKey.Decrypt(cipher, RSAEncryptionPadding.Pkcs1);
+                return true;
+            }
+            catch (CryptographicException)
+            {
+            }
+        }
+
+        plain = [];
+        return false;
+    }
+
+    /// <summary>
+    /// Tries to decrypt a single RSA block with the content key matching
+    /// <paramref name="keyId"/> (PKCS#1 v1.5). Returns <c>false</c> if no key is
+    /// registered for that id or the padding/input is invalid.
+    /// </summary>
+    public bool TryDecryptContent(int keyId, byte[] cipher, out byte[] plain)
+    {
+        if (_encryptKeys.TryGetValue(keyId, out var key))
+        {
+            try
+            {
+                plain = key.Decrypt(cipher, RSAEncryptionPadding.Pkcs1);
+                return true;
+            }
+            catch (CryptographicException)
+            {
+            }
+        }
+
+        plain = [];
+        return false;
     }
 
     /// <summary>

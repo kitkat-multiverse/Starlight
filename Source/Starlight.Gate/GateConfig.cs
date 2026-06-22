@@ -1,3 +1,5 @@
+using Starlight.Crypto.Client;
+
 namespace Starlight.Gate;
 
 public sealed class GateConfig
@@ -15,6 +17,11 @@ public sealed class GateConfig
     public ushort ServePort { get; set; } = 22102;
 
     public ConnectionConfig Connections { get; set; } = new();
+
+    /// Filesystem paths to the RSA keys shared with the all-in-one launcher's
+    /// <see cref="ClientCrypto"/>. Leave empty to use the embedded keys. When the
+    /// gate runs alongside the SDK server, the SDK server's paths win on conflict.
+    public ClientCryptoOptions Keys { get; set; } = new();
 }
 
 public sealed class ConnectionConfig

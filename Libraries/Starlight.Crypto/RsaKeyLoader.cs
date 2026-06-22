@@ -6,7 +6,7 @@ namespace Starlight.Crypto;
 /// Shared helpers for reading RSA key material from disk or base64 strings,
 /// transparently accepting both DER bytes and PEM text.
 /// </summary>
-internal static class RsaKeyLoader
+public static class RsaKeyLoader
 {
     private const string PrivatePemBegin = "-----BEGIN PRIVATE KEY-----";
     private const string PrivatePemEnd = "-----END PRIVATE KEY-----";

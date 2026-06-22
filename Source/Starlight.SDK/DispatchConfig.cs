@@ -52,7 +52,8 @@ public sealed class DispatchConfig
     /// Filesystem path to the PKCS#8 RSA private key used for signing
     /// the region payload.
     /// <br/>
-    /// Leave empty to use a hardcoded signature instead.
+    /// Leave empty to use the signing ('cur') key embedded in
+    /// <c>Starlight.Crypto.Client</c>.
     /// </summary>
     public string? RsaSigningKeyPath { get; set; } = "";
 

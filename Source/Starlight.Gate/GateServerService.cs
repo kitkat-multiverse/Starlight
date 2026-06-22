@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Starlight.Common;
+using Starlight.Crypto.Client;
 using Starlight.Ec2b;
 using Starlight.Gate.Session;
 using Starlight.Kcp;
@@ -17,38 +18,28 @@ using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Starlight.Gate;
 
-public sealed class GateServerService : BackgroundService, IKcpServerHandler
+public sealed class GateServerService(
+    RpcTransport rpc,
+    ClientCrypto crypto,
+    ProtocolRegistryProvider registryProvider,
+    ITunnelConnector connector,
+    IConfiguration config,
+    ILogger<GateServerService> logger
+)
+    : BackgroundService, IKcpServerHandler
 {
     private static readonly TimeSpan HeartbeatInterval = TimeSpan.FromSeconds(15);
 
-    private readonly RpcTransport _rpc;
-    private readonly Lazy<GateConfig> _config;
-    private readonly ILogger<GateServerService> _logger;
-
+    private readonly Lazy<GateConfig> _config = new(() => config.GetSection("Gate").Get<GateConfig>() ?? new GateConfig());
     private readonly ConcurrentDictionary<KcpConnection, INetworkSession> _sessions = new();
 
     private CancellationToken _ct = CancellationToken.None;
 
-    public GateServerService(
-        RpcTransport rpc,
-        ProtocolRegistryProvider registryProvider,
-        ITunnelConnector connector,
-        IConfiguration config,
-        ILogger<GateServerService> logger
-    )
-    {
-        _rpc = rpc;
-        _config = new Lazy<GateConfig>(() => config.GetSection("Gate").Get<GateConfig>() ?? new GateConfig());
-        _logger = logger;
-
-        Registry = registryProvider;
-        Tunnel = new TunnelClient(rpc, connector);
-    }
-
     public GateConfig Config => _config.Value;
-    public TunnelClient Tunnel { get; }
+    public TunnelClient Tunnel { get; } = new(rpc, connector);
+    public ClientCrypto ClientCrypto { get; } = crypto;
 
-    public ProtocolRegistryProvider Registry { get; }
+    public ProtocolRegistryProvider Registry { get; } = registryProvider;
     public byte[] ServerKey { get; private set; } = [];
 
     protected override async Task ExecuteAsync(CancellationToken ct)
@@ -65,14 +56,14 @@ public sealed class GateServerService : BackgroundService, IKcpServerHandler
         {
             var server = new KcpServer(Config.BindAddress, Config.BindPort, LogMessage, this);
 
-            _logger.LogInformation("Starting GameServer at {Address}:{Port}",
+            logger.LogInformation("Starting GameServer at {Address}:{Port}",
                 Config.BindAddress, Config.BindPort);
 
             await server.RunAsync(ct);
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "An error occured while trying to start GameServer!");
+            logger.LogError(e, "An error occured while trying to start GameServer!");
         }
     }
 
@@ -91,13 +82,13 @@ public sealed class GateServerService : BackgroundService, IKcpServerHandler
                     }
                 };
 
-                await _rpc.Publish(GateSubjects.ServerHeartbeat, new GateHeartbeatNotify {
+                await rpc.Publish(GateSubjects.ServerHeartbeat, new GateHeartbeatNotify {
                     ServerInfo = serverInfo, RegionId = Config.RegionId
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to publish server heartbeat");
+                logger.LogWarning(ex, "Failed to publish server heartbeat");
             }
 
             await Task.Delay(HeartbeatInterval, ct);
@@ -106,7 +97,7 @@ public sealed class GateServerService : BackgroundService, IKcpServerHandler
 
     private void LogMessage(KcpLogLevel level, string message, params object[] args)
     {
-        _logger.Log(level switch {
+        logger.Log(level switch {
             KcpLogLevel.Verbose => LogLevel.Trace,
             KcpLogLevel.Debug => LogLevel.Debug,
             KcpLogLevel.Information => LogLevel.Information,
@@ -122,7 +113,7 @@ public sealed class GateServerService : BackgroundService, IKcpServerHandler
     {
         _sessions[conn] = new StarlightSession(this, conn);
 
-        _logger.LogDebug("Client connected: {Remote} (conv={Conv})", conn.Remote, conn.Conv);
+        logger.LogDebug("Client connected: {Remote} (conv={Conv})", conn.Remote, conn.Conv);
     }
 
     public void OnDisconnected(KcpConnection conn, uint reason)
@@ -132,7 +123,7 @@ public sealed class GateServerService : BackgroundService, IKcpServerHandler
             session.OnClose(reason);
         }
 
-        _logger.LogDebug("Client disconnected: {Remote} (conv={Conv})", conn.Remote, conn.Conv);
+        logger.LogDebug("Client disconnected: {Remote} (conv={Conv})", conn.Remote, conn.Conv);
     }
 
     public void OnReceive(KcpConnection conn, byte[] data)
@@ -146,12 +137,12 @@ public sealed class GateServerService : BackgroundService, IKcpServerHandler
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Failed to handle packet for {Remote}", conn.Remote);
+                    logger.LogWarning(ex, "Failed to handle packet for {Remote}", conn.Remote);
                 }
             }, _ct);
         }
 
-        _logger.LogTrace("Received {Length} bytes from {Remote}", data.Length, conn.Remote);
+        logger.LogTrace("Received {Length} bytes from {Remote}", data.Length, conn.Remote);
     }
 }
 
@@ -159,6 +150,11 @@ public static class GateServerExtensions
 {
     public static IHostApplicationBuilder AddGateServer(this IHostApplicationBuilder builder, params ProtocolRegistry[] registries)
     {
+        var config = builder.Configuration.GetSection("Gate").Get<GateConfig>() ?? new GateConfig();
+
+        builder.TrySetSigningKeyPath("Gate server", config.Keys.SigningKeyPath);
+        builder.TrySetSdkKeyPath("Gate server", config.Keys.SdkKeyPath);
+
         builder.Services
             .AddSingleton(new ProtocolRegistryProvider(registries))
             .AddHostedService<GateServerService>();
