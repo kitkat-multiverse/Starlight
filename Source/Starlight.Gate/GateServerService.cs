@@ -10,28 +10,45 @@ using Starlight.Kcp;
 using Starlight.Protobuf.Registry;
 using Starlight.Rpc;
 using Starlight.Rpc.Proto;
+using Starlight.Rpc.Tunnel;
+using Starlight.Rpc.Tunnel.Connection;
 using KcpLogLevel = Starlight.Kcp.LogLevel;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Starlight.Gate;
 
-public sealed class GateServerService(
-    RpcTransport rpc,
-    ProtocolRegistryProvider registryProvider,
-    IConfiguration config,
-    ILogger<GateServerService> logger
-) : BackgroundService, IKcpServerHandler
+public sealed class GateServerService : BackgroundService, IKcpServerHandler
 {
     private static readonly TimeSpan HeartbeatInterval = TimeSpan.FromSeconds(15);
 
-    private readonly ConcurrentDictionary<KcpConnection, INetworkSession> _sessions = new();
-    private readonly Lazy<GateConfig> _config = new(() => config.GetSection("Gate").Get<GateConfig>() ?? new GateConfig());
+    private readonly RpcTransport _rpc;
+    private readonly Lazy<GateConfig> _config;
+    private readonly ILogger<GateServerService> _logger;
 
-    public GateConfig Config => _config.Value;
+    private readonly ConcurrentDictionary<KcpConnection, INetworkSession> _sessions = new();
 
     private CancellationToken _ct = CancellationToken.None;
 
-    public ProtocolRegistryProvider Registry => registryProvider;
+    public GateServerService(
+        RpcTransport rpc,
+        ProtocolRegistryProvider registryProvider,
+        ITunnelConnector connector,
+        IConfiguration config,
+        ILogger<GateServerService> logger
+    )
+    {
+        _rpc = rpc;
+        _config = new Lazy<GateConfig>(() => config.GetSection("Gate").Get<GateConfig>() ?? new GateConfig());
+        _logger = logger;
+
+        Registry = registryProvider;
+        Tunnel = new TunnelClient(rpc, connector);
+    }
+
+    public GateConfig Config => _config.Value;
+    public TunnelClient Tunnel { get; }
+
+    public ProtocolRegistryProvider Registry { get; }
     public byte[] ServerKey { get; private set; } = [];
 
     protected override async Task ExecuteAsync(CancellationToken ct)
@@ -48,14 +65,14 @@ public sealed class GateServerService(
         {
             var server = new KcpServer(Config.BindAddress, Config.BindPort, LogMessage, this);
 
-            logger.LogInformation("Starting GameServer at {Address}:{Port}",
+            _logger.LogInformation("Starting GameServer at {Address}:{Port}",
                 Config.BindAddress, Config.BindPort);
 
             await server.RunAsync(ct);
         }
         catch (Exception e)
         {
-            logger.LogError(e, "An error occured while trying to start GameServer!");
+            _logger.LogError(e, "An error occured while trying to start GameServer!");
         }
     }
 
@@ -74,13 +91,13 @@ public sealed class GateServerService(
                     }
                 };
 
-                await rpc.Publish(GateSubjects.ServerHeartbeat, new GateHeartbeatNotify {
+                await _rpc.Publish(GateSubjects.ServerHeartbeat, new GateHeartbeatNotify {
                     ServerInfo = serverInfo, RegionId = Config.RegionId
                 });
             }
             catch (Exception ex)
             {
-                logger.LogWarning(ex, "Failed to publish server heartbeat");
+                _logger.LogWarning(ex, "Failed to publish server heartbeat");
             }
 
             await Task.Delay(HeartbeatInterval, ct);
@@ -89,7 +106,7 @@ public sealed class GateServerService(
 
     private void LogMessage(KcpLogLevel level, string message, params object[] args)
     {
-        logger.Log(level switch {
+        _logger.Log(level switch {
             KcpLogLevel.Verbose => LogLevel.Trace,
             KcpLogLevel.Debug => LogLevel.Debug,
             KcpLogLevel.Information => LogLevel.Information,
@@ -105,7 +122,7 @@ public sealed class GateServerService(
     {
         _sessions[conn] = new StarlightSession(this, conn);
 
-        logger.LogDebug("Client connected: {Remote} (conv={Conv})", conn.Remote, conn.Conv);
+        _logger.LogDebug("Client connected: {Remote} (conv={Conv})", conn.Remote, conn.Conv);
     }
 
     public void OnDisconnected(KcpConnection conn, uint reason)
@@ -115,7 +132,7 @@ public sealed class GateServerService(
             session.OnClose(reason);
         }
 
-        logger.LogDebug("Client disconnected: {Remote} (conv={Conv})", conn.Remote, conn.Conv);
+        _logger.LogDebug("Client disconnected: {Remote} (conv={Conv})", conn.Remote, conn.Conv);
     }
 
     public void OnReceive(KcpConnection conn, byte[] data)
@@ -129,12 +146,12 @@ public sealed class GateServerService(
                 }
                 catch (Exception ex)
                 {
-                    logger.LogWarning(ex, "Failed to handle packet for {Remote}", conn.Remote);
+                    _logger.LogWarning(ex, "Failed to handle packet for {Remote}", conn.Remote);
                 }
             }, _ct);
         }
 
-        logger.LogTrace("Received {Length} bytes from {Remote}", data.Length, conn.Remote);
+        _logger.LogTrace("Received {Length} bytes from {Remote}", data.Length, conn.Remote);
     }
 }
 
