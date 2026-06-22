@@ -1,10 +1,9 @@
 using Starlight.Common;
-using Starlight.Protocol;
 using Starlight.Protobuf.Core;
 using Starlight.Protobuf.Registry;
 using IMessage = Starlight.Protobuf.Core.IMessage;
 
-namespace Starlight.Gate.Network;
+namespace Starlight.Protocol;
 
 public class PacketParseException(string message) : Exception(message);
 

@@ -2,23 +2,28 @@
     <Folder Name="/Game/">
         <Project Path="Libraries/Starlight.Game.Resources/Starlight.Game.Resources.csproj" />
     </Folder>
-    <Folder Name="/Game/Protocol/">
-        <Project Path="Protocol/Starlight.Protocol.Base/Starlight.Protocol.Base.csproj" />
-        <Project Path="Protocol/Starlight.Protocol.V66/Starlight.Protocol.V66.csproj" />
-    </Folder>
     <Folder Name="/Libraries/">
         <Project Path="Libraries/Starlight.Common/Starlight.Common.csproj" />
+        <Project Path="Libraries/Starlight.Crypto.Client/Starlight.Crypto.Client.csproj" />
         <Project Path="Libraries/Starlight.Crypto/Starlight.Crypto.csproj" />
         <Project Path="Libraries/Starlight.Sqlite/Starlight.Sqlite.csproj" />
         <Project Path="Libraries/Starlight.Rpc/Starlight.Rpc.csproj" />
+        <Project Path="Libraries/Starlight.Protocol/Starlight.Protocol.csproj" />
         <Project Path="Libraries/Starlight.Rpc.Tunnel/Starlight.Rpc.Tunnel.csproj" />
         <Project Path="Libraries/Starlight.Kcp/Starlight.Kcp.csproj" />
         <Project Path="Libraries/Starlight.Ec2b/Starlight.Ec2b.csproj" />
+    </Folder>
+    <Folder Name="/Libraries/Generators/">
+        <Project Path="Libraries/Starlight.CodeGen.Network/Starlight.CodeGen.Network/Starlight.CodeGen.Network.csproj" />
     </Folder>
     <Folder Name="/Libraries/Protobuf/">
         <Project Path="Libraries/Starlight.Protobuf.Compiler/Starlight.Protobuf.Compiler.csproj" />
         <Project Path="Libraries/Starlight.Protobuf/Starlight.Protobuf.csproj" />
         <Project Path="Libraries/Starlight.Protobuf.Reflection/Starlight.Protobuf.Reflection.csproj" />
+    </Folder>
+    <Folder Name="/Protocol/">
+        <Project Path="Protocol/Starlight.Protocol.Base/Starlight.Protocol.Base.csproj" />
+        <Project Path="Protocol/Starlight.Protocol.V66/Starlight.Protocol.V66.csproj" />
     </Folder>
     <Folder Name="/Servers/">
         <Project Path="Source/Starlight.Game/Starlight.Game.csproj" />

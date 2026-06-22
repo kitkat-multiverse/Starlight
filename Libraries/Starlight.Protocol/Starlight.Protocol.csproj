@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Starlight.Common\Starlight.Common.csproj"/>
+        <ProjectReference Include="..\Starlight.Protobuf\Starlight.Protobuf.csproj"/>
+        <ProjectReference Include="..\..\Protocol\Starlight.Protocol.Base\Starlight.Protocol.Base.csproj"/>
+    </ItemGroup>
+
+</Project>

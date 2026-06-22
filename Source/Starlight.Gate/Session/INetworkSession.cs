@@ -1,4 +1,7 @@
+using Starlight.Gate.Session.Modules;
+using Starlight.Protocol;
 using Starlight.Rpc.Tunnel;
+using IMessage = Starlight.Protobuf.Core.IMessage;
 
 namespace Starlight.Gate.Session;
 
@@ -14,6 +17,14 @@ public interface INetworkSession
     /// to the game server to be processed instead.
     RpcTunnel? GameTunnel { get; set; }
 
+    byte[] XorPad { set; }
+
+    #endregion
+
+    #region Handler Modules
+
+    LoginModule Login { get; }
+
     #endregion
 
     #region Lifecycle
@@ -25,4 +36,7 @@ public interface INetworkSession
     }
 
     #endregion
+
+    /// Sends a message to the connected client, optionally with a <see cref="PacketHead"/>.
+    void Send(IMessage message, PacketHead? metadata = null);
 }

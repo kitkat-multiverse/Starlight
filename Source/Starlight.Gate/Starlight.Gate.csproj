@@ -4,16 +4,24 @@
         <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <PacketHandlerSession>Starlight.Gate.Session.INetworkSession</PacketHandlerSession>
     </PropertyGroup>
+
+    <ItemGroup>
+        <CompilerVisibleProperty Include="PacketHandlerSession"/>
+    </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\..\Libraries\Starlight.Common\Starlight.Common.csproj"/>
         <ProjectReference Include="..\..\Libraries\Starlight.Ec2b\Starlight.Ec2b.csproj"/>
         <ProjectReference Include="..\..\Libraries\Starlight.Kcp\Starlight.Kcp.csproj"/>
+        <ProjectReference Include="..\..\Libraries\Starlight.Protocol\Starlight.Protocol.csproj"/>
         <ProjectReference Include="..\..\Libraries\Starlight.Rpc.Tunnel\Starlight.Rpc.Tunnel.csproj"/>
         <ProjectReference Include="..\..\Libraries\Starlight.Rpc\Starlight.Rpc.csproj"/>
         <ProjectReference Include="..\..\Protocol\Starlight.Protocol.Base\Starlight.Protocol.Base.csproj" />
         <ProjectReference Include="..\..\Protocol\Starlight.Protocol.V66\Starlight.Protocol.V66.csproj" />
+        <ProjectReference Include="..\..\Libraries\Starlight.CodeGen.Network\Starlight.CodeGen.Network\Starlight.CodeGen.Network.csproj"
+                          OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
     </ItemGroup>
 
 </Project>

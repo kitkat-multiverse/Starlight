@@ -11,7 +11,9 @@ public sealed class Mt19937_64
     private readonly ulong[] _mt = new ulong[Nn];
     private int _mti;
 
-    public Mt19937_64(ulong seed)
+    public Mt19937_64(ulong seed) => Init(seed);
+
+    public void Init(ulong seed)
     {
         _mt[0] = seed;
 

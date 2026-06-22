@@ -18,6 +18,13 @@ public abstract class TunnelMessage
 
     public object? Metadata { get; protected set; }
 
+    /// <summary>
+    /// Optional publisher-supplied header bytes carried alongside the payload, opaque to the
+    /// tunnel. The gate uses this to forward a packet's <c>PacketHead</c> metadata to the game
+    /// server, which reconstructs the header lazily only when a handler actually needs it.
+    /// </summary>
+    public byte[]? Header { get; internal set; }
+
     public abstract T? TryDecode<T>() where T : class, IMessage;
 
     public T Decode<T>() where T : class, IMessage
