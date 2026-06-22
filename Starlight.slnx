@@ -14,7 +14,7 @@
         <Project Path="Libraries/Starlight.Ec2b/Starlight.Ec2b.csproj" />
     </Folder>
     <Folder Name="/Libraries/Generators/">
-        <Project Path="Libraries/Starlight.CodeGen.Network/Starlight.CodeGen.Network/Starlight.CodeGen.Network.csproj" />
+        <Project Path="Libraries/Starlight.CodeGen.Network/Starlight.CodeGen.Network.csproj" />
     </Folder>
     <Folder Name="/Libraries/Protobuf/">
         <Project Path="Libraries/Starlight.Protobuf.Compiler/Starlight.Protobuf.Compiler.csproj" />
