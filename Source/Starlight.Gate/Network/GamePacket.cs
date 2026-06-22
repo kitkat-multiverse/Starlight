@@ -1,5 +1,5 @@
 using Starlight.Common;
-using Starlight.Game.Protocol;
+using Starlight.Protocol;
 using Starlight.Protobuf.Core;
 using Starlight.Protobuf.Registry;
 using IMessage = Starlight.Protobuf.Core.IMessage;

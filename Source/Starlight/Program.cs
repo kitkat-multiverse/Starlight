@@ -8,7 +8,7 @@ using Serilog.Events;
 using Serilog.Sinks.SystemConsole.Themes;
 using Starlight.DbGate;
 using Starlight.Console;
-using Starlight.Game.Protocol.V66;
+using Starlight.Protocol.V66;
 using Starlight.Gate;
 using Starlight.Game.Resources;
 using Starlight.Rpc;

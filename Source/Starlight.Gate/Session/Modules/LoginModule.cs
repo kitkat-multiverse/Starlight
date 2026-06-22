@@ -1,4 +1,4 @@
-using Starlight.Game.Protocol;
+using Starlight.Protocol;
 using Starlight.Protobuf.Core;
 using Starlight.Rpc;
 

@@ -1,6 +1,6 @@
 using Google.Protobuf;
 using Serilog;
-using Starlight.Game.Protocol;
+using Starlight.Protocol;
 using Starlight.Gate.Crypto;
 using Starlight.Gate.Network;
 using Starlight.Kcp;

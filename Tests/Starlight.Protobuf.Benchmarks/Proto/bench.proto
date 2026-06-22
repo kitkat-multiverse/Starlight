@@ -1,5 +1,5 @@
 // Google.Protobuf reference messages for the serialization benchmarks.
-// Each message mirrors a Starlight.Game.Protocol message field-for-field and,
+// Each message mirrors a Starlight.Protocol message field-for-field and,
 // critically, uses the SAME wire field numbers so the encoded payloads are
 // byte-for-byte identical. That keeps the comparison honest: both engines do
 // the same amount of varint/tag/length work, only the implementation differs.
@@ -8,7 +8,7 @@ syntax = "proto3";
 
 option csharp_namespace = "Starlight.Protobuf.Benchmarks.Google";
 
-// Mirrors Starlight.Game.Protocol.ScalarMatrix (v66 wire numbers 101..115).
+// Mirrors Starlight.Protocol.ScalarMatrix (v66 wire numbers 101..115).
 message ScalarMatrix {
   int32 f_int32 = 101;
   int64 f_int64 = 102;
@@ -31,7 +31,7 @@ message CoverageSub {
   int32 value = 1;
 }
 
-// Mirrors Starlight.Game.Protocol.Coverage (v66 wire numbers 11..16).
+// Mirrors Starlight.Protocol.Coverage (v66 wire numbers 11..16).
 message Coverage {
   optional int32 opt_int = 11;
   optional string opt_str = 12;
@@ -44,7 +44,7 @@ message Coverage {
 }
 
 // Mirrors the canonical (de-obfuscated) fields of
-// Starlight.Game.Protocol.GetPlayerTokenReq with their v66 wire numbers, so a
+// Starlight.Protocol.GetPlayerTokenReq with their v66 wire numbers, so a
 // realistic string/varint-heavy login packet encodes to the same bytes.
 message GetPlayerTokenReq {
   string psn_id = 9;

@@ -12,8 +12,8 @@
         <ProjectReference Include="..\..\Libraries\Starlight.Kcp\Starlight.Kcp.csproj"/>
         <ProjectReference Include="..\..\Libraries\Starlight.Rpc.Tunnel\Starlight.Rpc.Tunnel.csproj"/>
         <ProjectReference Include="..\..\Libraries\Starlight.Rpc\Starlight.Rpc.csproj"/>
-        <ProjectReference Include="..\..\Protocol\Starlight.Game.Protocol.Base\Starlight.Game.Protocol.Base.csproj"/>
-        <ProjectReference Include="..\..\Protocol\Starlight.Game.Protocol.V66\Starlight.Game.Protocol.V66.csproj"/>
+        <ProjectReference Include="..\..\Protocol\Starlight.Protocol.Base\Starlight.Protocol.Base.csproj" />
+        <ProjectReference Include="..\..\Protocol\Starlight.Protocol.V66\Starlight.Protocol.V66.csproj" />
     </ItemGroup>
 
 </Project>
