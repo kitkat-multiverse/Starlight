@@ -2,7 +2,7 @@ namespace Starlight.Protocol;
 
 /// <summary>
 /// Marks a method as a packet handler. The
-/// <see cref="Starlight.CodeGen.Network.PacketHandlerGenerator"/> wires matching methods into
+/// <see cref="Starlight.CodeGen.Gate.PacketHandlerGenerator"/> wires matching methods into
 /// a generated switch keyed on the deserialized message's runtime type.
 /// <br/>
 /// The handled message type is inferred from the method's message-typed parameter, so

@@ -5,7 +5,7 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Starlight.CodeGen.Network;
+namespace Starlight.CodeGen.Gate;
 
 /// <summary>
 /// Generates a static <c>PacketDispatcher.Dispatch</c> method that routes a deserialized

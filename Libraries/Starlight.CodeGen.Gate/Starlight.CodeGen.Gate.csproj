@@ -9,8 +9,8 @@
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
         <IsRoslynComponent>true</IsRoslynComponent>
 
-        <RootNamespace>Starlight.CodeGen.Network</RootNamespace>
-        <PackageId>Starlight.CodeGen.Network</PackageId>
+        <RootNamespace>Starlight.CodeGen.Gate</RootNamespace>
+        <PackageId>Starlight.CodeGen.Gate</PackageId>
 
         <!-- Analyzer release tracking is unnecessary for an internal generator. -->
         <NoWarn>$(NoWarn);RS2008</NoWarn>
