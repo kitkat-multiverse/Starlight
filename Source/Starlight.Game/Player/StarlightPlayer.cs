@@ -11,11 +11,11 @@ public sealed class StarlightPlayer : IPlayer
     private readonly RpcTunnel _tunnel;
     private readonly IModule[] _modules;
 
-    public StarlightPlayer(ModuleRegistry registry, RpcTunnel tunnel)
+    public StarlightPlayer(IServiceProvider provider, ModuleRegistry registry, RpcTunnel tunnel)
     {
         _registry = registry;
         _tunnel = tunnel;
-        _modules = registry.CreateModules(this);
+        _modules = registry.CreateModules(provider, this);
     }
 
     public TModule Module<TModule>() where TModule : class, IModule

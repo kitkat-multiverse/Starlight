@@ -9,7 +9,9 @@ namespace Starlight.CodeGen.Component;
 /// <summary>
 /// Generates a <c>GeneratedModuleRegistration.Register(ModuleRegistry)</c> method for a component
 /// assembly. Every type implementing <c>IModule</c> is registered with a per-player factory
-/// (<c>p =&gt; new TModule(p)</c>); each <c>[Opcode]</c>-annotated method on those modules is
+/// (<c>(sp, p) =>; ActivatorUtilities.CreateInstance[TModule](sp, p)</c>), so a module's
+/// constructor receives the session <c>IPlayer</c> plus any services resolved from DI; each
+/// <c>[Opcode]</c>-annotated method on those modules is
 /// registered as a handler keyed on its message type. Handlers are bound by analyzing their
 /// parameters (the session <c>IPlayer</c> and/or the message) and their return shape (sync or
 /// <c>Task</c>/<c>ValueTask</c>, returning nothing, a single message, or an enumerable of
@@ -87,7 +89,7 @@ public sealed class ComponentModuleGenerator : IIncrementalGenerator
         foreach (var module in modules.OrderBy(m => m.ToDisplayString(FullyQualified), StringComparer.Ordinal))
         {
             var moduleFq = module.ToDisplayString(FullyQualified);
-            sb.AppendLine($"        registry.AddModule<{moduleFq}>(static p => new {moduleFq}(p));");
+            sb.AppendLine($"        registry.AddModule<{moduleFq}>(static (sp, p) => global::Microsoft.Extensions.DependencyInjection.ActivatorUtilities.CreateInstance<{moduleFq}>(sp, p));");
 
             foreach (var method in module.GetMembers().OfType<IMethodSymbol>())
             {

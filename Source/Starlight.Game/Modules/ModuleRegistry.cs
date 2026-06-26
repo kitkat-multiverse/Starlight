@@ -15,18 +15,18 @@ public delegate ValueTask ModuleHandler(IModule module, IPlayer player, IMessage
 /// </summary>
 public sealed class ModuleRegistry
 {
-    private readonly List<Func<IPlayer, IModule>> _factories = [];
+    private readonly List<Func<IServiceProvider, IPlayer, IModule>> _factories = [];
     private readonly Dictionary<Type, int> _moduleIndex = [];
     private readonly Dictionary<Type, List<PendingHandler>> _handlers = [];
 
-    private Func<IPlayer, IModule>[] _compiledFactories = [];
+    private Func<IServiceProvider, IPlayer, IModule>[] _compiledFactories = [];
     private FrozenDictionary<Type, int> _compiledIndex = FrozenDictionary<Type, int>.Empty;
     private FrozenDictionary<Type, CompiledHandler[]> _table = FrozenDictionary<Type, CompiledHandler[]>.Empty;
 
     public bool Immutable { get; private set; }
 
     /// <summary>Registers a module type and its per-player factory. Idempotent per type.</summary>
-    public void AddModule<TModule>(Func<IPlayer, TModule> factory) where TModule : class, IModule
+    public void AddModule<TModule>(Func<IServiceProvider, IPlayer, TModule> factory) where TModule : class, IModule
     {
         if (_moduleIndex.ContainsKey(typeof(TModule)))
             return;
@@ -67,11 +67,11 @@ public sealed class ModuleRegistry
     public int ModuleCount => _compiledFactories.Length;
 
     /// <summary>Builds a fresh module set for <paramref name="player"/>, indexed by module index.</summary>
-    public IModule[] CreateModules(IPlayer player)
+    public IModule[] CreateModules(IServiceProvider provider, IPlayer player)
     {
         var modules = new IModule[_compiledFactories.Length];
         for (var i = 0; i < modules.Length; i++)
-            modules[i] = _compiledFactories[i](player);
+            modules[i] = _compiledFactories[i](provider, player);
         return modules;
     }
 

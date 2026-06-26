@@ -12,6 +12,7 @@ using Starlight.Rpc.Tunnel.Connection;
 namespace Starlight.Game;
 
 public sealed class GameServerService(
+    IServiceProvider services,
     RpcTransport rpc,
     ITunnelAcceptor acceptor,
     ModuleRegistry modules,
@@ -44,7 +45,7 @@ public sealed class GameServerService(
             logger.LogInformation("Opened gate server connection for '{AccountId}' with {RemoteIp}:{RemotePort}.",
                 sessionInfo.Uid, sessionInfo.RemoteAddr, sessionInfo.RemotePort);
 
-            var player = new StarlightPlayer(modules, tunnel);
+            var player = new StarlightPlayer(services, modules, tunnel);
 
             // Route inbound packets to the player's handler modules.
             var listener = tunnel.Subscribe(GameSubjects.InboundPacket, async inbound => {
