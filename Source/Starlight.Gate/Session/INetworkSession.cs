@@ -1,3 +1,4 @@
+using System.Net;
 using Starlight.Gate.Session.Modules;
 using Starlight.Protocol;
 using Starlight.Rpc.Tunnel;
@@ -9,6 +10,7 @@ public interface INetworkSession
 {
     #region Common Properties
 
+    IPEndPoint Remote { get; }
     GateServerService Server { get; }
 
     /// The connection to the game server.

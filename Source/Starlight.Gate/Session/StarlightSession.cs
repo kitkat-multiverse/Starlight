@@ -1,3 +1,4 @@
+using System.Net;
 using Google.Protobuf;
 using Serilog;
 using Starlight.Protocol;
@@ -29,6 +30,7 @@ public sealed class StarlightSession : INetworkSession
         Login = new LoginModule(this);
     }
 
+    public IPEndPoint Remote => _connection.Remote;
     public GateServerService Server { get; }
     public RpcTunnel? GameTunnel { get; set; }
     public byte[] XorPad { private get; set; }
