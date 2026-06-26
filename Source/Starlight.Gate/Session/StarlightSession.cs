@@ -100,4 +100,12 @@ public sealed class StarlightSession : INetworkSession
         CryptoHelper.Xor(bytes, XorPad);
         _connection.Send(bytes);
     }
+
+    public void Disconnect(uint reason, bool flush)
+    {
+        if (flush)
+            _connection.DisconnectAfterFlush(reason);
+        else
+            _connection.Disconnect(reason);
+    }
 }

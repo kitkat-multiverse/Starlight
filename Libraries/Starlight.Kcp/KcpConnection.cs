@@ -10,6 +10,8 @@ public sealed class KcpConnection
     private readonly Action<byte[], EndPoint> _send;
     private readonly Action<KcpConnection, uint> _onDisconnect;
 
+    private uint? _lingerReason;
+
     public IPEndPoint Remote { get; }
     public uint Conv => _kcp.Conv;
     public uint Token => _kcp.Token;
@@ -43,6 +45,13 @@ public sealed class KcpConnection
         _onDisconnect(this, reason);
     }
 
+    /// <summary>
+    /// Disconnects only once every queued segment has been acknowledged by the client.
+    /// Use when a packet sent just before teardown must be guaranteed to arrive, since
+    /// <see cref="Disconnect(uint)"/> drops anything still in flight.
+    /// </summary>
+    public void DisconnectAfterFlush(uint reason = (uint)DisconnectReason.ServerKick) => _lingerReason = reason;
+
     internal void Input(byte[] data)
     {
         var result = _kcp.Input(new ByteCursor(data));
@@ -62,6 +71,16 @@ public sealed class KcpConnection
     internal void Update(long timestamp)
     {
         _kcp.Update(timestamp);
+
+        // A pending graceful disconnect fires once the send buffers have drained,
+        // i.e. the client has acked everything we queued before the kick.
+        if (_lingerReason is { } reason && _kcp.SndQueue.Count == 0 && _kcp.SndBuf.Count == 0)
+        {
+            _lingerReason = null;
+            Disconnect(reason);
+            return;
+        }
+
         if (IsDead) _handler.OnDisconnected(this, (uint)DisconnectReason.ServerKillClient);
     }
 

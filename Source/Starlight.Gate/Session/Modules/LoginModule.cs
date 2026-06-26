@@ -37,6 +37,13 @@ public sealed class LoginModule(INetworkSession session)
             return Task.CompletedTask;
         });
 
+        // Drop the client when the game server asks us to.
+        _ = gameTunnel.Subscribe(GameSubjects.Disconnect, raw => {
+            var notify = raw.Decode<DisconnectNotify>();
+            session.Disconnect(notify.Reason, notify.Flush);
+            return Task.CompletedTask;
+        });
+
         #region Seed Derivation & Signing
 
         var crypto = session.Server.ClientCrypto;

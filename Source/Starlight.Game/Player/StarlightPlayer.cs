@@ -25,6 +25,24 @@ public sealed class StarlightPlayer : IPlayer
         => _ = _tunnel.Publish(GameSubjects.OutboundPacket, message);
 
     /// <summary>Routes an inbound message to this player's handler modules.</summary>
-    internal ValueTask Dispatch(IMessage message)
-        => _registry.Dispatch(this, _modules, message);
+    internal async ValueTask Dispatch(IMessage message)
+    {
+        try
+        {
+            await _registry.Dispatch(this, _modules, message);
+        }
+        catch (KickException kick)
+        {
+            // A handler aborted the chain: send any farewell packets, then ask the gate to
+            // drop the client. Ordering is preserved across the tunnel, so a flush-disconnect
+            // sees the replies queued ahead of it.
+            foreach (var reply in kick.Replies)
+                Send(reply);
+
+            _ = _tunnel.Publish(GameSubjects.Disconnect, new DisconnectNotify {
+                Reason = kick.Reason,
+                Flush = kick.Flush
+            });
+        }
+    }
 }
