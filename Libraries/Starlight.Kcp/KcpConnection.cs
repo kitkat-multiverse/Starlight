@@ -10,7 +10,7 @@ public sealed class KcpConnection
     private readonly Action<byte[], EndPoint> _send;
     private readonly Action<KcpConnection, uint> _onDisconnect;
 
-    public EndPoint Remote { get; }
+    public IPEndPoint Remote { get; }
     public uint Conv => _kcp.Conv;
     public uint Token => _kcp.Token;
     public bool IsDead => _kcp.State == -1;
@@ -18,7 +18,7 @@ public sealed class KcpConnection
     internal KcpConnection(
         uint conv,
         uint token,
-        EndPoint remote,
+        IPEndPoint remote,
         IKcpServerHandler handler,
         Action<byte[], EndPoint> send,
         Action<KcpConnection, uint> onDisconnect
