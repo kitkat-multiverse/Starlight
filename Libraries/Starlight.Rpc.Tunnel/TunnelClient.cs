@@ -1,7 +1,6 @@
 using Google.Protobuf;
 using Serilog;
 using Starlight.Common;
-using Starlight.Rpc;
 using Starlight.Rpc.Proto;
 using Starlight.Rpc.Tunnel.Connection;
 

@@ -33,3 +33,13 @@ message FetchPlayerRsp {
   StarlightRetcode retcode = 1;
   optional NetPlayer player = 2;
 }
+
+// Sent as a metadata payload for informing the game server
+// of the connecting player.
+//
+// Subject: <none>
+message PlayerConnectNotify {
+  uint32 uid = 1;
+  string remote_addr = 2;
+  uint32 remote_port = 3;
+}

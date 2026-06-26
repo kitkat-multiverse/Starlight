@@ -9,6 +9,7 @@ public static class GameSubjects
 {
     public const string GateConnection = "game.gate.connection";
     public const string InboundPacket = "game.gate.inbound";
+    public const string OutboundPacket = "game.gate.outbound";
 
     public const string FetchPlayer = "game.player.fetch";
 }

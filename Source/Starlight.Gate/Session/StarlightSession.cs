@@ -78,6 +78,11 @@ public sealed class StarlightSession : INetworkSession
         }
     }
 
+    public void OnClose(uint reason)
+    {
+        GameTunnel?.Dispose();
+    }
+
     public void Send(IMessage message, PacketHead? metadata = null)
     {
         var registry = _registry ?? throw new InvalidOperationException(

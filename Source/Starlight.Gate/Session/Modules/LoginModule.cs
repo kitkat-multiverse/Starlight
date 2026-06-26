@@ -1,7 +1,9 @@
 using System.Buffers.Binary;
+using Google.Protobuf;
 using Starlight.Gate.Crypto;
 using Starlight.Protocol;
 using Starlight.Rpc;
+using Starlight.Rpc.Proto;
 
 namespace Starlight.Gate.Session.Modules;
 
@@ -22,7 +24,20 @@ public sealed class LoginModule(INetworkSession session)
         //       logged in elsewhere.
 
         // TODO: Pick better server based on population and load.
-        session.GameTunnel = await session.Server.Tunnel.Open(GameSubjects.GateConnection, reqTimeout: ReplyTimeout);
+        var sessionInfo = new PlayerConnectNotify {
+            Uid = 10001,
+            RemoteAddr = session.Remote.Address.ToString(),
+            RemotePort = (ushort)session.Remote.Port
+        }.ToByteArray();
+        var gameTunnel = session.GameTunnel = await session.Server.Tunnel.Open(GameSubjects.GateConnection, metadata: sessionInfo, reqTimeout: ReplyTimeout);
+
+        // Relay packets the game server emits back down to the client.
+        _ = gameTunnel.Subscribe(GameSubjects.OutboundPacket, raw => {
+            session.Send(raw.Decode<Starlight.Protobuf.Core.IMessage>());
+            return Task.CompletedTask;
+        });
+
+        #region Seed Derivation & Signing
 
         var crypto = session.Server.ClientCrypto;
 
@@ -47,6 +62,8 @@ public sealed class LoginModule(INetworkSession session)
         }
 
         var sign = crypto.GenerateSignature(seedBytes);
+
+        #endregion
 
         session.Send(new GetPlayerTokenRsp {
             ServerRandKey = serverRandKey,

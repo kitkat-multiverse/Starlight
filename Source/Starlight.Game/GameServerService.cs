@@ -1,5 +1,8 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Starlight.Game.Modules;
+using Starlight.Game.Player;
 using Starlight.Protobuf.Core;
 using Starlight.Rpc;
 using Starlight.Rpc.Proto;
@@ -11,6 +14,7 @@ namespace Starlight.Game;
 public sealed class GameServerService(
     RpcTransport rpc,
     ITunnelAcceptor acceptor,
+    ModuleRegistry modules,
     ILogger<GameServerService> logger) : BackgroundService
 {
     private readonly HashSet<IDisposable> _subs = [];
@@ -34,19 +38,50 @@ public sealed class GameServerService(
 
     private Task OnTunnelOpened(RpcTunnel tunnel, NewTunnelReq msg)
     {
-        // TODO: Use `metadata` to pass the UID & IP address of the connecting user.
-        logger.LogInformation("Opened gate server connection.");
+        try
+        {
+            var sessionInfo = PlayerConnectNotify.Parser.ParseFrom(msg.Metadata);
+            logger.LogInformation("Opened gate server connection for '{AccountId}' with {RemoteIp}:{RemotePort}.",
+                sessionInfo.Uid, sessionInfo.RemoteAddr, sessionInfo.RemotePort);
 
-        // TODO: Dispose when connection collapses.
-        //       Use `RpcTunnel#OnClosed` for this.
-        tunnel.Subscribe(GameSubjects.InboundPacket, inbound => {
-            var packet = inbound.Decode<IMessage>();
-            // TODO: Resolve serializer from `metadata`.
-            logger.LogInformation("Received packet from server: {Packet}",
-                packet.GetType().Name);
-            return Task.CompletedTask;
-        });
+            var player = new StarlightPlayer(modules, tunnel);
+
+            // Route inbound packets to the player's handler modules.
+            var listener = tunnel.Subscribe(GameSubjects.InboundPacket, async inbound => {
+                var message = inbound.Decode<IMessage>();
+                await player.Dispatch(message);
+            });
+
+            tunnel.OnClosed += () => {
+                logger.LogDebug("Closed gate server connection with {RemoteIp}:{RemotePort}.",
+                    sessionInfo.RemoteAddr, sessionInfo.RemotePort);
+
+                listener.Dispose();
+            };
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to accept gate server connection");
+        }
 
         return Task.CompletedTask;
+    }
+}
+
+public static class GameServerExtensions
+{
+    /// Adds the <see cref="GameServerService"/> with a requirement of having an
+    /// immutable <see cref="ModuleRegistry"/> configured.
+    public static IHostApplicationBuilder AddGameServer(this IHostApplicationBuilder builder, ModuleRegistry registry)
+    {
+        if (!registry.Immutable)
+        {
+            throw new ArgumentException("ModuleRegistry must be immutable when adding GameServerService.", nameof(registry));
+        }
+
+        builder.Services
+            .AddSingleton(registry)
+            .AddHostedService<GameServerService>();
+        return builder;
     }
 }

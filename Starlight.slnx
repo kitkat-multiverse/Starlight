@@ -1,6 +1,8 @@
 <Solution>
     <Folder Name="/Game/">
+        <Project Path="Libraries/Starlight.Game.Avatar/Starlight.Game.Avatar.csproj" />
         <Project Path="Libraries/Starlight.Game.Resources/Starlight.Game.Resources.csproj" />
+        <Project Path="Libraries/Starlight.Game.Social/Starlight.Game.Social.csproj" />
     </Folder>
     <Folder Name="/Libraries/">
         <Project Path="Libraries/Starlight.Common/Starlight.Common.csproj" />
@@ -15,6 +17,7 @@
     </Folder>
     <Folder Name="/Libraries/Generators/">
         <Project Path="Libraries/Starlight.CodeGen.Gate/Starlight.CodeGen.Gate.csproj" />
+        <Project Path="Libraries/Starlight.CodeGen.Component/Starlight.CodeGen.Component.csproj" />
     </Folder>
     <Folder Name="/Libraries/Protobuf/">
         <Project Path="Libraries/Starlight.Protobuf.Compiler/Starlight.Protobuf.Compiler.csproj" />

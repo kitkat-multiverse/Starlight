@@ -10,9 +10,12 @@ using Starlight.DbGate;
 using Starlight.Console;
 using Starlight.Crypto.Client;
 using Starlight.Game;
+using Starlight.Game.Avatar;
+using Starlight.Game.Modules;
 using Starlight.Protocol.V66;
 using Starlight.Gate;
 using Starlight.Game.Resources;
+using Starlight.Game.Social;
 using Starlight.Rpc;
 using Starlight.Rpc.Tunnel;
 using Starlight.Rpc.Tunnel.Connection;
@@ -91,27 +94,35 @@ internal static class Program
             LogLevel.MinimumLevel = builder.Configuration
                 .GetValue("LogLevel", LogEventLevel.Information);
 
+            var moduleRegistry = new ModuleRegistry()
+                .AddAvatarComponent()
+                .AddSocialComponent()
+                .Build();
+
             builder
+                // Add server services.
+                // These are all the servers we run in our Starlight launcher.
                 .AddSdkServer()
                 .AddDispatchServer()
                 .AddDbGate()
                 .AddGateServer(new V66ProtocolRegistry())
+                .AddGameServer(moduleRegistry)
+                // Add dependency services.
+                // The server services use these to operate.
                 .Services
-                .AddHostedService<GameServerService>();
-
-            var clientCryptoOptions = builder.GetClientCryptoOptions();
-
-            builder.Services
                 .AddSerilog()
                 .AddCommands()
                 .AddSingleton<GameData>()
-                .AddSingleton(_ => ClientCrypto.Create(clientCryptoOptions))
-                .AddSingleton<RpcTransport, DirectRpcTransport>()
+                // Client crypto contains the RSA keys used in dispatch, gate, & on the client.
+                .AddSingleton(_ => ClientCrypto.Create(builder.GetClientCryptoOptions()))
+                // RPC Tunnel: Used for connecting the gate & game servers.
                 .AddSingleton<ITunnelBroker, DirectTunnelBroker>()
                 .AddSingleton<ITunnelConnector, DirectTunnelConnector>()
                 .AddSingleton<ITunnelAcceptor, DirectTunnelAcceptor>()
                 .AddSingleton<TunnelClient>()
                 .AddSingleton<TunnelHost>()
+                // RPC: Used for sending messages between services.
+                .AddSingleton<RpcTransport, DirectRpcTransport>()
                 .AddHostedService(s => s.GetRequiredService<RpcTransport>());
 
             // Prepare the application.

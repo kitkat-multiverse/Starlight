@@ -4,11 +4,10 @@
         <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <PacketHandlerSession>Starlight.Game.Player.IPlayer</PacketHandlerSession>
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\Libraries\Starlight.CodeGen.Network\Starlight.CodeGen.Network.csproj"
+        <ProjectReference Include="..\..\Libraries\Starlight.CodeGen.Component\Starlight.CodeGen.Component.csproj"
                           OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
         <ProjectReference Include="..\..\Libraries\Starlight.Common\Starlight.Common.csproj"/>
         <ProjectReference Include="..\..\Libraries\Starlight.Protocol\Starlight.Protocol.csproj" />
