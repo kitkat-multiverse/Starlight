@@ -12,8 +12,8 @@ internal static partial class CodeEmitter
 
     /// <summary>
     /// An invertible integer transform applied to a field on the wire. <see cref="Ops"/>
-    /// is the encode chain (real -&gt; wire), one char per step in <c>{ '+', '-', '^' }</c>,
-    /// paired positionally with <see cref="Operands"/>. Decode (wire -&gt; real) applies the
+    /// is the encode chain (real -> wire), one char per step in <c>{ '+', '-', '^' }</c>,
+    /// paired positionally with <see cref="Operands"/>. Decode (wire -> real) applies the
     /// inverse of each op in reverse order. A <c>mask</c> that <see cref="ParseMask"/> can't
     /// invert is rejected outright (no transform) and reported as an error, so every
     /// transform that survives here round-trips on both the fast and reflective paths.
@@ -58,7 +58,7 @@ internal static partial class CodeEmitter
     /// Per-message alternate-name lookup, keyed by message name then base field name. The
     /// canonical (base) proto declares <c>[alts = "..."]</c> on a field to list the version
     /// field names that should correlate to it, so a version may rename a field without
-    /// breaking the base&lt;-&gt;version match. Authored on base protos only.
+    /// breaking the base<->version match. Authored on base protos only.
     /// </summary>
     internal sealed class AltsTable
     {
@@ -156,7 +156,7 @@ internal static partial class CodeEmitter
 
     // ---- codegen ------------------------------------------------------------
 
-    /// <summary>Encode expression (real -&gt; wire) for <paramref name="valueExpr"/>, cast back to <paramref name="csType"/>.</summary>
+    /// <summary>Encode expression (real -> wire) for <paramref name="valueExpr"/>, cast back to <paramref name="csType"/>.</summary>
     private static string Encode(Transform? t, string valueExpr, string csType)
     {
         if (t is null) return valueExpr;
@@ -168,7 +168,7 @@ internal static partial class CodeEmitter
         return $"unchecked(({csType})({inner}))";
     }
 
-    /// <summary>Decode expression (wire -&gt; real) wrapping <paramref name="readExpr"/>, cast to <paramref name="csType"/>.</summary>
+    /// <summary>Decode expression (wire -> real) wrapping <paramref name="readExpr"/>, cast to <paramref name="csType"/>.</summary>
     private static string Decode(Transform? t, string readExpr, string csType)
     {
         if (t is null) return readExpr;

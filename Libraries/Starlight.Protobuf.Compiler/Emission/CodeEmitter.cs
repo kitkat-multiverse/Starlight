@@ -17,7 +17,7 @@ internal static partial class CodeEmitter
 
     /// <summary>
     /// Maps a fully-qualified proto message/enum name to its dotted C# type path relative to the
-    /// emitted namespace (e.g. <c>.CreateGadgetInfo.Chest</c> -&gt; <c>CreateGadgetInfo.Chest</c>),
+    /// emitted namespace (e.g. <c>.CreateGadgetInfo.Chest</c> -> <c>CreateGadgetInfo.Chest</c>),
     /// with each path segment prefix-stripped. Returns null for types the map doesn't know.
     /// </summary>
     internal delegate string? CsName(string fullyQualifiedTypeName);
@@ -108,7 +108,7 @@ internal static partial class CodeEmitter
 
     /// <summary>
     /// Strips a leading underscore prefix from a name so the emitted C# identifier reads
-    /// cleanly (e.g. <c>_PlayerWorldInfo</c> -&gt; <c>PlayerWorldInfo</c>). Stripping is for the
+    /// cleanly (e.g. <c>_PlayerWorldInfo</c> -> <c>PlayerWorldInfo</c>). Stripping is for the
     /// C# identifier only -- proto correlation, transform keys and wire names keep the raw
     /// name. Skipped when it would leave an empty name or one starting with a digit, to keep
     /// the result a legal identifier.
@@ -135,7 +135,7 @@ internal static partial class CodeEmitter
     /// <summary>
     /// Serializer class base name for a (possibly nested) C# type path. Serializers are emitted as
     /// top-level classes, so a nested type's path is flattened with '_' to keep the name unique
-    /// (e.g. <c>CreateGadgetInfo.Chest</c> -&gt; <c>CreateGadgetInfo_Chest</c>).
+    /// (e.g. <c>CreateGadgetInfo.Chest</c> -> <c>CreateGadgetInfo_Chest</c>).
     /// </summary>
     public static string SerBase(string typePath) => typePath.Replace(".", "_");
 

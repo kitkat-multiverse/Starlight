@@ -20,7 +20,7 @@ public sealed class FieldTransform
         _operands = operands;
     }
 
-    /// <summary>Real value -&gt; wire value: applies each op left to right.</summary>
+    /// <summary>Real value -> wire value: applies each op left to right.</summary>
     public long Encode(long value)
     {
         unchecked
@@ -31,7 +31,7 @@ public sealed class FieldTransform
         }
     }
 
-    /// <summary>Wire value -&gt; real value: applies the inverse of each op in reverse order.</summary>
+    /// <summary>Wire value -> real value: applies the inverse of each op in reverse order.</summary>
     public long Decode(long value)
     {
         unchecked

@@ -280,7 +280,7 @@ public sealed class SdkShieldConfig
     /// <summary>
     /// Per-app third-party login token configurations. Typed as
     /// <see cref="ThirdPartyTokenConfig"/> rather than
-    /// <c>Dictionary&lt;string, Dictionary&lt;string, object&gt;&gt;</c>;
+    /// <c>Dictionary[string, Dictionary[string, object]]</c>;
     /// keys are <see cref="ThirdPartyApp"/> constants.
     /// </summary>
     public Dictionary<string, ThirdPartyTokenConfig> ThirdPartyConfigs { get; set; } = new() {

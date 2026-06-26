@@ -191,7 +191,7 @@ public sealed class ShieldLoadConfigData
     /// <summary>
     /// Per-app third-party login token configurations. Typed as
     /// <see cref="ThirdPartyTokenConfig"/> rather than
-    /// <c>Dictionary&lt;string, object&gt;</c> so the inner shape is
+    /// <c>Dictionary[string, object]</c> so the inner shape is
     /// compile-checked. Keys are <see cref="ThirdPartyApp"/> constants.
     /// </summary>
     [JsonPropertyName("thirdparty_login_configs")]

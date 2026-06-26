@@ -17,7 +17,7 @@ internal static partial class CodeEmitter
     /// <summary>
     /// Emits the per-message field table that drives the reflective slow path and
     /// field-ID remap. Only name-matched fields are included, mirroring the fast
-    /// path; nested message references are lazy (<c>() =&gt; XSerializer.Descriptor</c>)
+    /// path; nested message references are lazy (<c>() => XSerializer.Descriptor</c>)
     /// to sidestep static-init ordering.
     /// </summary>
     private static void EmitDescriptor(
