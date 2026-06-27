@@ -1,4 +1,5 @@
 using Starlight.Game.Modules;
+using Starlight.Protocol;
 using Starlight.Rpc;
 using Starlight.Rpc.Tunnel;
 using IMessage = Starlight.Protobuf.Core.IMessage;
@@ -17,6 +18,8 @@ public sealed class StarlightPlayer : IPlayer
         _tunnel = tunnel;
         _modules = registry.CreateModules(provider, this);
     }
+
+    public uint Uid { get; set; }
 
     public TModule Module<TModule>() where TModule : class, IModule
         => (TModule)_modules[_registry.IndexOf<TModule>()];

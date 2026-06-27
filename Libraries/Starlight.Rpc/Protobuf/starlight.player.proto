@@ -7,8 +7,10 @@ option csharp_namespace = "Starlight.Rpc.Proto";
 import "starlight.proto";
 
 message NetPlayer {
+  // The game ID. Pure number used across the game.
   uint32 uid = 1;
-  uint32 account_id = 2;
+  // The account ID. Assigned by the SDK server.
+  string account_id = 2;
   NetPlayerProfile profile = 3;
 }
 
@@ -24,7 +26,17 @@ message NetPlayerProfile {
 // Path: Game Server -> DB Gate
 // Subject: `game.player.fetch`
 message FetchPlayerReq {
-  uint32 uid = 1;
+  // If one account can be on multiple regions,
+  // we should only need to know what the account ID is.
+  //
+  // Each region can only have one player per account, and the
+  // user connects to a specific region with a specific DB Gate,
+  // so one account ID + one region -> one player.
+  string account_uid = 1;
+
+  // Used exclusively for first login scenarios.
+  // If the player doesn't exist, their data will be created.
+  optional bool create = 2;
 }
 
 // Path: DB Gate -> Game Server

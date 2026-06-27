@@ -5,6 +5,8 @@ namespace Starlight.Game.Player;
 
 public interface IPlayer
 {
+    uint Uid { get; internal set; }
+
     /// <summary>Resolves this player's instance of <typeparamref name="TModule"/>.</summary>
     TModule Module<TModule>() where TModule : class, IModule;
 

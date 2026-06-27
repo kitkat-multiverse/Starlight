@@ -19,6 +19,8 @@ public sealed class StarlightDbContext(DbContextOptions options) : DbContext(opt
     {
         base.OnModelCreating(modelBuilder);
 
+        #region JSON Column Support
+
         foreach (var entity in modelBuilder.Model.GetEntityTypes())
         {
             var properties = entity.GetProperties()
@@ -30,5 +32,10 @@ public sealed class StarlightDbContext(DbContextOptions options) : DbContext(opt
                     .OwnsOne(property.ClrType, property.Name, nav => nav.ToJson());
             }
         }
+
+        #endregion
+
+        modelBuilder.Entity<Player>()
+            .HasAlternateKey(p => p.AccountId);
     }
 }
