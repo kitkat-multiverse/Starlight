@@ -77,12 +77,13 @@ public sealed class LoginModule(INetworkSession session)
             Sign = sign,
             // TODO: Replace with dynamic variables.
             Uid = 10001,
+            AccountUid = msg.AccountUid,
             Token = "somethingreallylong",
             PlatformType = msg.PlatformType,
             CountryCode = "US",
             ClientIpStr = "127.0.0.1",
             ClientVersionRandomKey = VersionKey,
-            KeyId = msg.KeyId
+            KeyId = msg.KeyId,
         });
 
         // Derive the session XOR-pad from the server seed. The client recovers
