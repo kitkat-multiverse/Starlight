@@ -31,7 +31,7 @@ internal static class Program
 
     public static readonly LoggingLevelSwitch
         LogLevel = new(),
-        HttpLogLevel = new(LogEventLevel.Warning);
+        VerboseLogLevel = new(LogEventLevel.Warning);
 
     private const string LoggerConsoleTemplate = "{Timestamp:yyyy-MM-dd HH:mm:ss} « {Level:u3} » {Message:lj}{NewLine}{Exception}";
     private const string LoggerFileTemplate = "{Timestamp:yyyy-MM-dd HH:mm:ss} « {Level:u3} » {Message:lj}{NewLine}";
@@ -68,15 +68,15 @@ internal static class Program
             .MinimumLevel.ControlledBy(LogLevel)
             .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Warning)
             .MinimumLevel.Override("Microsoft.Extensions.Hosting", LogEventLevel.Warning)
-            .MinimumLevel.Override("Microsoft.AspNetCore", HttpLogLevel)
+            .MinimumLevel.Override("Microsoft.AspNetCore", VerboseLogLevel)
+            .MinimumLevel.Override("Microsoft.EntityFrameworkCore", VerboseLogLevel)
             .WriteTo.Console(
                 outputTemplate: LoggerConsoleTemplate,
                 theme: LoggerTheme)
             .WriteTo.File(
                 "logs/latest.log",
                 rollingInterval: RollingInterval.Day,
-                outputTemplate: LoggerFileTemplate,
-                restrictedToMinimumLevel: LogEventLevel.Information)
+                outputTemplate: LoggerFileTemplate)
             .CreateLogger();
         Log.Information("Starting Starlight...");
 
@@ -138,7 +138,7 @@ internal static class Program
                 .MapDispatchServer();
 
             StartTime.Stop();
-            Log.Information("Done! Finished starting in {Elapsed}ms.", StartTime.ElapsedMilliseconds);
+            Log.Information("Finished initializing in {Elapsed}ms.", StartTime.ElapsedMilliseconds);
 
             await app.RunAsync();
             return 0;
