@@ -25,6 +25,7 @@ public interface INetworkSession
 
     #region Handler Modules
 
+    NetworkModule Network { get; }
     LoginModule Login { get; }
 
     #endregion

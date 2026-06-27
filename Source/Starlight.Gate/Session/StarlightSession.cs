@@ -1,6 +1,7 @@
 using System.Net;
 using Google.Protobuf;
 using Serilog;
+using Starlight.Common;
 using Starlight.Protocol;
 using Starlight.Gate.Crypto;
 using Starlight.Gate.Session.Modules;
@@ -18,6 +19,7 @@ public sealed class StarlightSession : INetworkSession
 
     private readonly KcpConnection _connection;
 
+    private uint _sequenceId = 10;
     private ProtocolRegistry? _registry;
 
     public StarlightSession(GateServerService server, KcpConnection connection)
@@ -27,6 +29,7 @@ public sealed class StarlightSession : INetworkSession
 
         XorPad = server.ServerKey;
 
+        Network = new NetworkModule(this);
         Login = new LoginModule(this);
     }
 
@@ -35,6 +38,7 @@ public sealed class StarlightSession : INetworkSession
     public RpcTunnel? GameTunnel { get; set; }
     public byte[] XorPad { private get; set; }
 
+    public NetworkModule Network { get; }
     public LoginModule Login { get; }
 
     public async Task HandlePacket(byte[] data)
@@ -97,6 +101,13 @@ public sealed class StarlightSession : INetworkSession
     {
         var registry = _registry ?? throw new InvalidOperationException(
             "Cannot send a message before the session's protocol version has been resolved.");
+
+        metadata ??= new PacketHead();
+
+        if (metadata.ClientSequenceId == 0)
+            metadata.ClientSequenceId = ++_sequenceId;
+        if (metadata.SentMs == 0)
+            metadata.SentMs = Time.CurrentMs();
 
         var packet = new GamePacket(registry, message, metadata);
         var bytes = packet.ToBytes();

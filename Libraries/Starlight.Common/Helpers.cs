@@ -1,5 +1,10 @@
 namespace Starlight.Common;
 
+public static class Time
+{
+    public static uint CurrentMs() => (uint)DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+}
+
 public static class SystemHelper
 {
     private const string EchoApi = "https://api.ipify.org/";
