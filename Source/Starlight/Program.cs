@@ -95,6 +95,7 @@ internal static class Program
                 .GetValue("LogLevel", LogEventLevel.Information);
 
             var moduleRegistry = new ModuleRegistry()
+                .AddGameComponent()
                 .AddAvatarComponent()
                 .AddSocialComponent()
                 .Build();
