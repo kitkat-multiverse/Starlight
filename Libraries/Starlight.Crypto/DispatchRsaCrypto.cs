@@ -148,8 +148,7 @@ public sealed class DispatchRsaCrypto : IDisposable
                 return true;
             }
             catch (CryptographicException)
-            {
-            }
+            {}
         }
 
         plain = [];
@@ -171,8 +170,7 @@ public sealed class DispatchRsaCrypto : IDisposable
                 return true;
             }
             catch (CryptographicException)
-            {
-            }
+            {}
         }
 
         plain = [];

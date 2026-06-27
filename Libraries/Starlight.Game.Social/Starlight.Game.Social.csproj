@@ -8,11 +8,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\Source\Starlight.Game\Starlight.Game.csproj" />
-        <ProjectReference Include="..\Starlight.Game.Resources\Starlight.Game.Resources.csproj" />
-        <ProjectReference Include="..\Starlight.Protocol\Starlight.Protocol.csproj" />
+        <ProjectReference Include="..\..\Source\Starlight.Game\Starlight.Game.csproj"/>
+        <ProjectReference Include="..\Starlight.Game.Resources\Starlight.Game.Resources.csproj"/>
+        <ProjectReference Include="..\Starlight.Protocol\Starlight.Protocol.csproj"/>
         <ProjectReference Include="..\Starlight.CodeGen.Component\Starlight.CodeGen.Component.csproj"
-                          OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+                          OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
     </ItemGroup>
 
 </Project>

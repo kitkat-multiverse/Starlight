@@ -59,8 +59,7 @@ public static class ClientCryptoHostExtensions
         {
             state.Options.SigningKeyPath = path;
             state.SigningKeyOwner = serviceName;
-        }
-        else
+        } else
         {
             WarnConflict("signing", state.SigningKeyOwner, state.Options.SigningKeyPath, serviceName, path);
         }
@@ -86,8 +85,7 @@ public static class ClientCryptoHostExtensions
         {
             state.Options.SdkKeyPath = path;
             state.SdkKeyOwner = serviceName;
-        }
-        else
+        } else
         {
             WarnConflict("SDK", state.SdkKeyOwner, state.Options.SdkKeyPath, serviceName, path);
         }

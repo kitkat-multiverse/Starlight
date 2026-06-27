@@ -20,19 +20,16 @@ public sealed class AvatarModule(IPlayer player) : IModule
         }
 
         return new AvatarDataNotify {
-            AvatarList = { }
+            AvatarList = {}
         };
     }
 
     [Opcode]
-    public async Task<SetPlayerBornDataRsp> OnSetBornData(SetPlayerBornDataReq msg)
-    {
+    public async Task<SetPlayerBornDataRsp> OnSetBornData(SetPlayerBornDataReq msg) =>
         // TODO: Check if nickname is valid.
         // TODO: Initialize player data asynchronously.
         // TODO: Save selected traveler choice.
-
-        return new SetPlayerBornDataRsp {
+        new() {
             Retcode = (int)Retcode.RETCODE_NICKNAME_WORD_ILLEGAL
         };
-    }
 }

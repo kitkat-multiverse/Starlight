@@ -86,7 +86,7 @@ public sealed class StarlightSession : INetworkSession
         // body copy (no ByteString round-trip through PlayerPacketNotify). The raw metadata
         // bytes ride along as the tunnel header so the game side can reconstruct PacketHead
         // lazily, without the gate parsing it for packets it only forwards.
-        if (GameTunnel is { } tunnel)
+        if (GameTunnel is {} tunnel)
         {
             await tunnel.Publish(GameSubjects.InboundPacket, message, packet.RawMetadata);
         }
@@ -106,6 +106,7 @@ public sealed class StarlightSession : INetworkSession
 
         if (metadata.ClientSequenceId == 0)
             metadata.ClientSequenceId = ++_sequenceId;
+
         if (metadata.SentMs == 0)
             metadata.SentMs = Time.CurrentMs();
 

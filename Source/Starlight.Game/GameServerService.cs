@@ -16,7 +16,8 @@ public sealed class GameServerService(
     RpcTransport rpc,
     ITunnelAcceptor acceptor,
     ModuleRegistry modules,
-    ILogger<GameServerService> logger) : BackgroundService
+    ILogger<GameServerService> logger
+) : BackgroundService
 {
     private readonly HashSet<IDisposable> _subs = [];
 
@@ -42,6 +43,7 @@ public sealed class GameServerService(
         try
         {
             var sessionInfo = PlayerConnectNotify.Parser.ParseFrom(msg.Metadata);
+
             logger.LogInformation("Opened gate server connection for '{AccountId}' with {RemoteIp}:{RemotePort}.",
                 sessionInfo.Uid, sessionInfo.RemoteAddr, sessionInfo.RemotePort);
 

@@ -19,7 +19,8 @@ public static class LogEndpoints
 
     private static IResult VerboseLog(
         [FromBody] dynamic? body,
-        [FromServices] ILoggerFactory loggerFactory)
+        [FromServices] ILoggerFactory loggerFactory
+    )
     {
         // A static type can't be a generic type argument (CS0718), so
         // ILogger<T> isn't an option here. The factory caches by category,
@@ -34,7 +35,8 @@ public static class LogEndpoints
 
     private static IResult WarningLog(
         [FromBody] dynamic? body,
-        [FromServices] ILoggerFactory loggerFactory)
+        [FromServices] ILoggerFactory loggerFactory
+    )
     {
         // A static type can't be a generic type argument (CS0718), so
         // ILogger<T> isn't an option here. The factory caches by category,

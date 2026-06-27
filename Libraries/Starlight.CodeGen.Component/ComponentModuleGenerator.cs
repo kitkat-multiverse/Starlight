@@ -32,12 +32,12 @@ public sealed class ComponentModuleGenerator : IIncrementalGenerator
     private static readonly DiagnosticDescriptor UninferableMessage = new(
         "SLCMP001", "Cannot infer packet handler message type",
         "Packet handler '{0}' has no single message-typed parameter to infer the opcode from; declare exactly one message parameter or pass the type explicitly as [Opcode(typeof(...))]",
-        "Starlight.Components", DiagnosticSeverity.Error, true);
+        "Starlight.Components", DiagnosticSeverity.Error, isEnabledByDefault: true);
 
     private static readonly DiagnosticDescriptor UnsupportedParameter = new(
         "SLCMP002", "Unsupported packet handler parameter",
         "Packet handler '{0}' parameter '{1}' has unsupported type '{2}'; allowed: IPlayer or a message type",
-        "Starlight.Components", DiagnosticSeverity.Error, true);
+        "Starlight.Components", DiagnosticSeverity.Error, isEnabledByDefault: true);
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
         => context.RegisterSourceOutput(context.CompilationProvider, Generate);
@@ -61,6 +61,7 @@ public sealed class ComponentModuleGenerator : IIncrementalGenerator
 
         var modules = new List<INamedTypeSymbol>();
         CollectModules(compilation.Assembly.GlobalNamespace, moduleIface, modules);
+
         if (modules.Count == 0)
             return;
 
@@ -82,23 +83,29 @@ public sealed class ComponentModuleGenerator : IIncrementalGenerator
         sb.AppendLine("/// <summary>Generated module registration for this component assembly.</summary>");
         sb.AppendLine("public static class GeneratedModuleRegistration");
         sb.AppendLine("{");
-        sb.AppendLine($"    /// <summary>Registers every <c>IModule</c> in the <c>{componentName}</c> component with <paramref name=\"registry\"/>, returning it for chaining.</summary>");
+
+        sb.AppendLine(
+            $"    /// <summary>Registers every <c>IModule</c> in the <c>{componentName}</c> component with <paramref name=\"registry\"/>, returning it for chaining.</summary>");
         sb.AppendLine($"    public static {registryFq} {methodName}(this {registryFq} registry)");
         sb.AppendLine("    {");
 
         foreach (var module in modules.OrderBy(m => m.ToDisplayString(FullyQualified), StringComparer.Ordinal))
         {
             var moduleFq = module.ToDisplayString(FullyQualified);
-            sb.AppendLine($"        registry.AddModule<{moduleFq}>(static (sp, p) => global::Microsoft.Extensions.DependencyInjection.ActivatorUtilities.CreateInstance<{moduleFq}>(sp, p));");
+
+            sb.AppendLine(
+                $"        registry.AddModule<{moduleFq}>(static (sp, p) => global::Microsoft.Extensions.DependencyInjection.ActivatorUtilities.CreateInstance<{moduleFq}>(sp, p));");
 
             foreach (var method in module.GetMembers().OfType<IMethodSymbol>())
             {
                 var attribute = method.GetAttributes().FirstOrDefault(a =>
                     SymbolEqualityComparer.Default.Equals(a.AttributeClass, opcodeAttr));
+
                 if (attribute is null)
                     continue;
 
                 var messageType = ResolveMessageType(attribute, method, iMessage);
+
                 if (messageType is null)
                 {
                     spc.ReportDiagnostic(Diagnostic.Create(UninferableMessage,
@@ -119,15 +126,25 @@ public sealed class ComponentModuleGenerator : IIncrementalGenerator
     }
 
     private static void EmitHandler(
-        SourceProductionContext spc, StringBuilder sb, INamedTypeSymbol module, IMethodSymbol method,
-        INamedTypeSymbol messageType, INamedTypeSymbol player, INamedTypeSymbol iMessage,
-        INamedTypeSymbol? task1, INamedTypeSymbol? valueTask1, INamedTypeSymbol? task, INamedTypeSymbol? valueTask)
+        SourceProductionContext spc,
+        StringBuilder sb,
+        INamedTypeSymbol module,
+        IMethodSymbol method,
+        INamedTypeSymbol messageType,
+        INamedTypeSymbol player,
+        INamedTypeSymbol iMessage,
+        INamedTypeSymbol? task1,
+        INamedTypeSymbol? valueTask1,
+        INamedTypeSymbol? task,
+        INamedTypeSymbol? valueTask
+    )
     {
         var moduleFq = module.ToDisplayString(FullyQualified);
         var messageFq = messageType.ToDisplayString(FullyQualified);
 
         var args = new List<string>();
         var usesMessage = false;
+
         foreach (var parameter in method.Parameters)
         {
             if (IsAssignable(player, parameter.Type))
@@ -136,8 +153,7 @@ public sealed class ComponentModuleGenerator : IIncrementalGenerator
             {
                 args.Add("__msg");
                 usesMessage = true;
-            }
-            else
+            } else
             {
                 spc.ReportDiagnostic(Diagnostic.Create(UnsupportedParameter,
                     parameter.Locations.FirstOrDefault(), method.Name, parameter.Name,
@@ -149,14 +165,18 @@ public sealed class ComponentModuleGenerator : IIncrementalGenerator
         var ret = ClassifyReturn(method.ReturnType, iMessage, task1, valueTask1, task, valueTask);
 
         var priority = 0;
+
         foreach (var named in attributeArgs(method))
+        {
             if (named.Key == "Priority" && named.Value.Value is int value)
                 priority = value;
+        }
 
         var asyncMod = ret.Awaitable ? "async " : "";
         sb.AppendLine($"        registry.AddHandler<{moduleFq}, {messageFq}>({priority}, {asyncMod}static (module, player, message) =>");
         sb.AppendLine("        {");
         sb.AppendLine($"            var __m = ({moduleFq})module;");
+
         if (usesMessage)
             sb.AppendLine($"            var __msg = ({messageFq})message;");
 
@@ -167,12 +187,14 @@ public sealed class ComponentModuleGenerator : IIncrementalGenerator
         {
             case SendKind.None:
                 sb.AppendLine($"            {call};");
+
                 if (!ret.Awaitable)
                     sb.AppendLine("            return default;");
                 break;
             case SendKind.Single:
                 sb.AppendLine($"            var __result = {call};");
                 sb.AppendLine("            if (__result is not null) player.Send(__result);");
+
                 if (!ret.Awaitable)
                     sb.AppendLine("            return default;");
                 break;
@@ -181,6 +203,7 @@ public sealed class ComponentModuleGenerator : IIncrementalGenerator
                 sb.AppendLine("            if (__results is not null)");
                 sb.AppendLine("                foreach (var __message in __results)");
                 sb.AppendLine("                    if (__message is not null) player.Send(__message);");
+
                 if (!ret.Awaitable)
                     sb.AppendLine("            return default;");
                 break;
@@ -192,18 +215,24 @@ public sealed class ComponentModuleGenerator : IIncrementalGenerator
     private static IEnumerable<KeyValuePair<string, TypedConstant>> attributeArgs(IMethodSymbol method)
     {
         foreach (var attribute in method.GetAttributes())
-            foreach (var named in attribute.NamedArguments)
-                yield return named;
+        foreach (var named in attribute.NamedArguments)
+        {
+            yield return named;
+        }
     }
 
     private static INamedTypeSymbol? ResolveMessageType(
-        AttributeData attribute, IMethodSymbol method, INamedTypeSymbol iMessage)
+        AttributeData attribute,
+        IMethodSymbol method,
+        INamedTypeSymbol iMessage
+    )
     {
         if (attribute.ConstructorArguments.Length > 0 &&
             attribute.ConstructorArguments[0].Value is INamedTypeSymbol explicitType)
             return explicitType;
 
         INamedTypeSymbol? inferred = null;
+
         foreach (var parameter in method.Parameters)
         {
             if (parameter.Type is not INamedTypeSymbol named ||
@@ -213,6 +242,7 @@ public sealed class ComponentModuleGenerator : IIncrementalGenerator
 
             if (inferred is not null)
                 return null; // ambiguous
+
             inferred = named;
         }
 
@@ -222,9 +252,14 @@ public sealed class ComponentModuleGenerator : IIncrementalGenerator
     private static void CollectModules(INamespaceSymbol ns, INamedTypeSymbol moduleIface, List<INamedTypeSymbol> output)
     {
         foreach (var type in ns.GetTypeMembers())
+        {
             CollectFromType(type, moduleIface, output);
+        }
+
         foreach (var child in ns.GetNamespaceMembers())
+        {
             CollectModules(child, moduleIface, output);
+        }
     }
 
     private static void CollectFromType(INamedTypeSymbol type, INamedTypeSymbol moduleIface, List<INamedTypeSymbol> output)
@@ -233,12 +268,19 @@ public sealed class ComponentModuleGenerator : IIncrementalGenerator
             output.Add(type);
 
         foreach (var nested in type.GetTypeMembers())
+        {
             CollectFromType(nested, moduleIface, output);
+        }
     }
 
     private static ReturnInfo ClassifyReturn(
-        ITypeSymbol returnType, INamedTypeSymbol iMessage,
-        INamedTypeSymbol? task1, INamedTypeSymbol? valueTask1, INamedTypeSymbol? task, INamedTypeSymbol? valueTask)
+        ITypeSymbol returnType,
+        INamedTypeSymbol iMessage,
+        INamedTypeSymbol? task1,
+        INamedTypeSymbol? valueTask1,
+        INamedTypeSymbol? task,
+        INamedTypeSymbol? valueTask
+    )
     {
         var awaitable = false;
         var inner = returnType;
@@ -246,16 +288,16 @@ public sealed class ComponentModuleGenerator : IIncrementalGenerator
         if (returnType is INamedTypeSymbol named)
         {
             var definition = named.ConstructedFrom;
+
             if (SymbolEqualityComparer.Default.Equals(definition, task1) ||
                 SymbolEqualityComparer.Default.Equals(definition, valueTask1))
             {
                 awaitable = true;
                 inner = named.TypeArguments[0];
-            }
-            else if (SymbolEqualityComparer.Default.Equals(named, task) ||
-                     SymbolEqualityComparer.Default.Equals(named, valueTask))
+            } else if (SymbolEqualityComparer.Default.Equals(named, task) ||
+                       SymbolEqualityComparer.Default.Equals(named, valueTask))
             {
-                return new ReturnInfo(true, SendKind.None);
+                return new ReturnInfo(awaitable: true, SendKind.None);
             }
         }
 
@@ -263,8 +305,10 @@ public sealed class ComponentModuleGenerator : IIncrementalGenerator
             return new ReturnInfo(awaitable, SendKind.None);
 
         var item = GetEnumerableItem(inner);
+
         if (item is not null && IsAssignable(item, iMessage))
             return new ReturnInfo(awaitable, SendKind.Many);
+
         if (IsAssignable(inner, iMessage))
             return new ReturnInfo(awaitable, SendKind.Single);
 
@@ -277,8 +321,10 @@ public sealed class ComponentModuleGenerator : IIncrementalGenerator
             return named.TypeArguments[0];
 
         foreach (var iface in type.AllInterfaces)
+        {
             if (iface.OriginalDefinition.SpecialType == SpecialType.System_Collections_Generic_IEnumerable_T)
                 return iface.TypeArguments[0];
+        }
 
         return null;
     }
@@ -293,14 +339,21 @@ public sealed class ComponentModuleGenerator : IIncrementalGenerator
                 return true;
 
         foreach (var iface in source.AllInterfaces)
+        {
             if (SymbolEqualityComparer.Default.Equals(iface, destination))
                 return true;
+        }
 
         return false;
     }
 }
 
-internal enum SendKind { None, Single, Many }
+internal enum SendKind
+{
+    None,
+    Single,
+    Many
+}
 
 internal readonly struct ReturnInfo(bool awaitable, SendKind send)
 {

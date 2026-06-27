@@ -29,22 +29,22 @@ public sealed class PacketHandlerGenerator : IIncrementalGenerator
     private static readonly DiagnosticDescriptor UnusedParameters = new(
         "SLNET001", "Packet handler parameters are unused",
         "Packet handler '{0}' declares parameters but uses none of them; remove the unused parameters",
-        "Starlight.PacketHandlers", DiagnosticSeverity.Warning, true);
+        "Starlight.PacketHandlers", DiagnosticSeverity.Warning, isEnabledByDefault: true);
 
     private static readonly DiagnosticDescriptor Unreachable = new(
         "SLNET002", "Packet handler is unreachable from the session",
         "Packet handler '{0}' lives in type '{1}', which has no property or field on session type '{2}'",
-        "Starlight.PacketHandlers", DiagnosticSeverity.Warning, true);
+        "Starlight.PacketHandlers", DiagnosticSeverity.Warning, isEnabledByDefault: true);
 
     private static readonly DiagnosticDescriptor UnsupportedParameter = new(
         "SLNET003", "Unsupported packet handler parameter",
         "Packet handler '{0}' parameter '{1}' has unsupported type '{2}'; allowed: the session type, GamePacket, PacketHead, or a message type",
-        "Starlight.PacketHandlers", DiagnosticSeverity.Error, true);
+        "Starlight.PacketHandlers", DiagnosticSeverity.Error, isEnabledByDefault: true);
 
     private static readonly DiagnosticDescriptor UninferableMessage = new(
         "SLNET004", "Cannot infer packet handler message type",
         "Packet handler '{0}' has no single message-typed parameter to infer the opcode from; declare exactly one message parameter or pass the type explicitly as [Opcode(typeof(...))]",
-        "Starlight.PacketHandlers", DiagnosticSeverity.Error, true);
+        "Starlight.PacketHandlers", DiagnosticSeverity.Error, isEnabledByDefault: true);
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
@@ -88,6 +88,7 @@ public sealed class PacketHandlerGenerator : IIncrementalGenerator
                 SymbolEqualityComparer.Default.Equals(a.AttributeClass, opcodeAttr));
 
             var messageType = ResolveMessageType(attribute, method, iMessage, packetHead);
+
             if (messageType is null)
             {
                 spc.ReportDiagnostic(Diagnostic.Create(UninferableMessage,
@@ -96,6 +97,7 @@ public sealed class PacketHandlerGenerator : IIncrementalGenerator
             }
 
             var access = FindAccessPath(sessionType, method.ContainingType);
+
             if (access is null)
             {
                 spc.ReportDiagnostic(Diagnostic.Create(Unreachable,
@@ -105,9 +107,11 @@ public sealed class PacketHandlerGenerator : IIncrementalGenerator
 
             var args = new List<string>();
             var valid = true;
+
             foreach (var parameter in method.Parameters)
             {
                 var argument = BindParameter(parameter.Type, sessionType, gamePacket, packetHead, iMessage);
+
                 if (argument is null)
                 {
                     spc.ReportDiagnostic(Diagnostic.Create(UnsupportedParameter,
@@ -124,11 +128,15 @@ public sealed class PacketHandlerGenerator : IIncrementalGenerator
                 continue;
 
             var priority = 0;
+
             foreach (var named in attribute.NamedArguments)
+            {
                 if (named.Key == "Priority" && named.Value.Value is int value)
                     priority = value;
+            }
 
             var ret = ClassifyReturn(method.ReturnType, iMessage, task1, valueTask1, task, valueTask, packetHead);
+
             models.Add(new Handler(
                 messageType.ToDisplayString(FullyQualified), access, method.Name, args, ret, priority));
         }
@@ -159,7 +167,9 @@ public sealed class PacketHandlerGenerator : IIncrementalGenerator
         sb.AppendLine("public static class PacketDispatcher");
         sb.AppendLine("{");
         sb.AppendLine("    /// <summary>Routes <paramref name=\"message\"/> to its handler. Returns <c>true</c> when handled.</summary>");
-        sb.AppendLine($"    public static {(anyAsync ? "async " : "")}global::System.Threading.Tasks.ValueTask<bool> Dispatch({sessionFq} session, {packetFq} packet, {messageFq} message)");
+
+        sb.AppendLine(
+            $"    public static {(anyAsync ? "async " : "")}global::System.Threading.Tasks.ValueTask<bool> Dispatch({sessionFq} session, {packetFq} packet, {messageFq} message)");
         sb.AppendLine("    {");
         sb.AppendLine("        switch (message)");
         sb.AppendLine("        {");
@@ -200,12 +210,12 @@ public sealed class PacketHandlerGenerator : IIncrementalGenerator
                 }
             }
 
-            sb.AppendLine($"                {Return(anyAsync, true)}");
+            sb.AppendLine($"                {Return(anyAsync, value: true)}");
             sb.AppendLine("            }");
         }
 
         sb.AppendLine("            default:");
-        sb.AppendLine($"                {Return(anyAsync, false)}");
+        sb.AppendLine($"                {Return(anyAsync, value: false)}");
         sb.AppendLine("        }");
         sb.AppendLine("    }");
         sb.AppendLine("}");
@@ -216,9 +226,7 @@ public sealed class PacketHandlerGenerator : IIncrementalGenerator
     private static string Return(bool async, bool value)
     {
         var literal = value ? "true" : "false";
-        return async
-            ? $"return {literal};"
-            : $"return new global::System.Threading.Tasks.ValueTask<bool>({literal});";
+        return async ? $"return {literal};" : $"return new global::System.Threading.Tasks.ValueTask<bool>({literal});";
     }
 
     /// <summary>
@@ -228,23 +236,29 @@ public sealed class PacketHandlerGenerator : IIncrementalGenerator
     /// protocol message but binds to the packet metadata, so it is excluded from inference.
     /// </summary>
     private static INamedTypeSymbol? ResolveMessageType(
-        AttributeData attribute, IMethodSymbol method, INamedTypeSymbol iMessage, INamedTypeSymbol? packetHead)
+        AttributeData attribute,
+        IMethodSymbol method,
+        INamedTypeSymbol iMessage,
+        INamedTypeSymbol? packetHead
+    )
     {
         if (attribute.ConstructorArguments.Length > 0 &&
             attribute.ConstructorArguments[0].Value is INamedTypeSymbol explicitType)
             return explicitType;
 
         INamedTypeSymbol? inferred = null;
+
         foreach (var parameter in method.Parameters)
         {
             if (parameter.Type is not INamedTypeSymbol named ||
                 SymbolEqualityComparer.Default.Equals(named, iMessage) ||
-                (packetHead is not null && SymbolEqualityComparer.Default.Equals(named, packetHead)) ||
+                packetHead is not null && SymbolEqualityComparer.Default.Equals(named, packetHead) ||
                 !IsAssignable(named, iMessage))
                 continue;
 
             if (inferred is not null)
                 return null; // ambiguous: more than one message-typed parameter
+
             inferred = named;
         }
 
@@ -254,20 +268,29 @@ public sealed class PacketHandlerGenerator : IIncrementalGenerator
     private static void CollectHandlers(INamespaceSymbol ns, INamedTypeSymbol attribute, List<IMethodSymbol> output)
     {
         foreach (var type in ns.GetTypeMembers())
+        {
             CollectFromType(type, attribute, output);
+        }
+
         foreach (var child in ns.GetNamespaceMembers())
+        {
             CollectHandlers(child, attribute, output);
+        }
     }
 
     private static void CollectFromType(INamedTypeSymbol type, INamedTypeSymbol attribute, List<IMethodSymbol> output)
     {
         foreach (var member in type.GetMembers())
+        {
             if (member is IMethodSymbol method &&
                 method.GetAttributes().Any(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, attribute)))
                 output.Add(method);
+        }
 
         foreach (var nested in type.GetTypeMembers())
+        {
             CollectFromType(nested, attribute, output);
+        }
     }
 
     /// <summary>Finds how to reach an instance of <paramref name="module"/> from <c>session</c>.</summary>
@@ -278,8 +301,7 @@ public sealed class PacketHandlerGenerator : IIncrementalGenerator
 
         foreach (var member in EnumerateMembers(session))
         {
-            var memberType = member switch
-            {
+            var memberType = member switch {
                 IPropertySymbol { GetMethod: not null, IsWriteOnly: false } p => p.Type,
                 IFieldSymbol f => f.Type,
                 _ => null
@@ -299,35 +321,52 @@ public sealed class PacketHandlerGenerator : IIncrementalGenerator
         for (var current = type; current is not null; current = current.BaseType)
         {
             foreach (var member in current.GetMembers().Where(member => seen.Add(member)))
+            {
                 yield return member;
+            }
         }
 
         foreach (var iface in type.AllInterfaces)
         {
             foreach (var member in iface.GetMembers().Where(member => seen.Add(member)))
+            {
                 yield return member;
+            }
         }
     }
 
     private static string? BindParameter(
-        ITypeSymbol parameter, INamedTypeSymbol session, INamedTypeSymbol gamePacket,
-        INamedTypeSymbol? packetHead, INamedTypeSymbol iMessage)
+        ITypeSymbol parameter,
+        INamedTypeSymbol session,
+        INamedTypeSymbol gamePacket,
+        INamedTypeSymbol? packetHead,
+        INamedTypeSymbol iMessage
+    )
     {
         if (SymbolEqualityComparer.Default.Equals(parameter, gamePacket))
             return "packet";
+
         if (packetHead is not null && SymbolEqualityComparer.Default.Equals(parameter, packetHead))
             return "packet.Metadata.Value";
+
         if (IsAssignable(session, parameter))
             return "session";
+
         if (IsAssignable(parameter, iMessage))
             return "msg";
+
         return null;
     }
 
     private static ReturnInfo ClassifyReturn(
-        ITypeSymbol returnType, INamedTypeSymbol iMessage,
-        INamedTypeSymbol? task1, INamedTypeSymbol? valueTask1, INamedTypeSymbol? task, INamedTypeSymbol? valueTask,
-        INamedTypeSymbol? packetHead)
+        ITypeSymbol returnType,
+        INamedTypeSymbol iMessage,
+        INamedTypeSymbol? task1,
+        INamedTypeSymbol? valueTask1,
+        INamedTypeSymbol? task,
+        INamedTypeSymbol? valueTask,
+        INamedTypeSymbol? packetHead
+    )
     {
         var awaitable = false;
         var inner = returnType;
@@ -335,16 +374,16 @@ public sealed class PacketHandlerGenerator : IIncrementalGenerator
         if (returnType is INamedTypeSymbol named)
         {
             var definition = named.ConstructedFrom;
+
             if (SymbolEqualityComparer.Default.Equals(definition, task1) ||
                 SymbolEqualityComparer.Default.Equals(definition, valueTask1))
             {
                 awaitable = true;
                 inner = named.TypeArguments[0];
-            }
-            else if (SymbolEqualityComparer.Default.Equals(named, task) ||
-                     SymbolEqualityComparer.Default.Equals(named, valueTask))
+            } else if (SymbolEqualityComparer.Default.Equals(named, task) ||
+                       SymbolEqualityComparer.Default.Equals(named, valueTask))
             {
-                return new ReturnInfo(true, SendKind.None);
+                return new ReturnInfo(awaitable: true, SendKind.None);
             }
         }
 
@@ -359,8 +398,10 @@ public sealed class PacketHandlerGenerator : IIncrementalGenerator
             return new ReturnInfo(awaitable, SendKind.SingleWithHead);
 
         var item = GetEnumerableItem(inner);
+
         if (item is not null && IsAssignable(item, iMessage))
             return new ReturnInfo(awaitable, SendKind.Many);
+
         if (IsAssignable(inner, iMessage))
             return new ReturnInfo(awaitable, SendKind.Single);
 
@@ -411,11 +452,13 @@ public sealed class PacketHandlerGenerator : IIncrementalGenerator
             return;
 
         var body = (SyntaxNode?)declaration.Body ?? declaration.ExpressionBody?.Expression;
+
         if (body is null)
             return;
 
         var model = compilation.GetSemanticModel(declaration.SyntaxTree);
         var flow = model.AnalyzeDataFlow(body);
+
         if (!flow.Succeeded)
             return;
 
@@ -428,7 +471,13 @@ public sealed class PacketHandlerGenerator : IIncrementalGenerator
     }
 }
 
-internal enum SendKind { None, Single, SingleWithHead, Many }
+internal enum SendKind
+{
+    None,
+    Single,
+    SingleWithHead,
+    Many
+}
 
 internal readonly struct ReturnInfo(bool awaitable, SendKind send)
 {
@@ -437,7 +486,13 @@ internal readonly struct ReturnInfo(bool awaitable, SendKind send)
 }
 
 internal readonly struct Handler(
-    string messageType, string access, string method, List<string> arguments, ReturnInfo returnInfo, int priority)
+    string messageType,
+    string access,
+    string method,
+    List<string> arguments,
+    ReturnInfo returnInfo,
+    int priority
+)
 {
     public string MessageType { get; } = messageType;
     public string Access { get; } = access;

@@ -353,8 +353,7 @@ internal static partial class CodeEmitter
 
     private static bool TryTokenizeMask(string s, out List<string> tokens)
     {
-        tokens = [
-        ];
+        tokens = [];
         var i = 0;
 
         while (i < s.Length)

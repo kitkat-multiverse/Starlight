@@ -48,13 +48,10 @@ public sealed class PlayerModule(RpcTransport rpc, ILogger<PlayerModule> logger,
     /// <br/>
     /// It should be called after all login handlers.
     [Opcode(typeof(PlayerLoginReq), Priority = -1000)]
-    public PlayerLoginRsp OnFinishLogin()
-    {
-        return new PlayerLoginRsp {
-            IsUseAbilityHash = true,
-            AbilityHashCode = 1844674,
-            GameBiz = "hk4e_global",
-            CountryCode = "US"
-        };
-    }
+    public PlayerLoginRsp OnFinishLogin() => new() {
+        IsUseAbilityHash = true,
+        AbilityHashCode = 1844674,
+        GameBiz = "hk4e_global",
+        CountryCode = "US"
+    };
 }

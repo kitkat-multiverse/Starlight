@@ -29,7 +29,7 @@ public sealed class LoginModule(INetworkSession session)
             RemoteAddr = session.Remote.Address.ToString(),
             RemotePort = (ushort)session.Remote.Port
         }.ToByteArray();
-        var gameTunnel = session.GameTunnel = await session.Server.Tunnel.Open(GameSubjects.GateConnection, metadata: sessionInfo, reqTimeout: ReplyTimeout);
+        var gameTunnel = session.GameTunnel = await session.Server.Tunnel.Open(GameSubjects.GateConnection, sessionInfo, ReplyTimeout);
 
         // Relay packets the game server emits back down to the client.
         _ = gameTunnel.Subscribe(GameSubjects.OutboundPacket, raw => {
@@ -83,7 +83,7 @@ public sealed class LoginModule(INetworkSession session)
             CountryCode = "US",
             ClientIpStr = "127.0.0.1",
             ClientVersionRandomKey = VersionKey,
-            KeyId = msg.KeyId,
+            KeyId = msg.KeyId
         });
 
         // Derive the session XOR-pad from the server seed. The client recovers

@@ -7,10 +7,7 @@ namespace Starlight.Game.Social;
 public sealed class SocialModule(IPlayer player) : IModule
 {
     [Opcode]
-    public async Task<GetPlayerSocialDetailRsp> OnDetailFetch(GetPlayerSocialDetailReq msg)
-    {
-        return new GetPlayerSocialDetailRsp {
-            Retcode = (int)Retcode.RETCODE_ACCOUNT_INFO_NOT_EXIST
-        };
-    }
+    public async Task<GetPlayerSocialDetailRsp> OnDetailFetch(GetPlayerSocialDetailReq msg) => new() {
+        Retcode = (int)Retcode.RETCODE_ACCOUNT_INFO_NOT_EXIST
+    };
 }

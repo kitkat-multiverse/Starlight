@@ -17,10 +17,14 @@ namespace Starlight.Protocol;
 public sealed class OpcodeAttribute : Attribute
 {
     /// <summary>Infers the handled message type from the method's message-typed parameter.</summary>
-    public OpcodeAttribute() { }
+    public OpcodeAttribute()
+    {}
 
     /// <summary>Explicitly sets the handled message type, for handlers without a message parameter.</summary>
-    public OpcodeAttribute(Type message) => Message = message;
+    public OpcodeAttribute(Type message)
+    {
+        Message = message;
+    }
 
     /// <summary>The protocol message type this handler is invoked for, or <c>null</c> to infer it.</summary>
     public Type? Message { get; }

@@ -57,8 +57,7 @@ public abstract class ProtocolRegistry
     /// Field tables for this version's messages, used to register opt-in field-ID
     /// remaps (live deobfuscation). Empty for registries without compiled descriptors.
     /// </summary>
-    public virtual IReadOnlyCollection<MessageDescriptor> Descriptors => [
-    ];
+    public virtual IReadOnlyCollection<MessageDescriptor> Descriptors => [];
 
     /// <summary>Field table for the message with the given CmdId, or <c>null</c>.</summary>
     public virtual MessageDescriptor? GetDescriptor(int cmdId) => null;

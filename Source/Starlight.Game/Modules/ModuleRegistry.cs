@@ -51,6 +51,7 @@ public sealed class ModuleRegistry
     {
         _compiledFactories = _factories.ToArray();
         _compiledIndex = _moduleIndex.ToFrozenDictionary();
+
         _table = _handlers.ToFrozenDictionary(
             pair => pair.Key,
             pair => pair.Value
@@ -70,6 +71,7 @@ public sealed class ModuleRegistry
     public IModule[] CreateModules(IServiceProvider provider, IPlayer player)
     {
         var modules = new IModule[_compiledFactories.Length];
+
         for (var i = 0; i < modules.Length; i++)
             modules[i] = _compiledFactories[i](provider, player);
         return modules;
@@ -85,7 +87,9 @@ public sealed class ModuleRegistry
             return;
 
         foreach (var handler in handlers)
+        {
             await handler.Invoke(modules[handler.ModuleIndex], player, message);
+        }
     }
 
     private readonly record struct PendingHandler(Type ModuleType, int Priority, ModuleHandler Handler);

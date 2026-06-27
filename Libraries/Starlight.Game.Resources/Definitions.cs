@@ -11,8 +11,7 @@ public abstract class Data
     /// Invoked when the resource is loaded.
     /// </summary>
     public virtual void OnLoad()
-    {
-    }
+    {}
 }
 
 /// <summary>

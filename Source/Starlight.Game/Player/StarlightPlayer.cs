@@ -40,7 +40,9 @@ public sealed class StarlightPlayer : IPlayer
             // drop the client. Ordering is preserved across the tunnel, so a flush-disconnect
             // sees the replies queued ahead of it.
             foreach (var reply in kick.Replies)
+            {
                 Send(reply);
+            }
 
             _ = _tunnel.Publish(GameSubjects.Disconnect, new DisconnectNotify {
                 Reason = kick.Reason,

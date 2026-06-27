@@ -53,6 +53,7 @@ public sealed class ClientCrypto : IDisposable
         var signingKey = LoadSigningKey(assembly, options.SigningKeyPath);
 
         RsaCrypto sdk;
+
         try
         {
             sdk = LoadSdkKey(assembly, options.SdkKeyPath);
@@ -64,6 +65,7 @@ public sealed class ClientCrypto : IDisposable
         }
 
         DispatchRsaCrypto dispatch;
+
         try
         {
             dispatch = new DispatchRsaCrypto(signingKey, contentKeys);
@@ -172,14 +174,14 @@ public sealed class ClientCrypto : IDisposable
     }
 
     private static RsaCrypto LoadSdkKey(Assembly assembly, string? overridePath)
-        => !string.IsNullOrWhiteSpace(overridePath) && File.Exists(overridePath)
-            ? RsaCrypto.FromPkcs8File(overridePath)
-            : RsaCrypto.FromBase64Pkcs8(ReadResource(assembly, SdkResource));
+        => !string.IsNullOrWhiteSpace(overridePath) && File.Exists(overridePath) ?
+            RsaCrypto.FromPkcs8File(overridePath) :
+            RsaCrypto.FromBase64Pkcs8(ReadResource(assembly, SdkResource));
 
     private static string ReadResource(Assembly assembly, string name)
     {
         using var stream = assembly.GetManifestResourceStream(name)
-            ?? throw new InvalidOperationException($"Embedded crypto resource '{name}' was not found.");
+                           ?? throw new InvalidOperationException($"Embedded crypto resource '{name}' was not found.");
         using var reader = new StreamReader(stream);
         return reader.ReadToEnd();
     }
