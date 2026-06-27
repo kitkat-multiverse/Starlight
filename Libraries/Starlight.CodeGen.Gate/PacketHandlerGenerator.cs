@@ -87,7 +87,7 @@ public sealed class PacketHandlerGenerator : IIncrementalGenerator
             var attribute = method.GetAttributes().First(a =>
                 SymbolEqualityComparer.Default.Equals(a.AttributeClass, opcodeAttr));
 
-            var messageType = ResolveMessageType(attribute, method, iMessage);
+            var messageType = ResolveMessageType(attribute, method, iMessage, packetHead);
             if (messageType is null)
             {
                 spc.ReportDiagnostic(Diagnostic.Create(UninferableMessage,
@@ -224,10 +224,11 @@ public sealed class PacketHandlerGenerator : IIncrementalGenerator
     /// <summary>
     /// Determines the message type a handler is keyed on: the explicit <c>[Opcode(typeof(T))]</c>
     /// argument when present, otherwise the handler's single message-typed parameter. Returns
-    /// <c>null</c> when neither yields an unambiguous message type.
+    /// <c>null</c> when neither yields an unambiguous message type. <c>PacketHead</c> is itself a
+    /// protocol message but binds to the packet metadata, so it is excluded from inference.
     /// </summary>
     private static INamedTypeSymbol? ResolveMessageType(
-        AttributeData attribute, IMethodSymbol method, INamedTypeSymbol iMessage)
+        AttributeData attribute, IMethodSymbol method, INamedTypeSymbol iMessage, INamedTypeSymbol? packetHead)
     {
         if (attribute.ConstructorArguments.Length > 0 &&
             attribute.ConstructorArguments[0].Value is INamedTypeSymbol explicitType)
@@ -238,6 +239,7 @@ public sealed class PacketHandlerGenerator : IIncrementalGenerator
         {
             if (parameter.Type is not INamedTypeSymbol named ||
                 SymbolEqualityComparer.Default.Equals(named, iMessage) ||
+                (packetHead is not null && SymbolEqualityComparer.Default.Equals(named, packetHead)) ||
                 !IsAssignable(named, iMessage))
                 continue;
 
