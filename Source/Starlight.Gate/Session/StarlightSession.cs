@@ -52,8 +52,18 @@ public sealed class StarlightSession : INetworkSession
         _registry ??= Server.Registry.ResolveByFirstPacket(packet.CmdId)
                       ?? throw new MissingRegistryException(packet.CmdId);
 
-        using var stream = new CodedInputStream(packet.Body);
-        var message = _registry.Deserialize(packet.CmdId, stream);
+        IMessage message;
+
+        try
+        {
+            using var stream = new CodedInputStream(packet.Body);
+            message = _registry.Deserialize(packet.CmdId, stream);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            Logger.Verbose("C>S | Packet: (obfuscated) [{CmdId}] ({Length})", packet.CmdId, packet.Body.Length);
+            return;
+        }
 
         #endregion
 
@@ -93,7 +103,7 @@ public sealed class StarlightSession : INetworkSession
 
         if (Server.Config.Connections.LogPackets)
         {
-            Logger.Debug("C>S | Packet: {Message} [{CmdId}] ({Length} bytes)",
+            Logger.Debug("S>C | Packet: {Message} [{CmdId}] ({Length} bytes)",
                 message.GetType().Name, packet.CmdId, packet.Body.Length);
         }
 
