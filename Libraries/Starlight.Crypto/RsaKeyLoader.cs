@@ -35,14 +35,24 @@ public static class RsaKeyLoader
 
         if (contents.Contains(PemBeginPrefix, StringComparison.Ordinal))
         {
-            if (!contents.Contains(PrivatePemBegin, StringComparison.Ordinal)
-                && !contents.Contains(Pkcs1PrivatePemBegin, StringComparison.Ordinal)
-                && !contents.Contains(EncryptedPrivatePemBegin, StringComparison.Ordinal))
+            // ImportFromPem can't unwrap a passphrase, so say so plainly instead of letting
+            // it surface as an opaque CryptographicException from wherever the key is loaded.
+            if (contents.Contains(EncryptedPrivatePemBegin, StringComparison.Ordinal))
             {
                 rsa.Dispose();
 
                 throw new ArgumentException(
-                    $"'{path}' is not a private-key PEM (expected PKCS#8, PKCS#1, or encrypted private key).",
+                    $"'{path}' is an encrypted private key, which is not supported. Decrypt it first.",
+                    nameof(path));
+            }
+
+            if (!contents.Contains(PrivatePemBegin, StringComparison.Ordinal)
+                && !contents.Contains(Pkcs1PrivatePemBegin, StringComparison.Ordinal))
+            {
+                rsa.Dispose();
+
+                throw new ArgumentException(
+                    $"'{path}' is not a private-key PEM (expected PKCS#8 or PKCS#1).",
                     nameof(path));
             }
 
