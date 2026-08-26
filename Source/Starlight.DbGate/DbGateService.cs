@@ -12,7 +12,7 @@ namespace Starlight.DbGate;
 public sealed class DbGateService(
     RpcTransport rpc,
     PlayerService players,
-    StarlightDbContext db,
+    IServiceScopeFactory scopes,
     ILogger<DbGateService> logger
 ) : IHostedService
 {
@@ -23,7 +23,12 @@ public sealed class DbGateService(
 #if DEBUG
         // Create the database.
         // TODO: Replace with real migrations once data models are done!
-        await db.Database.EnsureCreatedAsync(cancellationToken);
+        // The context is scoped, so it can't be injected into this singleton directly.
+        using (var scope = scopes.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<StarlightDbContext>();
+            await db.Database.EnsureCreatedAsync(cancellationToken);
+        }
 #endif
 
         _subscriptions.Add(await rpc.Subscribe<FetchPlayerReq>(GameSubjects.FetchPlayer, players.Fetch));
