@@ -13,4 +13,10 @@ The next-generation of *a certain anime game*'s reimplementation.
 
 ---
 
+<p align="center">
+  <img src="Assets/banner.png" width="100%">
+</p>
+
+---
+
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
