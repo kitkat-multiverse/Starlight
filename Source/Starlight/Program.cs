@@ -10,12 +10,10 @@ using Starlight.DbGate;
 using Starlight.Console;
 using Starlight.Crypto.Client;
 using Starlight.Game;
-using Starlight.Game.Avatar;
 using Starlight.Game.Modules;
 using Starlight.Protocol.V66;
 using Starlight.Gate;
 using Starlight.Game.Resources;
-using Starlight.Game.Social;
 using Starlight.Rpc;
 using Starlight.Rpc.Tunnel;
 using Starlight.Rpc.Tunnel.Connection;
@@ -96,8 +94,6 @@ internal static class Program
 
             var moduleRegistry = new ModuleRegistry()
                 .AddGameComponent()
-                .AddAvatarComponent()
-                .AddSocialComponent()
                 .Build();
 
             builder
