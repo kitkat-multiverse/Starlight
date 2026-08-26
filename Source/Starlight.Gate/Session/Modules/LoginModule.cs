@@ -1,6 +1,10 @@
 using System.Buffers.Binary;
+using System.Security.Cryptography;
 using Google.Protobuf;
+using Serilog;
+using Starlight.Crypto.Client;
 using Starlight.Gate.Crypto;
+using Starlight.Kcp;
 using Starlight.Protocol;
 using Starlight.Rpc;
 using Starlight.Rpc.Proto;
@@ -9,6 +13,8 @@ namespace Starlight.Gate.Session.Modules;
 
 public sealed class LoginModule(INetworkSession session)
 {
+    private static readonly ILogger Logger = Log.ForContext<LoginModule>();
+
     /// Used when computing the <c>client_version_hash</c>.
     /// We use a hardcoded value existing since the Grasscutter days.
     private const string VersionKey = "c25-314dd05b0b5f";
@@ -22,6 +28,27 @@ public sealed class LoginModule(INetworkSession session)
         // TODO: Check if the `gate_ticket` matches the expected value.
         //       This call is also where we would kick the player if they are already
         //       logged in elsewhere.
+
+        // Derive the seed before touching the tunnel; key material we can't use leaves
+        // nothing to unwind, and the client gets a real answer instead of silence.
+        if (!TrySignSeed(session.Server.ClientCrypto, msg, out var seed))
+        {
+            Logger.Warning("Rejecting {Remote}: bad client_rand_key or unknown key_id {KeyId}.",
+                session.Remote, msg.KeyId);
+
+            session.Send(new GetPlayerTokenRsp {
+                Retcode = (int)Retcode.RETCODE_TOKEN_PARAM_ERROR,
+                AccountUid = msg.AccountUid,
+                KeyId = msg.KeyId
+            });
+            session.Disconnect((uint)DisconnectReason.ServerKick, flush: true);
+            return;
+        }
+
+        // Clients may re-handshake on a live connection. Drop the tunnel from the previous
+        // attempt so its subscriptions stop relaying into this session.
+        session.GameTunnel?.Dispose();
+        session.GameTunnel = null;
 
         // TODO: Pick better server based on population and load.
         var sessionInfo = new PlayerConnectNotify {
@@ -44,37 +71,9 @@ public sealed class LoginModule(INetworkSession session)
             return Task.CompletedTask;
         });
 
-        #region Seed Derivation & Signing
-
-        var crypto = session.Server.ClientCrypto;
-
-        // Recover the client's seed by decrypting client_rand_key with the
-        // signing ('cur') key. The plaintext is a big-endian 64-bit seed.
-        var keyId = (int)msg.KeyId;
-        var clientKeyCipher = Convert.FromBase64String(msg.ClientRandKey);
-        var clientSeed = BinaryPrimitives.ReadInt64BigEndian(crypto.DecryptWithSigningKey(clientKeyCipher));
-
-        // Combine it with a freshly generated server seed.
-        var serverSeed = Random.Shared.NextInt64();
-        var combinedSeed = serverSeed ^ clientSeed;
-
-        var seedBytes = new byte[sizeof(long)];
-        BinaryPrimitives.WriteInt64BigEndian(seedBytes, combinedSeed);
-
-        // Encrypt the combined seed with the client's content (key_id) key and
-        // sign it with the signing key.
-        if (!crypto.TryEncryptPayload(seedBytes, keyId, out var serverRandKey))
-        {
-            throw new InvalidOperationException($"No content key registered for key_id {keyId}.");
-        }
-
-        var sign = crypto.GenerateSignature(seedBytes);
-
-        #endregion
-
         session.Send(new GetPlayerTokenRsp {
-            ServerRandKey = serverRandKey,
-            Sign = sign,
+            ServerRandKey = seed.ServerRandKey,
+            Sign = seed.Signature,
             // TODO: Replace with dynamic variables.
             Uid = 10001,
             AccountUid = msg.AccountUid,
@@ -89,6 +88,49 @@ public sealed class LoginModule(INetworkSession session)
         // Derive the session XOR-pad from the server seed. The client recovers
         // this same value as (clientSeed ^ server_rand_key); server_rand_key
         // carries the combined seed so only the holder of clientSeed can extract it.
-        session.XorPad = MtKey.Generate((ulong)serverSeed);
+        session.XorPad = MtKey.Generate((ulong)seed.ServerSeed);
     }
+
+    /// <summary>
+    /// Recovers the client's seed from <c>client_rand_key</c>, mixes in a fresh server seed, then
+    /// encrypts and signs the result. Returns <c>false</c> for any unusable key material.
+    /// </summary>
+    private static bool TrySignSeed(ClientCrypto crypto, GetPlayerTokenReq msg, out SeedExchange seed)
+    {
+        seed = default;
+
+        if (!crypto.CanSign)
+        {
+            return false;
+        }
+
+        // The plaintext behind client_rand_key is a big-endian 64-bit seed, encrypted
+        // against the signing ('cur') key.
+        var cipher = new byte[msg.ClientRandKey.Length / 4 * 3];
+
+        if (!Convert.TryFromBase64String(msg.ClientRandKey, cipher, out var length)
+            || !crypto.TryDecryptWithSigningKey(cipher[..length], out var clientKey)
+            || clientKey.Length < sizeof(long))
+        {
+            return false;
+        }
+
+        var serverSeed = BinaryPrimitives.ReadInt64BigEndian(RandomNumberGenerator.GetBytes(sizeof(long)));
+        var combinedSeed = serverSeed ^ BinaryPrimitives.ReadInt64BigEndian(clientKey);
+
+        var seedBytes = new byte[sizeof(long)];
+        BinaryPrimitives.WriteInt64BigEndian(seedBytes, combinedSeed);
+
+        // Encrypt the combined seed with the client's content (key_id) key and
+        // sign it with the signing key.
+        if (!crypto.TryEncryptPayload(seedBytes, (int)msg.KeyId, out var serverRandKey))
+        {
+            return false;
+        }
+
+        seed = new SeedExchange(serverSeed, serverRandKey, crypto.GenerateSignature(seedBytes));
+        return true;
+    }
+
+    private readonly record struct SeedExchange(long ServerSeed, string ServerRandKey, string Signature);
 }
