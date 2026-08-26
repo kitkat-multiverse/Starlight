@@ -24,7 +24,7 @@ public sealed class PlayerModule(RpcTransport rpc, ILogger<PlayerModule> logger,
             var request = new FetchPlayerReq { AccountUid = msg.AccountUid, Create = true };
             var response = await rpc.Request<FetchPlayerReq, FetchPlayerRsp>(GameSubjects.FetchPlayer, request);
 
-            if (response is not { Player: var data, Retcode: StarlightRetcode.Success })
+            if (response is not { Player: {} data, Retcode: StarlightRetcode.Success })
             {
                 logger.LogError("Failed to fetch player '{AccountId}': {Response}", msg.AccountUid, response.Retcode);
 
