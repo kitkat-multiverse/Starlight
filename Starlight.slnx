@@ -23,6 +23,7 @@
         <Project Path="Libraries/Starlight.Protobuf.Compiler/Starlight.Protobuf.Compiler.csproj"/>
         <Project Path="Libraries/Starlight.Protobuf/Starlight.Protobuf.csproj"/>
         <Project Path="Libraries/Starlight.Protobuf.Reflection/Starlight.Protobuf.Reflection.csproj"/>
+        <Project Path="Libraries/Starlight.Protobuf.Fixtures/Starlight.Protobuf.Fixtures.csproj"/>
     </Folder>
     <Folder Name="/Protocol/">
         <Project Path="Protocol/Starlight.Protocol.Base/Starlight.Protocol.Base.csproj"/>
@@ -38,10 +39,9 @@
         <Project Path="Tests/Starlight.Tests/Starlight.Tests.csproj"/>
         <Project Path="Tests/Starlight.Protobuf.Tests/Starlight.Protobuf.Tests.csproj"/>
     </Folder>
-    <Folder Name="/Tests/Protobuf/">
-        <Project Path="Tests/Starlight.Protobuf.Benchmarks/Starlight.Protobuf.Benchmarks.csproj"/>
-        <Project Path="Tests/Starlight.Protobuf.Compiler.Host/Starlight.Protobuf.Compiler.Host.csproj"/>
-        <Project Path="Tests/Starlight.Protobuf.Fixtures/Starlight.Protobuf.Fixtures.csproj"/>
+    <Folder Name="/Tools/">
+        <Project Path="Tools/Starlight.Protobuf.Benchmarks/Starlight.Protobuf.Benchmarks.csproj"/>
+        <Project Path="Tools/Starlight.Protobuf.Compiler.Host/Starlight.Protobuf.Compiler.Host.csproj"/>
     </Folder>
     <Project Path="Source/Starlight/Starlight.csproj"/>
 </Solution>

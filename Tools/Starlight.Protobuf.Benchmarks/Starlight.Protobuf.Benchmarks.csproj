@@ -25,7 +25,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\..\Libraries\Starlight.Protobuf\Starlight.Protobuf.csproj"/>
-        <ProjectReference Include="..\Starlight.Protobuf.Fixtures\Starlight.Protobuf.Fixtures.csproj"/>
+        <ProjectReference Include="..\..\Libraries\Starlight.Protobuf.Fixtures\Starlight.Protobuf.Fixtures.csproj"/>
     </ItemGroup>
 
 </Project>

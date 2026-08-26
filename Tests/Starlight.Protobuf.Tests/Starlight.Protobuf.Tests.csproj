@@ -22,7 +22,7 @@
         <ProjectReference Include="..\..\Libraries\Starlight.Protobuf\Starlight.Protobuf.csproj"/>
         <ProjectReference Include="..\..\Libraries\Starlight.Protobuf.Compiler\Starlight.Protobuf.Compiler.csproj"/>
         <ProjectReference Include="..\..\Libraries\Starlight.Protobuf.Reflection\Starlight.Protobuf.Reflection.csproj"/>
-        <ProjectReference Include="..\Starlight.Protobuf.Fixtures\Starlight.Protobuf.Fixtures.csproj"/>
+        <ProjectReference Include="..\..\Libraries\Starlight.Protobuf.Fixtures\Starlight.Protobuf.Fixtures.csproj"/>
     </ItemGroup>
 
 </Project>
