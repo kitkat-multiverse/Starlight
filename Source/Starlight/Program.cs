@@ -110,6 +110,7 @@ internal static class Program
                 .AddSerilog()
                 .AddCommands()
                 .AddSingleton<GameData>()
+                .AddHostedService(s => s.GetRequiredService<GameData>())
                 // Client crypto contains the RSA keys used in dispatch, gate, & on the client.
                 .AddSingleton(_ => ClientCrypto.Create(builder.GetClientCryptoOptions()))
                 // RPC Tunnel: Used for connecting the gate & game servers.
