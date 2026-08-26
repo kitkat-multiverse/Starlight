@@ -8,7 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Starlight.Common\Starlight.Common.csproj"/>
+        <ProjectReference Include="..\..\Libraries\Starlight.Common\Starlight.Common.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
