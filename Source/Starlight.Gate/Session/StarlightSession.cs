@@ -1,4 +1,5 @@
 using System.Net;
+using System.Threading.Channels;
 using Google.Protobuf;
 using Serilog;
 using Starlight.Common;
@@ -19,6 +20,18 @@ public sealed class StarlightSession : INetworkSession
 
     private readonly KcpConnection _connection;
 
+    /// KCP delivers in order, but its receive callback fires each packet on its own task. The
+    /// queue puts arrival order back so the login pad swap can't race the packet behind it.
+    private readonly Channel<byte[]> _inbound = Channel.CreateUnbounded<byte[]>(new UnboundedChannelOptions {
+        SingleReader = true,
+        SingleWriter = true
+    });
+
+    /// Guards everything that touches the wire. Handlers aren't the only callers of
+    /// <see cref="Send"/> — the game tunnel's relay subscriptions call it too.
+    private readonly Lock _sendLock = new();
+
+    private byte[] _xorPad;
     private uint _sequenceId = 10;
     private ProtocolRegistry? _registry;
 
@@ -27,25 +40,53 @@ public sealed class StarlightSession : INetworkSession
         Server = server;
         _connection = connection;
 
-        XorPad = server.ServerKey;
+        _xorPad = server.ServerKey;
 
         Network = new NetworkModule(this);
         Login = new LoginModule(this);
+
+        _ = Task.Run(ConsumeInbound);
     }
 
     public IPEndPoint Remote => _connection.Remote;
     public GateServerService Server { get; }
     public RpcTunnel? GameTunnel { get; set; }
-    public byte[] XorPad { private get; set; }
+
+    public byte[] XorPad
+    {
+        set {
+            lock (_sendLock)
+            {
+                _xorPad = value;
+            }
+        }
+    }
 
     public NetworkModule Network { get; }
     public LoginModule Login { get; }
 
-    public async Task HandlePacket(byte[] data)
+    public void Receive(byte[] data) => _inbound.Writer.TryWrite(data);
+
+    private async Task ConsumeInbound()
+    {
+        await foreach (var data in _inbound.Reader.ReadAllAsync())
+        {
+            try
+            {
+                await HandlePacket(data);
+            }
+            catch (Exception ex)
+            {
+                Logger.Warning(ex, "Failed to handle packet for {Remote}", Remote);
+            }
+        }
+    }
+
+    private async Task HandlePacket(byte[] data)
     {
         #region Pre-process the packet
 
-        CryptoHelper.Xor(data, XorPad);
+        CryptoHelper.Xor(data, _xorPad);
 
         var packet = new GamePacket(data);
 
@@ -94,6 +135,7 @@ public sealed class StarlightSession : INetworkSession
 
     public void OnClose(uint reason)
     {
+        _inbound.Writer.TryComplete();
         GameTunnel?.Dispose();
     }
 
@@ -102,25 +144,28 @@ public sealed class StarlightSession : INetworkSession
         var registry = _registry ?? throw new InvalidOperationException(
             "Cannot send a message before the session's protocol version has been resolved.");
 
-        metadata ??= new PacketHead();
-
-        if (metadata.ClientSequenceId == 0)
-            metadata.ClientSequenceId = ++_sequenceId;
-
-        if (metadata.SentMs == 0)
-            metadata.SentMs = Time.CurrentMs();
-
-        var packet = new GamePacket(registry, message, metadata);
-        var bytes = packet.ToBytes();
-
-        if (Server.Config.Connections.LogPackets)
+        lock (_sendLock)
         {
-            Logger.Debug("S>C | Packet: {Message} [{CmdId}] ({Length} bytes)",
-                message.GetType().Name, packet.CmdId, packet.Body.Length);
-        }
+            metadata ??= new PacketHead();
 
-        CryptoHelper.Xor(bytes, XorPad);
-        _connection.Send(bytes);
+            if (metadata.ClientSequenceId == 0)
+                metadata.ClientSequenceId = ++_sequenceId;
+
+            if (metadata.SentMs == 0)
+                metadata.SentMs = Time.CurrentMs();
+
+            var packet = new GamePacket(registry, message, metadata);
+            var bytes = packet.ToBytes();
+
+            if (Server.Config.Connections.LogPackets)
+            {
+                Logger.Debug("S>C | Packet: {Message} [{CmdId}] ({Length} bytes)",
+                    message.GetType().Name, packet.CmdId, packet.Body.Length);
+            }
+
+            CryptoHelper.Xor(bytes, _xorPad);
+            _connection.Send(bytes);
+        }
     }
 
     public void Disconnect(uint reason, bool flush)

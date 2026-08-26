@@ -33,8 +33,6 @@ public sealed class GateServerService(
     private readonly Lazy<GateConfig> _config = new(() => config.GetSection("Gate").Get<GateConfig>() ?? new GateConfig());
     private readonly ConcurrentDictionary<KcpConnection, INetworkSession> _sessions = new();
 
-    private CancellationToken _ct = CancellationToken.None;
-
     public GateConfig Config => _config.Value;
     public TunnelClient Tunnel { get; } = new(rpc, connector);
     public ClientCrypto ClientCrypto { get; } = crypto;
@@ -44,8 +42,6 @@ public sealed class GateServerService(
 
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
-        _ct = ct;
-
         // From the region ID, derive the client secret & XOR key.
         var secret = Ec2bKeyGen.Create(Config.RegionId);
         ServerKey = Ec2bHelper.Derive(secret);
@@ -130,16 +126,7 @@ public sealed class GateServerService(
     {
         if (_sessions.TryGetValue(conn, out var session))
         {
-            Task.Run(async () => {
-                try
-                {
-                    await session.HandlePacket(data);
-                }
-                catch (Exception ex)
-                {
-                    logger.LogWarning(ex, "Failed to handle packet for {Remote}", conn.Remote);
-                }
-            }, _ct);
+            session.Receive(data);
         }
 
         logger.LogTrace("Received {Length} bytes from {Remote}", data.Length, conn.Remote);

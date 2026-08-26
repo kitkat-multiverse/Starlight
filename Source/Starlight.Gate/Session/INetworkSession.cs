@@ -32,7 +32,9 @@ public interface INetworkSession
 
     #region Lifecycle
 
-    Task HandlePacket(byte[] data);
+    /// Queues an inbound packet. Packets are handled one at a time in arrival order, so a
+    /// handler that swaps <see cref="XorPad"/> can't be overtaken by the packet behind it.
+    void Receive(byte[] data);
 
     void OnClose(uint reason)
     {}
