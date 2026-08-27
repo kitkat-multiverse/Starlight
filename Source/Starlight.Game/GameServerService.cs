@@ -25,17 +25,22 @@ public sealed class GameServerService(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _subs.Add(await Tunnel.Listen(GameSubjects.GateConnection));
+        // Listen last: it starts accepting tunnels immediately, and one that lands before the
+        // handler is attached would be accepted with nothing subscribed to its packets.
         Tunnel.TunnelOpened += OnTunnelOpened;
+        _subs.Add(await Tunnel.Listen(GameSubjects.GateConnection));
     }
 
-    public override Task StopAsync(CancellationToken cancellationToken)
+    public override async Task StopAsync(CancellationToken cancellationToken)
     {
+        await base.StopAsync(cancellationToken);
+
         foreach (var sub in _subs)
         {
             sub.Dispose();
         }
-        return Task.CompletedTask;
+
+        Tunnel.Dispose();
     }
 
     private Task OnTunnelOpened(RpcTunnel tunnel, NewTunnelReq msg)
@@ -64,7 +69,10 @@ public sealed class GameServerService(
         }
         catch (Exception ex)
         {
+            // TunnelHost needs the throw: it closes the local end and reports the error back to
+            // the gate. Swallowing it leaves the gate holding a tunnel nobody is listening on.
             logger.LogWarning(ex, "Failed to accept gate server connection");
+            throw;
         }
 
         return Task.CompletedTask;
