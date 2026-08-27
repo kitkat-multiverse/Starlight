@@ -213,9 +213,11 @@ public static class PassportEndpoints
             acc.Country)));
 
         // Email before username, so an account holding both still resolves the way it always did.
-        async Task<Account?> Lookup() =>
-            await db.Accounts.FirstOrDefaultAsync(a => a.Email == email, ct)
-            ?? await db.Accounts.FirstOrDefaultAsync(a => a.Username == account, ct);
+        async Task<Account?> Lookup()
+        {
+            return await db.Accounts.FirstOrDefaultAsync(a => a.Email == email, ct)
+                   ?? await db.Accounts.FirstOrDefaultAsync(a => a.Username == account, ct);
+        }
     }
 
     /// <summary>

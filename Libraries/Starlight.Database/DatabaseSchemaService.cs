@@ -53,7 +53,7 @@ internal sealed class DatabaseSchemaService<TContext>(
     // pointing at something like ./data/accounts.db fails on a fresh checkout.
     private static void EnsureDataSourceDirectory(TContext db)
     {
-        if (DataSourcePath(db) is not { } path)
+        if (DataSourcePath(db) is not {} path)
             return;
 
         var directory = Path.GetDirectoryName(Path.GetFullPath(path));
@@ -73,7 +73,9 @@ internal sealed class DatabaseSchemaService<TContext>(
 
         return string.IsNullOrEmpty(source)
                || source == ":memory:"
-               || source.StartsWith("file:", StringComparison.OrdinalIgnoreCase) ? null : source;
+               || source.StartsWith("file:", StringComparison.OrdinalIgnoreCase) ?
+            null :
+            source;
     }
 
 #if DEBUG
