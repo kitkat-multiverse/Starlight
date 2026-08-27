@@ -1,7 +1,7 @@
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Starlight.Database;
 using Starlight.DbGate.Models;
 using Starlight.Rpc;
 using Starlight.Rpc.Proto;
@@ -15,10 +15,6 @@ public sealed class PlayerService(IServiceScopeFactory scopes, ILogger<PlayerSer
 
     /// Collisions resolve in a round or two; past that, fail rather than spin.
     private const int MaxInsertAttempts = 5;
-
-    /// SQLITE_CONSTRAINT_PRIMARYKEY & SQLITE_CONSTRAINT_UNIQUE.
-    private const int SqlitePrimaryKey = 1555;
-    private const int SqliteUnique = 2067;
 
     public async Task Fetch(FetchPlayerReq msg, RpcMessage rpc)
     {
@@ -63,7 +59,7 @@ public sealed class PlayerService(IServiceScopeFactory scopes, ILogger<PlayerSer
                 await db.SaveChangesAsync();
                 player = candidate;
             }
-            catch (DbUpdateException ex) when (IsUniqueViolation(ex) && attempt < MaxInsertAttempts)
+            catch (DbUpdateException ex) when (DatabaseErrors.IsUniqueViolation(ex) && attempt < MaxInsertAttempts)
             {
                 db.ChangeTracker.Clear();
 
@@ -88,11 +84,4 @@ public sealed class PlayerService(IServiceScopeFactory scopes, ILogger<PlayerSer
             Player = player.Serialize()
         });
     }
-
-    /// Anything else (NOT NULL, I/O, disk full) would retry forever, since the AccountId
-    /// lookup that ends the loop only finds rows a concurrent insert created.
-    private static bool IsUniqueViolation(DbUpdateException ex)
-        => ex.InnerException is SqliteException {
-            SqliteExtendedErrorCode: SqlitePrimaryKey or SqliteUnique
-        };
 }

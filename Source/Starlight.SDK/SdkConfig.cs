@@ -84,7 +84,7 @@ public sealed class SdkConfig
     /// <summary>
     /// Configuration for the database. Defaults to SQLite.
     /// </summary>
-    public DatabaseConfig Database { get; set; } = new();
+    public DatabaseConfig Database { get; set; } = new() { ConnectionString = "Data Source=./data/accounts.db;" };
 
     /// <summary>
     /// Configuration for the real ip-api.com GeoIP lookup. When
@@ -139,17 +139,6 @@ public sealed class SdkConfig
     /// extension lists; the response is built from this static table.
     /// </summary>
     public SdkDeviceFpConfig DeviceFp { get; set; } = new();
-}
-
-public enum ProviderType
-{
-    Sqlite
-}
-
-public sealed class DatabaseConfig
-{
-    public ProviderType Provider { get; set; } = ProviderType.Sqlite;
-    public StarlightDatabaseOptions Sqlite { get; set; } = new() { Path = "./data/accounts.db" };
 }
 
 /// <summary>

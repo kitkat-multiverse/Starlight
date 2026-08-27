@@ -10,7 +10,7 @@
         <Project Path="Libraries/Starlight.Common/Starlight.Common.csproj"/>
         <Project Path="Libraries/Starlight.Crypto.Client/Starlight.Crypto.Client.csproj"/>
         <Project Path="Libraries/Starlight.Crypto/Starlight.Crypto.csproj"/>
-        <Project Path="Libraries/Starlight.Sqlite/Starlight.Sqlite.csproj"/>
+        <Project Path="Libraries/Starlight.Database/Starlight.Database.csproj"/>
         <Project Path="Libraries/Starlight.Rpc/Starlight.Rpc.csproj"/>
         <Project Path="Libraries/Starlight.Protocol/Starlight.Protocol.csproj"/>
         <Project Path="Libraries/Starlight.Rpc.Tunnel/Starlight.Rpc.Tunnel.csproj"/>

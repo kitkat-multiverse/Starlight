@@ -1,13 +1,17 @@
-using Starlight.Common;
+using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
 using Starlight.SDK.Common;
 
 namespace Starlight.SDK.Database.Models;
 
 /// <summary>
-/// Domain-model view of an SDK account. The session/combo tokens are
-/// mutated by the auth service on every successful login and are persisted
-/// via <see cref="Starlight.SDK.Database.IAccountRepository.UpdateSessionAsync"/>.
+/// An SDK account. The session/combo tokens are mutated by the auth service
+/// on every successful login and persisted through
+/// <see cref="Starlight.SDK.Database.SdkDbContext"/>.
 /// </summary>
+[Index(nameof(Username), IsUnique = true)]
+[Index(nameof(Email))]
+[Index(nameof(SessionToken))]
 public sealed class Account
 {
     /// <summary>
@@ -18,16 +22,20 @@ public sealed class Account
     /// </summary>
     public const int MaxKnownDeviceIds = 5;
 
-    public uint Id { get; set; }
-    public string Username { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
+    /// <summary>Column limit on <see cref="Username"/>; callers deriving a username truncate to it.</summary>
+    public const int MaxUsernameLength = 64;
+
+    [Key] public uint Id { get; set; }
+
+    [MaxLength(MaxUsernameLength)] public string Username { get; set; } = string.Empty;
+    [MaxLength(320)] public string Email { get; set; } = string.Empty;
 
     /// <summary>
     /// Argon2 password hash stored as a Base64 string with formatting.
     /// <br/>
     /// See <see cref="Starlight.Crypto.Argon2Crypto.Verify"/>.
     /// </summary>
-    public string PasswordHash { get; set; } = string.Empty;
+    [MaxLength(320)] public string PasswordHash { get; set; } = string.Empty;
 
     public long PasswordTime { get; set; }
 
@@ -36,14 +44,14 @@ public sealed class Account
     /// <see cref="Starlight.SDK.Services.IGeoIpLookup"/> on first login
     /// and refreshed on subsequent logins.
     /// </summary>
-    public string Country { get; set; } = string.Empty;
+    [MaxLength(8)] public string Country { get; set; } = string.Empty;
 
     /// <summary>
     /// Real-name flow marker. One of the constants on
     /// <see cref="RealNameOperations"/>. Stored as a string so unknown
     /// values pass through without extra plumbing.
     /// </summary>
-    public string RealNameOperation { get; set; } = RealNameOperations.None;
+    [MaxLength(32)] public string RealNameOperation { get; set; } = RealNameOperations.None;
 
     /// <summary>Whether the account must still complete real-person verification.</summary>
     public bool RequireRealPerson { get; set; }
@@ -66,12 +74,12 @@ public sealed class Account
     /// Token returned by the shield <c>login</c> endpoint and consumed by
     /// the combo granter endpoint. Rotated on every fresh login.
     /// </summary>
-    public string SessionToken { get; set; } = string.Empty;
+    [MaxLength(64)] public string SessionToken { get; set; } = string.Empty;
 
     /// <summary>
     /// Token consumed by the gate server. Rotated on every combo exchange.
     /// </summary>
-    public string ComboToken { get; set; } = string.Empty;
+    [MaxLength(64)] public string ComboToken { get; set; } = string.Empty;
 
     /// <summary>
     /// Device ids seen on this account (most-recently-used last), set by

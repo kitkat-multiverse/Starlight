@@ -1,20 +1,21 @@
-using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Starlight.SDK.Common;
 using Starlight.Crypto;
 using Starlight.Crypto.Client;
+using Starlight.Database;
+using Starlight.SDK.Common;
 using Starlight.SDK.Database;
+using Starlight.SDK.Database.Models;
 using Starlight.SDK.Http;
 
 namespace Starlight.SDK.Services;
 
 /// <summary>
 /// Default <see cref="IAuthService"/>. Holds the RSA password-decryption key
-/// in memory and delegates all storage operations to
-/// <see cref="IAccountRepository"/>.
+/// in memory and reads/writes accounts through <see cref="SdkDbContext"/>.
 /// </summary>
 public sealed class AuthService(
-    IAccountRepository accounts,
+    SdkDbContext db,
     ClientCrypto clientCrypto,
     SdkConfig sdkConfig,
     ILogger<AuthService> logger
@@ -57,7 +58,7 @@ public sealed class AuthService(
         if (sdkConfig.MinPasswordLength > 0 && password.Length < sdkConfig.MinPasswordLength)
             return AuthResult.Fail(Retcode.LoginCancel);
 
-        var record = await accounts.GetAccountByUsernameAsync(account, ct);
+        var record = await db.Accounts.FirstOrDefaultAsync(a => a.Username == account, ct);
 
         var wasAutoCreated = false;
 
@@ -67,15 +68,24 @@ public sealed class AuthService(
                 return AuthResult.Fail(Retcode.LoginInvalidAccount);
 
             // TODO: replace with a real registration endpoint, keep auto-create as an opt-in for now
+            record = new Account {
+                Username = account,
+                PasswordHash = Argon2Crypto.Hash(password)
+            };
+            db.Accounts.Add(record);
+
             try
             {
-                record = await accounts.CreateAccountAsync(account, Argon2Crypto.Hash(password), ct);
+                await db.SaveChangesAsync(ct);
                 wasAutoCreated = true;
             }
-            catch (SqliteException ex) when (!ct.IsCancellationRequested && SqliteErrorCodes.IsUniqueConstraintViolation(ex))
+            catch (DbUpdateException ex) when (!ct.IsCancellationRequested && DatabaseErrors.IsUniqueViolation(ex))
             {
-                // lost the race, someone else created the account between our read and insert, just pick it up
-                record = await accounts.GetAccountByUsernameAsync(account, ct);
+                // lost the race, someone else created the account between our read and insert, just pick it up.
+                // Only the dead insert gets detached; clearing the tracker would also drop whatever the
+                // endpoint sharing this scoped context is still holding on to.
+                db.Entry(record).State = EntityState.Detached;
+                record = await db.Accounts.FirstOrDefaultAsync(a => a.Username == account, ct);
 
                 if (record is null)
                     throw;
@@ -100,7 +110,7 @@ public sealed class AuthService(
             record.RealNameOperation = RealNameOperations.BindRealname;
         }
 
-        await accounts.UpdateSessionAsync(record, ct);
+        await db.SaveChangesAsync(ct);
         return AuthResult.Ok(record);
     }
 
@@ -113,7 +123,7 @@ public sealed class AuthService(
         if (string.IsNullOrWhiteSpace(sessionToken) || string.IsNullOrWhiteSpace(deviceId) || deviceId.Length > MaxDeviceIdLength)
             return AuthResult.Fail(Retcode.ParameterError);
 
-        var record = await accounts.GetAccountBySessionTokenAsync(sessionToken, ct);
+        var record = await db.Accounts.FirstOrDefaultAsync(a => a.SessionToken == sessionToken, ct);
 
         if (record is null)
             return AuthResult.Fail(Retcode.LoginInvalidAccount);
@@ -121,7 +131,7 @@ public sealed class AuthService(
         record.ComboToken = SdkHttpHelpers.GenerateToken(TokenLength);
         record.RegisterDevice(deviceId);
 
-        await accounts.UpdateSessionAsync(record, ct);
+        await db.SaveChangesAsync(ct);
         return AuthResult.Ok(record);
     }
 }

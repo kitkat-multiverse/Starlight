@@ -34,7 +34,7 @@ public static class ShieldEndpoints
         [FromHeader(Name = "x-rpc-language")] string? language,
         [FromServices] IAuthService auth,
         [FromServices] IGeoIpLookup geoIp,
-        [FromServices] IAccountRepository accounts,
+        [FromServices] SdkDbContext db,
         [FromServices] SdkConfig sdkConfig,
         CancellationToken ct
     )
@@ -81,7 +81,7 @@ public static class ShieldEndpoints
         if (!string.Equals(acc.Country, country, StringComparison.Ordinal))
         {
             acc.Country = country;
-            await accounts.UpdateSessionAsync(acc, ct);
+            await db.SaveChangesAsync(ct);
         }
 
         // config default can also be blank, so fall back to the "None"

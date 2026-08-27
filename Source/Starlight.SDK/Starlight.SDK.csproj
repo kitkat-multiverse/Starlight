@@ -17,7 +17,7 @@
         <ProjectReference Include="..\..\Libraries\Starlight.Crypto.Client\Starlight.Crypto.Client.csproj"/>
         <ProjectReference Include="..\..\Libraries\Starlight.Ec2b\Starlight.Ec2b.csproj"/>
         <ProjectReference Include="..\..\Libraries\Starlight.Rpc\Starlight.Rpc.csproj"/>
-        <ProjectReference Include="..\..\Libraries\Starlight.Sqlite\Starlight.Sqlite.csproj"/>
+        <ProjectReference Include="..\..\Libraries\Starlight.Database\Starlight.Database.csproj"/>
     </ItemGroup>
 
     <ItemGroup>

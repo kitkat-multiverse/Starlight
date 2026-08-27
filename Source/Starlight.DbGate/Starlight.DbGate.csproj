@@ -8,6 +8,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\..\Libraries\Starlight.Common\Starlight.Common.csproj"/>
+        <ProjectReference Include="..\..\Libraries\Starlight.Database\Starlight.Database.csproj"/>
         <ProjectReference Include="..\..\Libraries\Starlight.Rpc\Starlight.Rpc.csproj"/>
     </ItemGroup>
 
@@ -16,8 +17,6 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.9"/>
-        <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3"/>
     </ItemGroup>
 
 </Project>

@@ -7,10 +7,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Serilog;
-using Starlight.Database.DependencyInjection;
 using Starlight.Crypto.Client;
+using Starlight.Database;
 using Starlight.SDK.Database;
-using Starlight.SDK.Database.Impl;
 using Starlight.SDK.Http.Endpoints;
 using Starlight.SDK.Services;
 
@@ -24,17 +23,7 @@ public static partial class ServiceExtensions
 
         builder.TrySetSdkKeyPath("SDK server", config.PasswordRsaKeyPath);
 
-        switch (config.Database.Provider)
-        {
-            case ProviderType.Sqlite: {
-                builder.Services
-                    .AddStarlightDatabase(config.Database.Sqlite, typeof(ServiceExtensions).Assembly)
-                    .AddSingleton<IAccountRepository, SqliteAccountRepository>();
-                break;
-            }
-            default:
-                throw new NotSupportedException($"Unsupported or missing database provider '{config.Database.Provider.ToString()}'.");
-        }
+        builder.Services.AddStarlightDbContext<SdkDbContext>(config.Database);
 
         if (!config.SkipSignatureCheck && string.IsNullOrEmpty(config.HmacKey))
         {
@@ -56,7 +45,7 @@ public static partial class ServiceExtensions
 
         builder.Services
             .AddSingleton(config)
-            .AddSingleton<IAuthService, AuthService>();
+            .AddScoped<IAuthService, AuthService>();
 
         builder.WebHost.UseUrls($"http://{config.BindAddress}:{config.BindPort}");
 

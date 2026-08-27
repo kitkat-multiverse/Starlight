@@ -2,12 +2,13 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Starlight.SDK.Common;
 using Starlight.Crypto;
 using Starlight.Crypto.Client;
+using Starlight.Database;
 using Starlight.SDK.Database;
 using Starlight.SDK.Database.Models;
 using Starlight.SDK.Http.Models;
@@ -92,7 +93,7 @@ public static class PassportEndpoints
         [FromHeader(Name = "x-rpc-device_id")] string? deviceId,
         [FromServices] SdkConfig sdkConfig,
         [FromServices] IGeoIpLookup geoIp,
-        [FromServices] IAccountRepository accounts,
+        [FromServices] SdkDbContext db,
         [FromServices] ILoggerFactory loggerFactory,
         CancellationToken ct
     )
@@ -139,8 +140,9 @@ public static class PassportEndpoints
         if (password.Length < login.MinPasswordLength || password.Length > login.MaxPasswordLength)
             return Results.Ok(ApiResponse.From(Retcode.MaPassportPasswordFormatError));
 
-        var acc = await accounts.GetAccountByEmailAsync(account, ct)
-                  ?? await accounts.GetAccountByUsernameAsync(account, ct);
+        var email = account.ToLowerInvariant();
+
+        var acc = await Lookup();
 
         var wasAutoCreated = false;
 
@@ -149,15 +151,23 @@ public static class PassportEndpoints
             if (!sdkConfig.AllowAccountAutoCreate)
                 return Results.Ok(ApiResponse.From(Retcode.MaPassportAccountMismatch));
 
+            // The email doubles as the username so a later shield login by name still resolves.
+            acc = new Account {
+                Username = email.Length > Account.MaxUsernameLength ? email[..Account.MaxUsernameLength] : email,
+                Email = email,
+                PasswordHash = Argon2Crypto.Hash(password)
+            };
+            db.Accounts.Add(acc);
+
             try
             {
-                acc = await accounts.CreateAccountFromEmailAsync(account, Argon2Crypto.Hash(password), ct);
+                await db.SaveChangesAsync(ct);
                 wasAutoCreated = true;
             }
-            catch (SqliteException ex) when (!ct.IsCancellationRequested && SqliteErrorCodes.IsUniqueConstraintViolation(ex))
+            catch (DbUpdateException ex) when (!ct.IsCancellationRequested && DatabaseErrors.IsUniqueViolation(ex))
             {
-                acc = await accounts.GetAccountByEmailAsync(account, ct)
-                      ?? await accounts.GetAccountByUsernameAsync(account, ct);
+                db.Entry(acc).State = EntityState.Detached;
+                acc = await Lookup();
 
                 if (acc is null)
                     throw;
@@ -192,7 +202,7 @@ public static class PassportEndpoints
         if (string.IsNullOrEmpty(acc.Country))
             acc.Country = await geoIp.GetCountryCodeAsync(SdkHttpHelpers.GetClientIp(httpContext), ct).ConfigureAwait(false);
 
-        await accounts.UpdateSessionAsync(acc, ct);
+        await db.SaveChangesAsync(ct);
 
         return Results.Ok(ApiResponse.Ok(BuildLoginData(
             acc,
@@ -201,6 +211,11 @@ public static class PassportEndpoints
             string.Empty,
             string.Empty,
             acc.Country)));
+
+        // Email before username, so an account holding both still resolves the way it always did.
+        async Task<Account?> Lookup() =>
+            await db.Accounts.FirstOrDefaultAsync(a => a.Email == email, ct)
+            ?? await db.Accounts.FirstOrDefaultAsync(a => a.Username == account, ct);
     }
 
     /// <summary>
@@ -212,8 +227,8 @@ public static class PassportEndpoints
     /// Starlight does not yet persist tickets in its database, so this
     /// endpoint returns <see cref="Retcode.MaPassportIllegalParameter"/>
     /// for any non-empty ticket. The plumbing is in place; the only thing
-    /// missing is a <c>ITicketRepository</c> wired through
-    /// <see cref="IAccountRepository"/>. TODO: implement once ticket
+    /// missing is a ticket store wired through
+    /// <see cref="SdkDbContext"/>. TODO: implement once ticket
     /// storage is added.
     /// </remarks>
     private static Task<IResult> HandleAppLoginByAuthTicketAsync(
@@ -230,7 +245,7 @@ public static class PassportEndpoints
         //
         // Once a ticket repository exists, the implementation should:
         //   1. Resolve the ticket to an account id.
-        //   2. Load the account via accounts.GetAccountById(id, ct).
+        //   2. Load the account via db.Accounts.FindAsync(id).
         //   3. Resolve the caller's country via geoIp.
         //   4. Return BuildLoginData(acc, AuthTicketTokenType, acc.SessionToken, ...).
         return Task.FromResult(Results.Ok(ApiResponse.From(Retcode.MaPassportIllegalParameter)));
@@ -258,8 +273,8 @@ public static class PassportEndpoints
         //
         // Once a ticket repository exists, the implementation should:
         //   1. Resolve the ticket to an account id.
-        //   2. Load the account via accounts.GetAccountById(id, ct).
-        //   3. Set acc.RequireActivation = false; await accounts.UpdateSessionAsync(acc, ct).
+        //   2. Load the account via db.Accounts.FindAsync(id).
+        //   3. Set acc.RequireActivation = false; await db.SaveChangesAsync(ct).
         //   4. Resolve the caller's country via geoIp.
         //   5. Return BuildLoginData(acc, AppLoginTokenType, acc.SessionToken, ...).
         return Task.FromResult(Results.Ok(ApiResponse.From(Retcode.MaPassportTicketNotExist)));
