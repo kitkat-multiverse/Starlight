@@ -173,7 +173,10 @@ public sealed class ComponentModuleGenerator : IIncrementalGenerator
                 priority = value;
         }
 
-        var asyncMod = ret.Awaitable ? "async " : "";
+        // player.Send is awaitable now, so a handler that returns messages needs an async lambda
+        // to keep them ordered ahead of whatever the next handler in the chain sends.
+        var isAsync = ret.Awaitable || ret.Send != SendKind.None;
+        var asyncMod = isAsync ? "async " : "";
         sb.AppendLine($"        registry.AddHandler<{moduleFq}, {messageFq}>({priority}, {asyncMod}static (module, player, message) =>");
         sb.AppendLine("        {");
         sb.AppendLine($"            var __m = ({moduleFq})module;");
@@ -188,26 +191,22 @@ public sealed class ComponentModuleGenerator : IIncrementalGenerator
         {
             case SendKind.None:
                 sb.AppendLine($"            {call};");
-
-                if (!ret.Awaitable)
-                    sb.AppendLine("            return default;");
                 break;
             case SendKind.Single:
                 sb.AppendLine($"            var __result = {call};");
-                sb.AppendLine("            if (__result is not null) player.Send(__result);");
-
-                if (!ret.Awaitable)
-                    sb.AppendLine("            return default;");
+                sb.AppendLine("            if (__result is not null) await player.Send(__result);");
                 break;
             case SendKind.Many:
                 sb.AppendLine($"            var __results = {call};");
                 sb.AppendLine("            if (__results is not null)");
                 sb.AppendLine("                foreach (var __message in __results)");
-                sb.AppendLine("                    if (__message is not null) player.Send(__message);");
-
-                if (!ret.Awaitable)
-                    sb.AppendLine("            return default;");
+                sb.AppendLine("                    if (__message is not null) await player.Send(__message);");
                 break;
+        }
+
+        if (!isAsync)
+        {
+            sb.AppendLine("            return default;");
         }
 
         sb.AppendLine("        });");
