@@ -45,13 +45,25 @@ public sealed class StarlightDatabase(StarlightDatabaseOptions options) : IStarl
 
         try
         {
-            foreach (var model in models)
+            if (options.MigrateSchema)
             {
-                await ExecuteNonQueryLockedAsync(SqliteSchemaBuilder.CreateTable(model), parameterBag: null, cancellationToken);
+                await SqliteMigrator.EnsureLedgerAsync(_connection!, cancellationToken);
 
-                foreach (var indexSql in SqliteSchemaBuilder.CreateIndexes(model))
+                foreach (var model in models)
                 {
-                    await ExecuteNonQueryLockedAsync(indexSql, parameterBag: null, cancellationToken);
+                    await SqliteMigrator.SynchronizeAsync(_connection!, model, cancellationToken);
+                }
+            }
+            else
+            {
+                foreach (var model in models)
+                {
+                    await ExecuteNonQueryLockedAsync(SqliteSchemaBuilder.CreateTable(model), parameterBag: null, cancellationToken);
+
+                    foreach (var indexSql in SqliteSchemaBuilder.CreateIndexes(model))
+                    {
+                        await ExecuteNonQueryLockedAsync(indexSql, parameterBag: null, cancellationToken);
+                    }
                 }
             }
         }

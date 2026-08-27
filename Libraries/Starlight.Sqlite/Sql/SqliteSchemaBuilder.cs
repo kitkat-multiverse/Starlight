@@ -5,12 +5,12 @@ namespace Starlight.Database.Sql;
 
 internal static class SqliteSchemaBuilder
 {
-    public static string CreateTable(DatabaseModel model)
+    public static string CreateTable(DatabaseModel model, string? tableName = null)
     {
         var builder = new StringBuilder();
 
         builder.Append("CREATE TABLE IF NOT EXISTS ")
-            .Append(SqliteNames.QuoteIdentifier(model.TableName))
+            .Append(SqliteNames.QuoteIdentifier(tableName ?? model.TableName))
             .Append(" (");
 
         for (var i = 0; i < model.Columns.Count; i++)
