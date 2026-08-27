@@ -18,14 +18,21 @@ public sealed class StarlightSession : INetworkSession
 {
     private static readonly ILogger Logger = Log.ForContext<StarlightSession>();
 
+    /// A client that outruns <see cref="ConsumeInbound"/> gets dropped rather than growing
+    /// the queue until the process runs out of memory.
+    private const int MaxQueuedPackets = 1024;
+
     private readonly KcpConnection _connection;
 
     /// Restores arrival order, which the KCP callback loses by dispatching each packet
     /// separately. Without it a packet can decrypt with the pad the login swapped in behind it.
-    private readonly Channel<byte[]> _inbound = Channel.CreateUnbounded<byte[]>(new UnboundedChannelOptions {
+    private readonly Channel<byte[]> _inbound = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(MaxQueuedPackets) {
         SingleReader = true,
-        SingleWriter = true
+        SingleWriter = true,
+        FullMode = BoundedChannelFullMode.Wait
     });
+
+    private readonly CancellationTokenSource _closing = new();
 
     /// Handlers aren't the only callers of <see cref="Send"/>; the game tunnel's relay
     /// subscriptions call it off their own tasks.
@@ -50,11 +57,13 @@ public sealed class StarlightSession : INetworkSession
 
     public IPEndPoint Remote => _connection.Remote;
     public GateServerService Server { get; }
-    public RpcTunnel? GameTunnel { get; set; }
+    public RpcTunnel? GameTunnel { get; private set; }
+    public CancellationToken Closing => _closing.Token;
 
     public byte[] XorPad
     {
-        set {
+        set
+        {
             lock (_sendLock)
             {
                 _xorPad = value;
@@ -65,20 +74,54 @@ public sealed class StarlightSession : INetworkSession
     public NetworkModule Network { get; }
     public LoginModule Login { get; }
 
-    public void Receive(byte[] data) => _inbound.Writer.TryWrite(data);
+    public void Receive(byte[] data)
+    {
+        if (_inbound.Writer.TryWrite(data))
+            return;
+
+        Logger.Warning("Dropping {Remote}: more than {Max} packets queued.", Remote, MaxQueuedPackets);
+        Disconnect((uint)DisconnectReason.PacketFreqTooHigh, flush: false);
+    }
+
+    /// Swaps in the tunnel to the game server. Returns false when the session closed while the
+    /// tunnel was being opened, in which case the caller must abandon what it was doing.
+    public bool AttachTunnel(RpcTunnel tunnel)
+    {
+        lock (_sendLock)
+        {
+            if (!_closing.IsCancellationRequested)
+            {
+                // A client can re-handshake on a live connection; the old tunnel's subscriptions
+                // would keep relaying into this session otherwise.
+                GameTunnel?.Dispose();
+                GameTunnel = tunnel;
+                return true;
+            }
+        }
+
+        tunnel.Dispose();
+        return false;
+    }
 
     private async Task ConsumeInbound()
     {
-        await foreach (var data in _inbound.Reader.ReadAllAsync())
+        try
         {
-            try
+            await foreach (var data in _inbound.Reader.ReadAllAsync(_closing.Token))
             {
-                await HandlePacket(data);
+                try
+                {
+                    await HandlePacket(data);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    Logger.Warning(ex, "Failed to handle packet for {Remote}", Remote);
+                }
             }
-            catch (Exception ex)
-            {
-                Logger.Warning(ex, "Failed to handle packet for {Remote}", Remote);
-            }
+        }
+        catch (OperationCanceledException)
+        {
+            // The session closed; whatever is still queued is no longer worth handling.
         }
     }
 
@@ -135,8 +178,16 @@ public sealed class StarlightSession : INetworkSession
 
     public void OnClose(uint reason)
     {
+        _closing.Cancel();
         _inbound.Writer.TryComplete();
-        GameTunnel?.Dispose();
+
+        // Under the same lock AttachTunnel takes, so a login still awaiting Tunnel.Open can't
+        // hand us a tunnel after this point.
+        lock (_sendLock)
+        {
+            GameTunnel?.Dispose();
+            GameTunnel = null;
+        }
     }
 
     public void Send(IMessage message, PacketHead? metadata = null)

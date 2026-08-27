@@ -17,7 +17,10 @@ public interface INetworkSession
     /// <br/>
     /// Packets which are not handled in the gate server are forwarded
     /// to the game server to be processed instead.
-    RpcTunnel? GameTunnel { get; set; }
+    RpcTunnel? GameTunnel { get; }
+
+    /// Fires when the client disconnects. Pass it to anything a handler awaits.
+    CancellationToken Closing { get; }
 
     byte[] XorPad { set; }
 
@@ -34,6 +37,9 @@ public interface INetworkSession
 
     /// Queues an inbound packet. Packets are handled one at a time, in arrival order.
     void Receive(byte[] data);
+
+    /// <inheritdoc cref="StarlightSession.AttachTunnel"/>
+    bool AttachTunnel(RpcTunnel tunnel);
 
     void OnClose(uint reason)
     {}

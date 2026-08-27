@@ -44,17 +44,15 @@ public sealed class LoginModule(INetworkSession session)
             return;
         }
 
-        // A client can re-handshake on a live connection; the old tunnel's subscriptions
-        // would keep relaying into this session otherwise.
-        session.GameTunnel?.Dispose();
-
         // TODO: Pick better server based on population and load.
         var sessionInfo = new PlayerConnectNotify {
             Uid = 10001,
             RemoteAddr = session.Remote.Address.ToString(),
             RemotePort = (ushort)session.Remote.Port
         }.ToByteArray();
-        var gameTunnel = session.GameTunnel = await session.Server.Tunnel.Open(GameSubjects.GateConnection, sessionInfo, ReplyTimeout);
+
+        var gameTunnel = await session.Server.Tunnel.Open(
+            GameSubjects.GateConnection, sessionInfo, ReplyTimeout, ct: session.Closing);
 
         // Relay packets the game server emits back down to the client.
         _ = gameTunnel.Subscribe(GameSubjects.OutboundPacket, raw => {
@@ -68,6 +66,10 @@ public sealed class LoginModule(INetworkSession session)
             session.Disconnect(notify.Reason, notify.Flush);
             return Task.CompletedTask;
         });
+
+        // Subscribing first means the tunnel is usable the moment it is visible to the session.
+        if (!session.AttachTunnel(gameTunnel))
+            return;
 
         session.Send(new GetPlayerTokenRsp {
             ServerRandKey = seed.ServerRandKey,
