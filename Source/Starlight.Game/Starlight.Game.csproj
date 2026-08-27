@@ -19,4 +19,9 @@
         <ProjectReference Include="..\..\Libraries\Starlight.Kcp\Starlight.Kcp.csproj"/>
     </ItemGroup>
 
+    <ItemGroup>
+        <!-- The generated registrations call ActivatorUtilities, so don't rely on it arriving transitively. -->
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="11.0.0-preview.5.26302.115"/>
+    </ItemGroup>
+
 </Project>

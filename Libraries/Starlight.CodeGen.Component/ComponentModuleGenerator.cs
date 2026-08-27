@@ -113,7 +113,7 @@ public sealed class ComponentModuleGenerator : IIncrementalGenerator
                     continue;
                 }
 
-                EmitHandler(spc, sb, module, method, messageType, player, iMessage,
+                EmitHandler(spc, sb, module, method, attribute, messageType, player, iMessage,
                     task1, valueTask1, task, valueTask);
             }
         }
@@ -130,6 +130,7 @@ public sealed class ComponentModuleGenerator : IIncrementalGenerator
         StringBuilder sb,
         INamedTypeSymbol module,
         IMethodSymbol method,
+        AttributeData opcode,
         INamedTypeSymbol messageType,
         INamedTypeSymbol player,
         INamedTypeSymbol iMessage,
@@ -166,7 +167,7 @@ public sealed class ComponentModuleGenerator : IIncrementalGenerator
 
         var priority = 0;
 
-        foreach (var named in attributeArgs(method))
+        foreach (var named in opcode.NamedArguments)
         {
             if (named.Key == "Priority" && named.Value.Value is int value)
                 priority = value;
@@ -210,15 +211,6 @@ public sealed class ComponentModuleGenerator : IIncrementalGenerator
         }
 
         sb.AppendLine("        });");
-    }
-
-    private static IEnumerable<KeyValuePair<string, TypedConstant>> attributeArgs(IMethodSymbol method)
-    {
-        foreach (var attribute in method.GetAttributes())
-        foreach (var named in attribute.NamedArguments)
-        {
-            yield return named;
-        }
     }
 
     private static INamedTypeSymbol? ResolveMessageType(
