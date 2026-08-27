@@ -29,8 +29,7 @@ public sealed class LoginModule(INetworkSession session)
         //       This call is also where we would kick the player if they are already
         //       logged in elsewhere.
 
-        // Derive the seed before touching the tunnel; key material we can't use leaves
-        // nothing to unwind, and the client gets a real answer instead of silence.
+        // Runs before the tunnel is opened so a bad key leaves nothing to unwind.
         if (!TrySignSeed(session.Server.ClientCrypto, msg, out var seed))
         {
             Logger.Warning("Rejecting {Remote}: bad client_rand_key or unknown key_id {KeyId}.",
@@ -45,10 +44,9 @@ public sealed class LoginModule(INetworkSession session)
             return;
         }
 
-        // Clients may re-handshake on a live connection. Drop the tunnel from the previous
-        // attempt so its subscriptions stop relaying into this session.
+        // A client can re-handshake on a live connection; the old tunnel's subscriptions
+        // would keep relaying into this session otherwise.
         session.GameTunnel?.Dispose();
-        session.GameTunnel = null;
 
         // TODO: Pick better server based on population and load.
         var sessionInfo = new PlayerConnectNotify {
@@ -91,10 +89,8 @@ public sealed class LoginModule(INetworkSession session)
         session.XorPad = MtKey.Generate((ulong)seed.ServerSeed);
     }
 
-    /// <summary>
-    /// Recovers the client's seed from <c>client_rand_key</c>, mixes in a fresh server seed, then
-    /// encrypts and signs the result. Returns <c>false</c> for any unusable key material.
-    /// </summary>
+    /// Mixes the client's seed with a fresh server one, then encrypts and signs the result.
+    /// Returns <c>false</c> for any unusable key material.
     private static bool TrySignSeed(ClientCrypto crypto, GetPlayerTokenReq msg, out SeedExchange seed)
     {
         seed = default;
@@ -104,8 +100,7 @@ public sealed class LoginModule(INetworkSession session)
             return false;
         }
 
-        // The plaintext behind client_rand_key is a big-endian 64-bit seed, encrypted
-        // against the signing ('cur') key.
+        // client_rand_key holds a big-endian 64-bit seed encrypted against the signing ('cur') key.
         var cipher = new byte[msg.ClientRandKey.Length / 4 * 3];
 
         if (!Convert.TryFromBase64String(msg.ClientRandKey, cipher, out var length)

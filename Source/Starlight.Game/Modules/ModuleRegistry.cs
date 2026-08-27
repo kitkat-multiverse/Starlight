@@ -60,19 +60,18 @@ public sealed class ModuleRegistry
             pair => pair.Key,
             pair => pair.Value
                 .OrderByDescending(h => h.Priority)
-                .Select(h => new CompiledHandler(IndexOfModule(h.ModuleType), h.Handler))
+                .Select(h => new CompiledHandler(
+                    _moduleIndex.TryGetValue(h.ModuleType, out var index) ?
+                        index :
+                        throw new InvalidOperationException(
+                            $"A handler is registered for '{h.ModuleType.Name}', but that module was never added."),
+                    h.Handler))
                 .ToArray());
 
         Immutable = true;
 
         return this;
     }
-
-    private int IndexOfModule(Type moduleType)
-        => _moduleIndex.TryGetValue(moduleType, out var index) ?
-            index :
-            throw new InvalidOperationException(
-                $"A handler is registered for '{moduleType.Name}', but that module was never added to the registry.");
 
     private void ThrowIfImmutable()
     {

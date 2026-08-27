@@ -11,8 +11,8 @@ public interface IPlayer
     TModule Module<TModule>() where TModule : class, IModule;
 
     /// <summary>
-    /// Sends a message back to the client (out through the gate tunnel). Await it to keep
-    /// ordering against whatever you send next, or <c>Defer()</c> it if you don't care.
+    /// Sends a message back to the client (out through the gate tunnel). Await it to order it
+    /// against the next send, or <c>Defer()</c> it.
     /// </summary>
     Task Send(IMessage message);
 }

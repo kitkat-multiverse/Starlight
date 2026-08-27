@@ -32,8 +32,7 @@ public interface INetworkSession
 
     #region Lifecycle
 
-    /// Queues an inbound packet. Packets are handled one at a time in arrival order, so a
-    /// handler that swaps <see cref="XorPad"/> can't be overtaken by the packet behind it.
+    /// Queues an inbound packet. Packets are handled one at a time, in arrival order.
     void Receive(byte[] data);
 
     void OnClose(uint reason)

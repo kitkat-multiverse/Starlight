@@ -173,8 +173,7 @@ public sealed class ComponentModuleGenerator : IIncrementalGenerator
                 priority = value;
         }
 
-        // player.Send is awaitable now, so a handler that returns messages needs an async lambda
-        // to keep them ordered ahead of whatever the next handler in the chain sends.
+        // Sending needs an async lambda too, or the next handler in the chain can publish first.
         var isAsync = ret.Awaitable || ret.Send != SendKind.None;
         var asyncMod = isAsync ? "async " : "";
         sb.AppendLine($"        registry.AddHandler<{moduleFq}, {messageFq}>({priority}, {asyncMod}static (module, player, message) =>");

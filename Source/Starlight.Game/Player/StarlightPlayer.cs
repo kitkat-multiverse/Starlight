@@ -41,9 +41,8 @@ public sealed class StarlightPlayer : IPlayer
         }
         catch (KickException kick)
         {
-            // A handler aborted the chain: send any farewell packets, then ask the gate to drop
-            // the client. Each publish has to be awaited in turn — overlapping them is what would
-            // let a flush-disconnect land ahead of the replies it is supposed to flush.
+            // Awaited in turn: overlapping the publishes lets a flush-disconnect land ahead of
+            // the replies it is supposed to flush.
             foreach (var reply in kick.Replies)
             {
                 await Send(reply);
@@ -53,8 +52,7 @@ public sealed class StarlightPlayer : IPlayer
         }
         catch (Exception ex)
         {
-            // Nothing below us answers the client, so an unhandled handler fault would otherwise
-            // leave them waiting on a reply that never comes. Drop them instead of hanging.
+            // Nothing below us answers the client, so a fault here would hang them forever.
             _logger.LogError(ex, "Unhandled error dispatching {Message} for player '{PlayerId}'",
                 message.GetType().Name, Uid);
 

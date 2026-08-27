@@ -20,15 +20,15 @@ public sealed class StarlightSession : INetworkSession
 
     private readonly KcpConnection _connection;
 
-    /// KCP delivers in order, but its receive callback fires each packet on its own task. The
-    /// queue puts arrival order back so the login pad swap can't race the packet behind it.
+    /// Restores arrival order, which the KCP callback loses by dispatching each packet
+    /// separately. Without it a packet can decrypt with the pad the login swapped in behind it.
     private readonly Channel<byte[]> _inbound = Channel.CreateUnbounded<byte[]>(new UnboundedChannelOptions {
         SingleReader = true,
         SingleWriter = true
     });
 
-    /// Guards everything that touches the wire. Handlers aren't the only callers of
-    /// <see cref="Send"/> — the game tunnel's relay subscriptions call it too.
+    /// Handlers aren't the only callers of <see cref="Send"/>; the game tunnel's relay
+    /// subscriptions call it off their own tasks.
     private readonly Lock _sendLock = new();
 
     private byte[] _xorPad;

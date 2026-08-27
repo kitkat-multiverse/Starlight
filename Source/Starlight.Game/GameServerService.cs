@@ -25,8 +25,8 @@ public sealed class GameServerService(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        // Listen last: it starts accepting tunnels immediately, and one that lands before the
-        // handler is attached would be accepted with nothing subscribed to its packets.
+        // Listen accepts tunnels the moment it returns, so a request landing before the handler
+        // is attached would get a player-less tunnel.
         Tunnel.TunnelOpened += OnTunnelOpened;
         _subs.Add(await Tunnel.Listen(GameSubjects.GateConnection));
     }
@@ -69,8 +69,7 @@ public sealed class GameServerService(
         }
         catch (Exception ex)
         {
-            // TunnelHost needs the throw: it closes the local end and reports the error back to
-            // the gate. Swallowing it leaves the gate holding a tunnel nobody is listening on.
+            // TunnelHost closes the local end and reports the error only if this rethrows.
             logger.LogWarning(ex, "Failed to accept gate server connection");
             throw;
         }

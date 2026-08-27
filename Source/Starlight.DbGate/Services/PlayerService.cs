@@ -13,8 +13,7 @@ public sealed class PlayerService(IServiceScopeFactory scopes, ILogger<PlayerSer
     /// The <c>minus one</c> is so we can <c>add one</c> in the next code.
     private const uint StartingId = 100_000_000 - 1;
 
-    /// Collisions resolve in a round or two under any sane load; more than this
-    /// means something is wrong and we would rather fail than spin.
+    /// Collisions resolve in a round or two; past that, fail rather than spin.
     private const int MaxInsertAttempts = 5;
 
     /// SQLITE_CONSTRAINT_PRIMARYKEY & SQLITE_CONSTRAINT_UNIQUE.
@@ -67,8 +66,8 @@ public sealed class PlayerService(IServiceScopeFactory scopes, ILogger<PlayerSer
             {
                 db.Entry(candidate).State = EntityState.Detached;
 
-                // A concurrent request may have created this account first; otherwise it
-                // was an ID collision, so fall through and recompute the next UID.
+                // Null means it was an ID collision rather than a concurrent create, so the
+                // loop recomputes the next UID.
                 player = await db.Players
                     .AsNoTracking()
                     .FirstOrDefaultAsync(p => p.AccountId == msg.AccountUid);
@@ -88,8 +87,8 @@ public sealed class PlayerService(IServiceScopeFactory scopes, ILogger<PlayerSer
         });
     }
 
-    /// SQLite reports both the UID index and the AccountId key as constraint failures;
-    /// anything else (NOT NULL, I/O, disk full) is not worth retrying.
+    /// Anything else (NOT NULL, I/O, disk full) would retry forever, since the AccountId
+    /// lookup that ends the loop only finds rows a concurrent insert created.
     private static bool IsUniqueViolation(DbUpdateException ex)
         => ex.InnerException is SqliteException {
             SqliteExtendedErrorCode: SqlitePrimaryKey or SqliteUnique

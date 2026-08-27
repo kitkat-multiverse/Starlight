@@ -6,30 +6,23 @@ public static class TaskExtensions
 {
     private static readonly ILogger Logger = Log.ForContext(typeof(TaskExtensions));
 
-    /// <summary>
-    /// Fire-and-forget: lets <paramref name="task"/> run on without awaiting it. Unlike a bare
-    /// discard, a fault is logged where it happened rather than resurfacing later as an
-    /// unobserved exception. Only use this where the caller genuinely has no ordering or
-    /// failure interest in the result.
-    /// </summary>
+    /// Fire-and-forget. Unlike a bare discard, a fault is logged where it happened instead of
+    /// resurfacing later as an unobserved exception.
     public static void Defer(this Task task)
     {
-        if (task.IsCompletedSuccessfully)
-            return;
+        if (!task.IsCompletedSuccessfully)
+            _ = Observe(task);
+    }
 
-        _ = Observe(task);
-        return;
-
-        static async Task Observe(Task pending)
+    private static async Task Observe(Task task)
+    {
+        try
         {
-            try
-            {
-                await pending;
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, "A deferred task faulted.");
-            }
+            await task;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "A deferred task faulted.");
         }
     }
 }

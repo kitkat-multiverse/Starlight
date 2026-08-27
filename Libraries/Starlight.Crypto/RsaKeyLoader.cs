@@ -35,8 +35,8 @@ public static class RsaKeyLoader
 
         if (contents.Contains(PemBeginPrefix, StringComparison.Ordinal))
         {
-            // ImportFromPem can't unwrap a passphrase, so say so plainly instead of letting
-            // it surface as an opaque CryptographicException from wherever the key is loaded.
+            // ImportFromPem can't unwrap a passphrase; without this it throws an opaque
+            // CryptographicException from wherever the key happens to be loaded.
             if (contents.Contains(EncryptedPrivatePemBegin, StringComparison.Ordinal))
             {
                 rsa.Dispose();

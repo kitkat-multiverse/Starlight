@@ -22,8 +22,7 @@ return;
 
 static void Verify(string name, byte[] google, byte[] starlight)
 {
-    // Equal sizes prove nothing on their own — different tags or values can land on the
-    // same length, so compare the payloads themselves.
+    // Sizes alone prove nothing; different tags or values can land on the same length.
     var verdict = google.AsSpan().SequenceEqual(starlight) ? "OK (identical)" : "MISMATCH";
     Console.WriteLine($"{name,-20} google={google.Length,4}B  starlight={starlight.Length,4}B  -> {verdict}");
 }
