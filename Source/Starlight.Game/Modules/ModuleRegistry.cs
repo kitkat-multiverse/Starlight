@@ -28,6 +28,8 @@ public sealed class ModuleRegistry
     /// <summary>Registers a module type and its per-player factory. Idempotent per type.</summary>
     public void AddModule<TModule>(Func<IServiceProvider, IPlayer, TModule> factory) where TModule : class, IModule
     {
+        ThrowIfImmutable();
+
         if (_moduleIndex.ContainsKey(typeof(TModule)))
             return;
 
@@ -40,6 +42,8 @@ public sealed class ModuleRegistry
         where TModule : class, IModule
         where TMessage : class, IMessage
     {
+        ThrowIfImmutable();
+
         if (!_handlers.TryGetValue(typeof(TMessage), out var list))
             _handlers[typeof(TMessage)] = list = [];
 
@@ -56,12 +60,27 @@ public sealed class ModuleRegistry
             pair => pair.Key,
             pair => pair.Value
                 .OrderByDescending(h => h.Priority)
-                .Select(h => new CompiledHandler(_moduleIndex[h.ModuleType], h.Handler))
+                .Select(h => new CompiledHandler(IndexOfModule(h.ModuleType), h.Handler))
                 .ToArray());
 
         Immutable = true;
 
         return this;
+    }
+
+    private int IndexOfModule(Type moduleType)
+        => _moduleIndex.TryGetValue(moduleType, out var index) ?
+            index :
+            throw new InvalidOperationException(
+                $"A handler is registered for '{moduleType.Name}', but that module was never added to the registry.");
+
+    private void ThrowIfImmutable()
+    {
+        if (Immutable)
+        {
+            throw new InvalidOperationException(
+                "The module registry has already been built; registrations after Build() never run.");
+        }
     }
 
     /// <summary>Number of registered module types; the size of each player's module array.</summary>
