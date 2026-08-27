@@ -4,9 +4,9 @@ using Starlight.Protobuf.Core;
 using Starlight.Protobuf.Benchmarks;
 using Starlight.Protobuf.Fixtures.V99;
 
-// `--verify` (or no BenchmarkDotNet filter) compares the encoded output so the
-// comparison can be confirmed fair before spending minutes benchmarking: both
-// engines must encode each message to the exact same bytes.
+// `--verify` compares the encoded output so the comparison can be confirmed fair
+// before spending minutes benchmarking: both engines must encode each message to
+// the exact same bytes.
 if (args.Length == 1 && args[0] == "--verify")
 {
     Verify("ScalarMatrix", Samples.GoogleScalar().ToByteArray(),

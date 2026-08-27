@@ -20,6 +20,10 @@ public static class TaskExtensions
         {
             await task;
         }
+        catch (OperationCanceledException)
+        {
+            // Shutdown, not a fault.
+        }
         catch (Exception ex)
         {
             Logger.Error(ex, "A deferred task faulted.");
