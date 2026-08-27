@@ -58,7 +58,7 @@ internal static partial class CodeEmitter
     /// Per-message alternate-name lookup, keyed by message name then base field name. The
     /// canonical (base) proto declares <c>[alts = "..."]</c> on a field to list the version
     /// field names that should correlate to it, so a version may rename a field without
-    /// breaking the base<->version match. Authored on base protos only.
+    /// breaking the <c>base&lt;-&gt;version</c> match. Authored on base protos only.
     /// </summary>
     internal sealed class AltsTable
     {

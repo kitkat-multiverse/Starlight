@@ -44,7 +44,7 @@ public static class LogEndpoints
         var logger = loggerFactory.CreateLogger(typeof(LogEndpoints).FullName!);
 
         var serialized = JsonSerializer.Serialize(body, Constants.JsonOptions);
-        logger.LogTrace("Client sent error log: {Body}", serialized as string);
+        logger.LogWarning("Client sent error log: {Body}", serialized as string);
 
         return TypedResults.Ok(new { Retcode = 0, Message = "OK" });
     }

@@ -82,7 +82,9 @@ if (crash is not null)
     return 1;
 }
 
-return 0;
+// An invalid schema only shows up as a diagnostic, so fail here too — otherwise CI
+// checking this host's exit code would wave it through.
+return diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error) ? 1 : 0;
 
 file sealed class ProtoText(string path) : AdditionalText
 {
