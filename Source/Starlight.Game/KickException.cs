@@ -16,5 +16,5 @@ public sealed class KickException(uint reason, bool flush, params IMessage[] rep
     public IReadOnlyList<IMessage> Replies { get; } = replies;
 
     public KickException(DisconnectReason reason, params IMessage[] replies) : this((uint)reason, flush: true, replies)
-    {}
+    { }
 }

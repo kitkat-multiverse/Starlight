@@ -79,10 +79,10 @@ internal static partial class CodeEmitter
         var map = new Dictionary<string, Dictionary<string, List<string>>>();
 
         foreach (var file in set.Files)
-        foreach (var msg in file.MessageTypes)
-        {
-            ReadMessageAlts(msg, map);
-        }
+            foreach (var msg in file.MessageTypes)
+            {
+                ReadMessageAlts(msg, map);
+            }
         return new AltsTable(map);
     }
 
@@ -204,10 +204,10 @@ internal static partial class CodeEmitter
         var violations = new List<MaskViolation>();
 
         foreach (var file in set.Files)
-        foreach (var msg in file.MessageTypes)
-        {
-            ReadMessageTransforms(msg, map, violations);
-        }
+            foreach (var msg in file.MessageTypes)
+            {
+                ReadMessageTransforms(msg, map, violations);
+            }
 
         return new TransformTable(map, violations);
     }

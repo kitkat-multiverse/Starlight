@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using Starlight.Kcp.Internals;
 
 namespace Starlight.Kcp;
@@ -117,14 +117,14 @@ public sealed class KcpConnection
 
             // A pending graceful disconnect fires once the send buffers have drained,
             // i.e. the client has acked everything we queued before the kick.
-            if (_lingerReason is {} reason && _kcp.SndQueue.Count == 0 && _kcp.SndBuf.Count == 0)
+            if (_lingerReason is { } reason && _kcp.SndQueue.Count == 0 && _kcp.SndBuf.Count == 0)
             {
                 _lingerReason = null;
                 drained = reason;
             }
         }
 
-        if (drained is {} flushed)
+        if (drained is { } flushed)
         {
             Disconnect(flushed);
             return;

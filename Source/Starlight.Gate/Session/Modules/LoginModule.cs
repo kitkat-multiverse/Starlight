@@ -1,4 +1,4 @@
-﻿using System.Buffers.Binary;
+using System.Buffers.Binary;
 using System.Security.Cryptography;
 using Google.Protobuf;
 using Serilog;
@@ -108,7 +108,7 @@ public sealed class LoginModule(INetworkSession session)
                 new FetchPlayerReq { AccountUid = accountUid, Create = true },
                 ct: session.Closing);
 
-            return response is { Player: {} player, Retcode: StarlightRetcode.Success } ? player.Uid : null;
+            return response is { Player: { } player, Retcode: StarlightRetcode.Success } ? player.Uid : null;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

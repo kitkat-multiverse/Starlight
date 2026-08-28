@@ -31,28 +31,31 @@ public sealed class UnknownFieldSet
 
         switch (wireType)
         {
-            case WireFormat.WireType.Varint: {
-                var value = input.ReadUInt64();
-                var buffer = new byte[CodedOutputStream.ComputeUInt64Size(value)];
-                using var output = new CodedOutputStream(buffer);
-                output.WriteUInt64(value);
-                output.Flush();
-                return new UnknownField(number, wireType, buffer);
-            }
-            case WireFormat.WireType.Fixed32: {
-                var buffer = new byte[4];
-                using var output = new CodedOutputStream(buffer);
-                output.WriteFixed32(input.ReadFixed32());
-                output.Flush();
-                return new UnknownField(number, wireType, buffer);
-            }
-            case WireFormat.WireType.Fixed64: {
-                var buffer = new byte[8];
-                using var output = new CodedOutputStream(buffer);
-                output.WriteFixed64(input.ReadFixed64());
-                output.Flush();
-                return new UnknownField(number, wireType, buffer);
-            }
+            case WireFormat.WireType.Varint:
+                {
+                    var value = input.ReadUInt64();
+                    var buffer = new byte[CodedOutputStream.ComputeUInt64Size(value)];
+                    using var output = new CodedOutputStream(buffer);
+                    output.WriteUInt64(value);
+                    output.Flush();
+                    return new UnknownField(number, wireType, buffer);
+                }
+            case WireFormat.WireType.Fixed32:
+                {
+                    var buffer = new byte[4];
+                    using var output = new CodedOutputStream(buffer);
+                    output.WriteFixed32(input.ReadFixed32());
+                    output.Flush();
+                    return new UnknownField(number, wireType, buffer);
+                }
+            case WireFormat.WireType.Fixed64:
+                {
+                    var buffer = new byte[8];
+                    using var output = new CodedOutputStream(buffer);
+                    output.WriteFixed64(input.ReadFixed64());
+                    output.Flush();
+                    return new UnknownField(number, wireType, buffer);
+                }
             case WireFormat.WireType.LengthDelimited:
                 return new UnknownField(number, wireType, input.ReadBytes().ToByteArray());
             default:

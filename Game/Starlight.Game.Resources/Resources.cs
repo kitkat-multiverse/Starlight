@@ -43,7 +43,7 @@ internal static class DataExtensions
     /// </summary>
     public static uint GetId<T>(this T resource) where T : Data
     {
-        if (resource.GetType().GetProperty("Id") is not {} id)
+        if (resource.GetType().GetProperty("Id") is not { } id)
         {
             throw new Exception($"{typeof(T).Name} is missing an ID property.");
         }

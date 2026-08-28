@@ -33,7 +33,7 @@ public sealed class AvatarModule(IPlayer player, GameData data) : IModule
             CurAvatarTeamId = TeamId,
             ChooseAvatarGuid = _team[0].Guid,
             OwnedFlycloakList = [Avatar.DefaultFlycloak],
-            AvatarList = [.._team.Select(avatar => avatar.Info())],
+            AvatarList = [.. _team.Select(avatar => avatar.Info())],
             AvatarTeamMap = {
                 [TeamId] = new AvatarTeam {
                     TeamName = $"Team {TeamId}",

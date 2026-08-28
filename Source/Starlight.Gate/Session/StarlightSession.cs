@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Threading.Channels;
 using Google.Protobuf;
 using Serilog;
@@ -137,7 +137,7 @@ public sealed class StarlightSession : INetworkSession
 
         // A packet the current pad can't make sense of is how the client tells us it finished
         // the login handshake; everything after it, replies included, rides the staged pad.
-        if (_pendingPad is {} pending && !GamePacket.HasValidHeader(data))
+        if (_pendingPad is { } pending && !GamePacket.HasValidHeader(data))
         {
             CryptoHelper.Xor(data, _xorPad); // back to the raw bytes; XOR is its own inverse
             CryptoHelper.Xor(data, pending);
@@ -197,7 +197,7 @@ public sealed class StarlightSession : INetworkSession
         // body copy (no ByteString round-trip through PlayerPacketNotify). The raw metadata
         // bytes ride along as the tunnel header so the game side can reconstruct PacketHead
         // lazily, without the gate parsing it for packets it only forwards.
-        if (GameTunnel is {} tunnel)
+        if (GameTunnel is { } tunnel)
         {
             await tunnel.Publish(GameSubjects.InboundPacket, message, packet.RawMetadata);
         }

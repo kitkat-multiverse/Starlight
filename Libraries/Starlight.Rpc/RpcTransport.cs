@@ -61,7 +61,7 @@ public abstract class RpcTransport : IHostedService
 
         async Task ActivityListener(RpcMessage message)
         {
-            if (message.TryDeserialize<T>() is {} deserialized)
+            if (message.TryDeserialize<T>() is { } deserialized)
             {
                 await handler(deserialized, message);
             }

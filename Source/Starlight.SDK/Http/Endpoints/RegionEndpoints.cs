@@ -46,7 +46,7 @@ public static class RegionEndpoints
             return Results.Text(EmptyRegion, PlainTextContentType);
         }
 
-        if (dispatchCache.GetRegion(name) is not {} region)
+        if (dispatchCache.GetRegion(name) is not { } region)
         {
             return Results.NotFound($"Unknown dispatch region '{name}'.");
         }

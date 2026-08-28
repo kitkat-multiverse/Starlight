@@ -96,7 +96,7 @@ public sealed class ReflectionSchema
 
         if (version is not null)
             resolvedVersion = version;
-        else if (set.Files.Select(f => f.Package).FirstOrDefault(p => !string.IsNullOrEmpty(p)) is {} pkg)
+        else if (set.Files.Select(f => f.Package).FirstOrDefault(p => !string.IsNullOrEmpty(p)) is { } pkg)
             resolvedVersion = Capitalize(pkg);
         else
             resolvedVersion = "Reflection";
