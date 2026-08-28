@@ -108,7 +108,7 @@ public sealed class LoginModule(INetworkSession session)
                 new FetchPlayerReq { AccountUid = accountUid, Create = true },
                 ct: session.Closing);
 
-            return response is { Player: { } player, Retcode: StarlightRetcode.Success } ? player.Uid : null;
+            return response is { Player: {} player, Retcode: StarlightRetcode.Success } ? player.Uid : null;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

@@ -45,7 +45,7 @@ public interface INetworkSession
     bool AttachTunnel(RpcTunnel tunnel);
 
     void OnClose(uint reason)
-    { }
+    {}
 
     #endregion
 

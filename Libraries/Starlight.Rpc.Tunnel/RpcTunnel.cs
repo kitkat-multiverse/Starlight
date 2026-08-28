@@ -66,7 +66,7 @@ public abstract class RpcTunnel : IDisposable
 
     private static AsyncTunnelHandler Wrap<T>(AsyncTunnelHandler<T> handler) where T : class, IMessage
         => async msg => {
-            if (msg.TryDecode<T>() is { } t) await handler(t, msg);
+            if (msg.TryDecode<T>() is {} t) await handler(t, msg);
         };
 
     // --- request/reply ---
@@ -151,7 +151,7 @@ public abstract class RpcTunnel : IDisposable
     }
 
     protected virtual void OnSelfClosed()
-    { }
+    {}
 
     /// <summary>Called by the peer's <see cref="Close"/>; cancels without re-notifying.</summary>
     protected void MarkClosedFromPeer()

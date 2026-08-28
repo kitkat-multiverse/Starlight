@@ -259,36 +259,34 @@ public static class ReflectiveEngine
                 ReadMapEntry(desc, msg, f, input);
                 return;
 
-            case FieldRule.Repeated when f.Kind == ProtoKind.Message:
-                {
-                    var nested = f.MessageRef!();
-                    var sub = nested.Factory!();
-                    Deserialize(nested, sub, input.ReadBytes().CreateCodedInput());
-                    desc.GetList(msg, f).Add(sub);
-                    return;
-                }
+            case FieldRule.Repeated when f.Kind == ProtoKind.Message: {
+                var nested = f.MessageRef!();
+                var sub = nested.Factory!();
+                Deserialize(nested, sub, input.ReadBytes().CreateCodedInput());
+                desc.GetList(msg, f).Add(sub);
+                return;
+            }
 
             case FieldRule.Repeated when f.Kind is ProtoKind.String or ProtoKind.Bytes:
                 desc.AddElement(desc.GetList(msg, f), f, ReadValue(input, f.Kind));
                 return;
 
-            case FieldRule.Repeated:
+            case FieldRule.Repeated: {
+                var list = desc.GetList(msg, f);
+
+                if (wire == WireType.LengthDelimited)
                 {
-                    var list = desc.GetList(msg, f);
+                    var ci = input.ReadBytes().CreateCodedInput();
 
-                    if (wire == WireType.LengthDelimited)
-                    {
-                        var ci = input.ReadBytes().CreateCodedInput();
-
-                        while (!ci.IsAtEnd)
-                            desc.AddElement(list, f, ReadValue(ci, f.Kind));
-                    } else
-                    {
-                        desc.AddElement(list, f, ReadValue(input, f.Kind));
-                    }
-
-                    return;
+                    while (!ci.IsAtEnd)
+                        desc.AddElement(list, f, ReadValue(ci, f.Kind));
+                } else
+                {
+                    desc.AddElement(list, f, ReadValue(input, f.Kind));
                 }
+
+                return;
+            }
 
             default:
                 if (f.Kind == ProtoKind.Message)

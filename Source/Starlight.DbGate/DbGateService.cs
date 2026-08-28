@@ -118,11 +118,10 @@ public static class ServiceExtensions
         builder.Services.AddDbContext<StarlightDbContext>(opts => {
             switch (config.Provider)
             {
-                case ProviderType.Sqlite:
-                    {
-                        opts.UseSqlite(config.ConnectionString);
-                        break;
-                    }
+                case ProviderType.Sqlite: {
+                    opts.UseSqlite(config.ConnectionString);
+                    break;
+                }
                 default:
                     throw new NotSupportedException($"Unsupported or missing database provider '{config.Provider.ToString()}'.");
             }

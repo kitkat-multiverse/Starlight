@@ -220,37 +220,35 @@ public sealed class IpApiGeoIpLookup : IGeoIpLookup
 
         switch (addr.AddressFamily)
         {
-            case AddressFamily.InterNetwork:
-                {
-                    var b = addr.GetAddressBytes();
-                    // 10.0.0.0/8
-                    if (b[0] == 10) return true;
+            case AddressFamily.InterNetwork: {
+                var b = addr.GetAddressBytes();
+                // 10.0.0.0/8
+                if (b[0] == 10) return true;
 
-                    // 172.16.0.0/12
-                    if (b[0] == 172 && (b[1] & 0xF0) == 16) return true;
+                // 172.16.0.0/12
+                if (b[0] == 172 && (b[1] & 0xF0) == 16) return true;
 
-                    // 192.168.0.0/16
-                    if (b[0] == 192 && b[1] == 168) return true;
+                // 192.168.0.0/16
+                if (b[0] == 192 && b[1] == 168) return true;
 
-                    // 169.254.0.0/16 (link-local)
-                    if (b[0] == 169 && b[1] == 254) return true;
+                // 169.254.0.0/16 (link-local)
+                if (b[0] == 169 && b[1] == 254) return true;
 
-                    // 100.64.0.0/10 (CGNAT)
-                    if (b[0] == 100 && (b[1] & 0xC0) == 64) return true;
+                // 100.64.0.0/10 (CGNAT)
+                if (b[0] == 100 && (b[1] & 0xC0) == 64) return true;
 
-                    break;
-                }
-            case AddressFamily.InterNetworkV6:
-                {
-                    if (addr.IsIPv6LinkLocal) return true;
-                    if (addr.IsIPv6SiteLocal) return true;
+                break;
+            }
+            case AddressFamily.InterNetworkV6: {
+                if (addr.IsIPv6LinkLocal) return true;
+                if (addr.IsIPv6SiteLocal) return true;
 
-                    var b = addr.GetAddressBytes();
-                    // Unique local addresses fc00::/7
-                    if ((b[0] & 0xFE) == 0xFC) return true;
+                var b = addr.GetAddressBytes();
+                // Unique local addresses fc00::/7
+                if ((b[0] & 0xFE) == 0xFC) return true;
 
-                    break;
-                }
+                break;
+            }
         }
 
         return false;

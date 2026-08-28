@@ -419,59 +419,57 @@ public sealed class Kcp
 
             switch (cmd)
             {
-                case KCP_CMD_ACK:
+                case KCP_CMD_ACK: {
+                    var rtt = TimeDiff(Current, ts);
+
+                    if (rtt >= 0)
                     {
-                        var rtt = TimeDiff(Current, ts);
-
-                        if (rtt >= 0)
-                        {
-                            UpdateAck(rtt);
-                        }
-
-                        ParseAck(sn);
-                        ShrinkBuf();
-
-                        if (!flag)
-                        {
-                            maxAck = sn;
-                            flag = true;
-                        } else if (TimeDiff(sn, maxAck) > 0)
-                        {
-                            maxAck = sn;
-                        }
-
-                        break;
+                        UpdateAck(rtt);
                     }
 
-                case KCP_CMD_PUSH:
+                    ParseAck(sn);
+                    ShrinkBuf();
+
+                    if (!flag)
                     {
-                        if (TimeDiff(sn, RcvNxt + RcvWnd) < 0)
-                        {
-                            AckPush(sn, ts);
-
-                            if (TimeDiff(sn, RcvNxt) >= 0)
-                            {
-                                var sbuf = data.Read(len);
-                                hasReadData = true;
-
-                                var segment = new KcpSegment(sbuf, KcpVersion) {
-                                    Conv = conv,
-                                    Token = token,
-                                    Cmd = cmd,
-                                    Frg = frg,
-                                    Wnd = wnd,
-                                    Ts = ts,
-                                    Sn = sn,
-                                    Una = una,
-                                    ByteCheckCode = byteCheckCode
-                                };
-
-                                ParseData(segment);
-                            }
-                        }
-
-                        break;
+                        maxAck = sn;
+                        flag = true;
+                    } else if (TimeDiff(sn, maxAck) > 0)
+                    {
+                        maxAck = sn;
                     }
+
+                    break;
+                }
+
+                case KCP_CMD_PUSH: {
+                    if (TimeDiff(sn, RcvNxt + RcvWnd) < 0)
+                    {
+                        AckPush(sn, ts);
+
+                        if (TimeDiff(sn, RcvNxt) >= 0)
+                        {
+                            var sbuf = data.Read(len);
+                            hasReadData = true;
+
+                            var segment = new KcpSegment(sbuf, KcpVersion) {
+                                Conv = conv,
+                                Token = token,
+                                Cmd = cmd,
+                                Frg = frg,
+                                Wnd = wnd,
+                                Ts = ts,
+                                Sn = sn,
+                                Una = una,
+                                ByteCheckCode = byteCheckCode
+                            };
+
+                            ParseData(segment);
+                        }
+                    }
+
+                    break;
+                }
 
                 case KCP_CMD_WASK:
                     Probe |= KCP_ASK_TELL;

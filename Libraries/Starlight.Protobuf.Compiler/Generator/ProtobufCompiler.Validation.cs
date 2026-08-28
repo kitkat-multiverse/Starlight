@@ -68,7 +68,7 @@ public sealed partial class ProtobufCompiler
 
     private static void Report(SourceProductionContext ctx, NameViolation? violation)
     {
-        if (violation is { } v)
+        if (violation is {} v)
             ctx.ReportDiagnostic(Diagnostic.Create(ReservedNameError, Location.None,
                 v.Kind, v.ProtoName, v.CsName, v.Reason));
     }
@@ -96,7 +96,7 @@ public sealed partial class ProtobufCompiler
             var vf = CodeEmitter.MatchVersionField(bf, baseMsg.Name, versionByName, alts);
             if (vf is null) continue;
 
-            if (FieldCorrelation.Compare(Shape(bf), Shape(vf)) is { } m)
+            if (FieldCorrelation.Compare(Shape(bf), Shape(vf)) is {} m)
                 ctx.ReportDiagnostic(Diagnostic.Create(FieldTypeMismatchError, Location.None,
                     m.FieldName, baseMsg.Name, m.BaseType, m.VersionType, version));
         }

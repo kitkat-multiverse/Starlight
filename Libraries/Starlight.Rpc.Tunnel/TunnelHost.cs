@@ -38,7 +38,7 @@ public sealed class TunnelHost(RpcTransport rpc, ITunnelAcceptor acceptor) : IDi
             // can publish its first message.
             try
             {
-                if (TunnelOpened is { } handler)
+                if (TunnelOpened is {} handler)
                     await handler(localEnd, req);
             }
             catch (Exception ex)

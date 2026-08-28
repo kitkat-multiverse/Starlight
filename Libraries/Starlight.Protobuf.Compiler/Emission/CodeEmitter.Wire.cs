@@ -36,9 +36,11 @@ internal static partial class CodeEmitter
             case FType.TypeInt32:
                 return new Wire { CsType = "int", WireType = 0, Write = "WriteInt32", Read = "ReadInt32", Compute = "ComputeInt32Size" };
             case FType.TypeFixed64:
-                return new Wire { CsType = "ulong", WireType = 1, Write = "WriteFixed64", Read = "ReadFixed64", Compute = "ComputeFixed64Size" };
+                return new Wire
+                    { CsType = "ulong", WireType = 1, Write = "WriteFixed64", Read = "ReadFixed64", Compute = "ComputeFixed64Size" };
             case FType.TypeFixed32:
-                return new Wire { CsType = "uint", WireType = 5, Write = "WriteFixed32", Read = "ReadFixed32", Compute = "ComputeFixed32Size" };
+                return new Wire
+                    { CsType = "uint", WireType = 5, Write = "WriteFixed32", Read = "ReadFixed32", Compute = "ComputeFixed32Size" };
             case FType.TypeBool:
                 return new Wire { CsType = "bool", WireType = 0, Write = "WriteBool", Read = "ReadBool", Compute = "ComputeBoolSize" };
             case FType.TypeString:
@@ -51,15 +53,18 @@ internal static partial class CodeEmitter
             case FType.TypeUint32:
                 return new Wire { CsType = "uint", WireType = 0, Write = "WriteUInt32", Read = "ReadUInt32", Compute = "ComputeUInt32Size" };
             case FType.TypeSfixed32:
-                return new Wire { CsType = "int", WireType = 5, Write = "WriteSFixed32", Read = "ReadSFixed32", Compute = "ComputeSFixed32Size" };
+                return new Wire
+                    { CsType = "int", WireType = 5, Write = "WriteSFixed32", Read = "ReadSFixed32", Compute = "ComputeSFixed32Size" };
             case FType.TypeSfixed64:
-                return new Wire { CsType = "long", WireType = 1, Write = "WriteSFixed64", Read = "ReadSFixed64", Compute = "ComputeSFixed64Size" };
+                return new Wire
+                    { CsType = "long", WireType = 1, Write = "WriteSFixed64", Read = "ReadSFixed64", Compute = "ComputeSFixed64Size" };
             case FType.TypeSint32:
                 return new Wire { CsType = "int", WireType = 0, Write = "WriteSInt32", Read = "ReadSInt32", Compute = "ComputeSInt32Size" };
             case FType.TypeSint64:
                 return new Wire { CsType = "long", WireType = 0, Write = "WriteSInt64", Read = "ReadSInt64", Compute = "ComputeSInt64Size" };
             case FType.TypeEnum:
-                return new Wire { CsType = enumCsType, WireType = 0, Write = "WriteEnum", Read = "ReadEnum", Compute = "ComputeEnumSize", IsEnum = true };
+                return new Wire
+                    { CsType = enumCsType, WireType = 0, Write = "WriteEnum", Read = "ReadEnum", Compute = "ComputeEnumSize", IsEnum = true };
             default: throw new InvalidOperationException($"Unsupported scalar proto type: {type}");
         }
     }

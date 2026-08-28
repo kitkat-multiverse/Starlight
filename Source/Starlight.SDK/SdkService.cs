@@ -26,13 +26,12 @@ public static partial class ServiceExtensions
 
         switch (config.Database.Provider)
         {
-            case ProviderType.Sqlite:
-                {
-                    builder.Services
-                        .AddStarlightDatabase(config.Database.Sqlite, typeof(ServiceExtensions).Assembly)
-                        .AddSingleton<IAccountRepository, SqliteAccountRepository>();
-                    break;
-                }
+            case ProviderType.Sqlite: {
+                builder.Services
+                    .AddStarlightDatabase(config.Database.Sqlite, typeof(ServiceExtensions).Assembly)
+                    .AddSingleton<IAccountRepository, SqliteAccountRepository>();
+                break;
+            }
             default:
                 throw new NotSupportedException($"Unsupported or missing database provider '{config.Database.Provider.ToString()}'.");
         }

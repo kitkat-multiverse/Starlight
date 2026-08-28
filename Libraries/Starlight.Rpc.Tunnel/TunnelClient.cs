@@ -41,7 +41,7 @@ public sealed class TunnelClient(RpcTransport rpc, ITunnelConnector connector)
 
         if (sorter is not null)
         {
-            if (collectWindow is not { } collectWd)
+            if (collectWindow is not {} collectWd)
             {
                 throw new ArgumentNullException(nameof(collectWindow), "A collect window must be provided when using a sorter.");
             }
@@ -80,7 +80,7 @@ public sealed class TunnelClient(RpcTransport rpc, ITunnelConnector connector)
         var replies = new List<NewTunnelRsp>();
 
         using var sub = await rpc.Subscribe(replySubject, msg => {
-            if (msg.TryDeserialize<NewTunnelRsp>() is not { } rsp)
+            if (msg.TryDeserialize<NewTunnelRsp>() is not {} rsp)
                 return Task.CompletedTask;
 
             if (rsp.HasError)

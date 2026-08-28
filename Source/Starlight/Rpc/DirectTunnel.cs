@@ -13,7 +13,7 @@ public sealed class DirectTunnel : RpcTunnel
     private readonly Dictionary<string, List<AsyncTunnelHandler>> _stringHandlers = new();
 
     private DirectTunnel()
-    { }
+    {}
 
     /// <summary>Creates two linked tunnel ends. Publish on one delivers to the other.</summary>
     public static (RpcTunnel client, RpcTunnel server) CreatePair()
