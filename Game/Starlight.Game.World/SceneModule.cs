@@ -120,7 +120,7 @@ public sealed class SceneModule(IPlayer player) : IModule
 
         yield return new SceneEntityAppearNotify {
             AppearType = VisionType.VISION_TYPE_BORN,
-            EntityList = [.._spawned]
+            EntityList = [.. _spawned]
         };
 
         yield return new EnterSceneDoneRsp { EnterSceneToken = msg.EnterSceneToken };

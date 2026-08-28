@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using Starlight.Game.Modules;
 using Starlight.Kcp;
 using Starlight.Protocol;

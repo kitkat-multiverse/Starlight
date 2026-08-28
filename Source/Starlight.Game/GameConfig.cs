@@ -1,4 +1,4 @@
-﻿namespace Starlight.Game;
+namespace Starlight.Game;
 
 public sealed class GameConfig
 {

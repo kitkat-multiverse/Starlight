@@ -20,6 +20,7 @@ using Starlight.Rpc;
 using Starlight.Rpc.Tunnel;
 using Starlight.Rpc.Tunnel.Connection;
 using Starlight.SDK;
+using Starlight.SDK.Http.Endpoints;
 
 namespace Starlight;
 
@@ -91,6 +92,8 @@ internal static class Program
                 .AddJsonFile("config.json", optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables("SL__");
 
+            var config = builder.Configuration.Get<Config>() ?? new Config();
+
             LogLevel.MinimumLevel = builder.Configuration
                 .GetValue("LogLevel", LogEventLevel.Information);
 
@@ -117,7 +120,8 @@ internal static class Program
                 .AddHostedService(s => s.GetRequiredService<GameData>())
                 .AddSingleton<WorldManager>()
                 // Client crypto contains the RSA keys used in dispatch, gate, & on the client.
-                .AddSingleton(_ => ClientCrypto.Create(builder.GetClientCryptoOptions()))
+                .AddSingleton(_ => ClientCrypto.Create(builder.Configuration.GetValue("GenerateRsaKeys", defaultValue: true),
+                    builder.GetClientCryptoOptions()))
                 // RPC Tunnel: Used for connecting the gate & game servers.
                 .AddSingleton<ITunnelBroker, DirectTunnelBroker>()
                 .AddSingleton<ITunnelConnector, DirectTunnelConnector>()
@@ -137,7 +141,8 @@ internal static class Program
 #endif
             app
                 .MapSdkServer()
-                .MapDispatchServer();
+                .MapDispatchServer()
+                .MapStarlightPatchEndpoints();
 
             StartTime.Stop();
             Log.Information("Finished initializing in {Elapsed}ms.", StartTime.ElapsedMilliseconds);

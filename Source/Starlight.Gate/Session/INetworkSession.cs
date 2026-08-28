@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using Starlight.Gate.Session.Modules;
 using Starlight.Protocol;
 using Starlight.Rpc.Tunnel;

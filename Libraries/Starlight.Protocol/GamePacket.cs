@@ -1,4 +1,4 @@
-﻿using Starlight.Common;
+using Starlight.Common;
 using Starlight.Protobuf.Core;
 using Starlight.Protobuf.Registry;
 using IMessage = Starlight.Protobuf.Core.IMessage;

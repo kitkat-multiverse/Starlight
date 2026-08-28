@@ -50,7 +50,7 @@ public sealed class Avatar
             WeaponGadgetId = weapon.GadgetId,
             WeaponGuid = guid + 1,
             // Depots pad their skill list with zeroes for the slots a character doesn't have.
-            Skills = [..depot.Skills.Append(depot.EnergySkill).Where(skill => skill != 0)],
+            Skills = [.. depot.Skills.Append(depot.EnergySkill).Where(skill => skill != 0)],
             FightProps = new Dictionary<uint, float> {
                 [BaseHp] = config.HpBase,
                 [BaseAttack] = config.AttackBase,
@@ -62,7 +62,7 @@ public sealed class Avatar
                 [CurAttack] = config.AttackBase,
                 [CurDefense] = config.DefenseBase
             },
-            Abilities = [..data.Avatars[avatarId].AbilityNames]
+            Abilities = [.. data.Avatars[avatarId].AbilityNames]
         };
     }
 

@@ -13,11 +13,9 @@ namespace Starlight.Crypto.Client;
 /// </summary>
 public sealed class ClientCrypto : IDisposable
 {
-    private const string ResourcePrefix = "Starlight.Crypto.Client.Resources.";
-    private const string ContentKeyPrefix = ResourcePrefix + "Keys.";
-    private const string PemSuffix = ".pem";
-    private const string SigningResource = ResourcePrefix + "signing.pem";
-    private const string SdkResource = ResourcePrefix + "sdk.pem";
+    private const string ResourcePrefix = "Starlight.Crypto.Client.Resources";
+    private const string ContentKeyPrefix = ResourcePrefix + "Keys";
+    private const string PemSuffix = "pem";
 
     private readonly DispatchRsaCrypto _dispatch;
     private readonly RsaCrypto _sdk;
@@ -44,19 +42,19 @@ public sealed class ClientCrypto : IDisposable
     /// Builds a <see cref="ClientCrypto"/> from the embedded keys, honoring any
     /// filesystem-path overrides supplied in <paramref name="options"/>.
     /// </summary>
-    public static ClientCrypto Create(ClientCryptoOptions? options = null)
+    public static ClientCrypto Create(bool generateRsaKeys, ClientCryptoOptions? options = null)
     {
         options ??= new ClientCryptoOptions();
         var assembly = typeof(ClientCrypto).Assembly;
 
         var contentKeys = LoadContentKeys(assembly);
-        var signingKey = LoadSigningKey(assembly, options.SigningKeyPath);
+        var signingKey = LoadOrCreateSigningKey(assembly, generateRsaKeys, options.SigningKeyPath);
 
         RsaCrypto sdk;
 
         try
         {
-            sdk = LoadSdkKey(assembly, options.SdkKeyPath);
+            sdk = LoadOrCreateSdkKey(assembly, generateRsaKeys, options.SdkKeyPath);
         }
         catch
         {
@@ -151,32 +149,80 @@ public sealed class ClientCrypto : IDisposable
         return keys;
     }
 
-    private static RSA LoadSigningKey(Assembly assembly, string? overridePath)
+    private static RSA LoadOrCreateSigningKey(Assembly assembly, bool generateRsaKeys, string? path)
     {
-        if (!string.IsNullOrWhiteSpace(overridePath) && File.Exists(overridePath))
+        if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
         {
-            return RsaKeyLoader.LoadPrivateKeyFile(overridePath);
+            return RsaKeyLoader.LoadPrivateKeyFile(path);
         }
 
-        var rsa = RSA.Create();
-
-        try
+        if (!generateRsaKeys)
         {
-            rsa.ImportFromPem(ReadResource(assembly, SigningResource));
-        }
-        catch
-        {
-            rsa.Dispose();
-            throw;
+            var pem = ReadResource(assembly, $"{ResourcePrefix}.signing.pem");
+            var rsa = RSA.Create();
+            rsa.ImportFromPem(pem);
+            return rsa;
         }
 
-        return rsa;
+        path ??= "keys/signing.pem";
+
+        EnsureRsaKeyExists(path, keySize: 2048, RsaKeyExportFormat.Pkcs8Pem);
+
+        return RsaKeyLoader.LoadPrivateKeyFile(path);
     }
 
-    private static RsaCrypto LoadSdkKey(Assembly assembly, string? overridePath)
-        => !string.IsNullOrWhiteSpace(overridePath) && File.Exists(overridePath) ?
-            RsaCrypto.FromPkcs8File(overridePath) :
-            RsaCrypto.FromBase64Pkcs8(ReadResource(assembly, SdkResource));
+    private static RsaCrypto LoadOrCreateSdkKey(Assembly assembly, bool generateRsaKeys, string? path)
+    {
+        if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
+        {
+            return RsaCrypto.FromBase64Pkcs8(File.ReadAllText(path));
+        }
+
+        if (!generateRsaKeys)
+        {
+            var key = ReadResource(assembly, $"{ResourcePrefix}.sdk.pem");
+            return RsaCrypto.FromBase64Pkcs8(key);
+        }
+
+        path ??= "keys/sdk.pem";
+
+        EnsureRsaKeyExists(path, keySize: 2048, RsaKeyExportFormat.Pkcs8Base64);
+
+        return RsaCrypto.FromBase64Pkcs8(File.ReadAllText(path));
+    }
+
+    private static void EnsureRsaKeyExists(
+        string path,
+        int keySize,
+        RsaKeyExportFormat exportFormat
+    )
+    {
+        if (File.Exists(path))
+        {
+            return;
+        }
+
+        var directory = Path.GetDirectoryName(path);
+
+        if (!string.IsNullOrEmpty(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        using var rsa = RSA.Create(keySize);
+
+        var key = exportFormat switch {
+            RsaKeyExportFormat.Pkcs8Pem =>
+                rsa.ExportPkcs8PrivateKeyPem(),
+
+            RsaKeyExportFormat.Pkcs8Base64 =>
+                Convert.ToBase64String(rsa.ExportPkcs8PrivateKey()),
+
+            _ => throw new ArgumentOutOfRangeException(nameof(exportFormat))
+        };
+
+        File.WriteAllText(path, key);
+    }
 
     private static string ReadResource(Assembly assembly, string name)
     {
@@ -184,5 +230,11 @@ public sealed class ClientCrypto : IDisposable
                            ?? throw new InvalidOperationException($"Embedded crypto resource '{name}' was not found.");
         using var reader = new StreamReader(stream);
         return reader.ReadToEnd();
+    }
+
+    private enum RsaKeyExportFormat
+    {
+        Pkcs8Pem,
+        Pkcs8Base64
     }
 }
