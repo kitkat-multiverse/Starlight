@@ -180,7 +180,7 @@ public sealed class ClientCrypto : IDisposable
 
         if (!generateRsaKeys)
         {
-            var key = ReadResource(assembly, $"{ResourcePrefix}sdk.pem");
+            var key = ReadResource(assembly, $"{ResourcePrefix}.sdk.pem");
             return RsaCrypto.FromBase64Pkcs8(key);
         }
 
