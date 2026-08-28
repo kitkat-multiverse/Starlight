@@ -161,7 +161,7 @@ public sealed class ClientCrypto : IDisposable
 
         path ??= "keys/signing.pem";
 
-        EnsureRsaKeyExists(path, 2048, RsaKeyExportFormat.Pkcs8Pem);
+        EnsureRsaKeyExists(path, keySize: 2048, RsaKeyExportFormat.Pkcs8Pem);
 
         return RsaKeyLoader.LoadPrivateKeyFile(path);
     }
@@ -176,7 +176,7 @@ public sealed class ClientCrypto : IDisposable
 
         path ??= "keys/sdk.pem";
 
-        EnsureRsaKeyExists(path, 2048, RsaKeyExportFormat.Pkcs8Base64);
+        EnsureRsaKeyExists(path, keySize: 2048, RsaKeyExportFormat.Pkcs8Base64);
 
         return RsaCrypto.FromBase64Pkcs8(File.ReadAllText(path));
     }
@@ -184,7 +184,8 @@ public sealed class ClientCrypto : IDisposable
     private static void EnsureRsaKeyExists(
         string path,
         int keySize,
-        RsaKeyExportFormat exportFormat)
+        RsaKeyExportFormat exportFormat
+    )
     {
         if (File.Exists(path))
         {

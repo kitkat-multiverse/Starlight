@@ -14,7 +14,8 @@ public static class StarlightPatchEndpoints
 
     private static Task<IResult> HandlePatchRequest(
         [FromServices] SdkConfig sdkConfig,
-        [FromServices] ClientCrypto clientCrypto)
+        [FromServices] ClientCrypto clientCrypto
+    )
     {
         var sdkKey = clientCrypto.SdkKey
             .ToXmlString(includePrivateParameters: false);
