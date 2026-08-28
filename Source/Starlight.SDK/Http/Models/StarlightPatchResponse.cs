@@ -11,7 +11,7 @@ public sealed class StarlightPatchResponse
     public string SdkKey { get; set; }
 
     [JsonPropertyName("checkSignKey")]
-    public string CheckSignKey { get; set; }
+    public string CheckSignKey { get; set; } = string.Empty;
 
     [JsonPropertyName("useSdkRsa")]
     public bool UseSdkRsa { get; set; }
