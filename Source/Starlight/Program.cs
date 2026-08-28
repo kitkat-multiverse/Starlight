@@ -20,6 +20,7 @@ using Starlight.Rpc;
 using Starlight.Rpc.Tunnel;
 using Starlight.Rpc.Tunnel.Connection;
 using Starlight.SDK;
+using Starlight.SDK.Http.Endpoints;
 
 namespace Starlight;
 
@@ -140,7 +141,8 @@ internal static class Program
 #endif
             app
                 .MapSdkServer()
-                .MapDispatchServer();
+                .MapDispatchServer()
+                .MapStarlightPatchEndpoints();
 
             StartTime.Stop();
             Log.Information("Finished initializing in {Elapsed}ms.", StartTime.ElapsedMilliseconds);
