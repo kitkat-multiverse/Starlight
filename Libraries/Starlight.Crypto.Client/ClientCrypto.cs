@@ -158,7 +158,7 @@ public sealed class ClientCrypto : IDisposable
 
         if (!generateRsaKeys)
         {
-            var pem = ReadResource(assembly, $"{ResourcePrefix}signing.pem");
+            var pem = ReadResource(assembly, $"{ResourcePrefix}.signing.pem");
             var rsa = RSA.Create();
             rsa.ImportFromPem(pem);
             return rsa;
