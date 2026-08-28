@@ -42,19 +42,19 @@ public sealed class ClientCrypto : IDisposable
     /// Builds a <see cref="ClientCrypto"/> from the embedded keys, honoring any
     /// filesystem-path overrides supplied in <paramref name="options"/>.
     /// </summary>
-    public static ClientCrypto Create(ClientCryptoOptions? options = null)
+    public static ClientCrypto Create(bool generateRsaKeys, ClientCryptoOptions? options = null)
     {
         options ??= new ClientCryptoOptions();
         var assembly = typeof(ClientCrypto).Assembly;
 
         var contentKeys = LoadContentKeys(assembly);
-        var signingKey = LoadOrCreateSigningKey(options.SigningKeyPath);
+        var signingKey = LoadOrCreateSigningKey(assembly, generateRsaKeys, options.SigningKeyPath);
 
         RsaCrypto sdk;
 
         try
         {
-            sdk = LoadOrCreateSdkKey(options.SdkKeyPath);
+            sdk = LoadOrCreateSdkKey(assembly, generateRsaKeys, options.SdkKeyPath);
         }
         catch
         {
@@ -149,16 +149,20 @@ public sealed class ClientCrypto : IDisposable
         return keys;
     }
 
-    private static RSA LoadOrCreateSigningKey(string? path)
+    private static RSA LoadOrCreateSigningKey(Assembly assembly, bool generateRsaKeys, string? path)
     {
-        if (string.IsNullOrWhiteSpace(path))
+        if (!generateRsaKeys)
         {
-            path = "keys/dispatchKey.pem";
+            var pem = ReadResource(assembly, ResourcePrefix + "signing.pem");
+            var rsa = RSA.Create();
+            rsa.ImportFromPem(pem);
+            return rsa;
         }
+
+        path ??= "keys/signing.pem";
 
         if (File.Exists(path))
         {
-            var pem = File.ReadAllText(path);
             return RsaKeyLoader.LoadPrivateKeyFile(path);
         }
 
@@ -170,19 +174,20 @@ public sealed class ClientCrypto : IDisposable
         }
 
         var newRsa = RSA.Create(2048);
-        var privateKeyPem = newRsa.ExportPkcs8PrivateKeyPem();
-
-        File.WriteAllText(path, privateKeyPem);
+        File.WriteAllText(path, newRsa.ExportPkcs8PrivateKeyPem());
 
         return newRsa;
     }
 
-    private static RsaCrypto LoadOrCreateSdkKey(string? path)
+    private static RsaCrypto LoadOrCreateSdkKey(Assembly assembly, bool generateRsaKeys, string? path)
     {
-        if (string.IsNullOrWhiteSpace(path))
+        if (!generateRsaKeys)
         {
-            path = "keys/sdkKey.pem";
+            var p3m = ReadResource(assembly, ResourcePrefix + "sdk.pem");
+            return RsaCrypto.FromBase64Pkcs8(p3m);
         }
+
+        path ??= "keys/sdk.pem";
 
         if (File.Exists(path))
         {
@@ -196,7 +201,7 @@ public sealed class ClientCrypto : IDisposable
             Directory.CreateDirectory(directory);
         }
 
-        using var rsa = RSA.Create(1024);
+        using var rsa = RSA.Create(2048);
         var pem = rsa.ExportPkcs8PrivateKeyPem();
 
         File.WriteAllText(path, pem);

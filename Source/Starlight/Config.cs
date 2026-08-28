@@ -19,6 +19,7 @@ namespace Starlight;
 public sealed class Config
 {
     public LogEventLevel LogLevel { get; set; } = LogEventLevel.Information;
+    public bool GenerateRsaKeys { get; set; } = true;
     public GameConfig Game { get; set; } = new();
     public GateConfig Gate { get; set; } = new();
     public DbGateConfig DbGate { get; set; } = new();
