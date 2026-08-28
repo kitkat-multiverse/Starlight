@@ -14,8 +14,8 @@ namespace Starlight.Crypto.Client;
 public sealed class ClientCrypto : IDisposable
 {
     private const string ResourcePrefix = "Starlight.Crypto.Client.Resources";
-    private const string ContentKeyPrefix = ResourcePrefix + "Keys.";
-    private const string PemSuffix = ".pem";
+    private const string ContentKeyPrefix = ResourcePrefix + "Keys";
+    private const string PemSuffix = "pem";
 
     private readonly DispatchRsaCrypto _dispatch;
     private readonly RsaCrypto _sdk;
