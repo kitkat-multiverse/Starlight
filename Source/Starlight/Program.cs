@@ -119,7 +119,8 @@ internal static class Program
                 .AddHostedService(s => s.GetRequiredService<GameData>())
                 .AddSingleton<WorldManager>()
                 // Client crypto contains the RSA keys used in dispatch, gate, & on the client.
-                .AddSingleton(_ => ClientCrypto.Create(config.GenerateRsaKeys, builder.GetClientCryptoOptions()))
+                .AddSingleton(_ => ClientCrypto.Create(builder.Configuration.GetValue("GenerateRsaKeys", defaultValue: true),
+                    builder.GetClientCryptoOptions()))
                 // RPC Tunnel: Used for connecting the gate & game servers.
                 .AddSingleton<ITunnelBroker, DirectTunnelBroker>()
                 .AddSingleton<ITunnelConnector, DirectTunnelConnector>()

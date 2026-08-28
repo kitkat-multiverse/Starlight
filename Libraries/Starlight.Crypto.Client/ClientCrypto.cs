@@ -161,37 +161,34 @@ public sealed class ClientCrypto : IDisposable
 
         path ??= "keys/signing.pem";
 
-        if (File.Exists(path))
-        {
-            return RsaKeyLoader.LoadPrivateKeyFile(path);
-        }
+        EnsureRsaKeyExists(path, 2048, RsaKeyExportFormat.Pkcs8Pem);
 
-        var directory = Path.GetDirectoryName(path);
-
-        if (!string.IsNullOrEmpty(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
-
-        var newRsa = RSA.Create(2048);
-        File.WriteAllText(path, newRsa.ExportPkcs8PrivateKeyPem());
-
-        return newRsa;
+        return RsaKeyLoader.LoadPrivateKeyFile(path);
     }
 
     private static RsaCrypto LoadOrCreateSdkKey(Assembly assembly, bool generateRsaKeys, string? path)
     {
         if (!generateRsaKeys)
         {
-            var p3m = ReadResource(assembly, ResourcePrefix + "sdk.pem");
-            return RsaCrypto.FromBase64Pkcs8(p3m);
+            var key = ReadResource(assembly, ResourcePrefix + "sdk.pem");
+            return RsaCrypto.FromBase64Pkcs8(key);
         }
 
         path ??= "keys/sdk.pem";
 
+        EnsureRsaKeyExists(path, 2048, RsaKeyExportFormat.Pkcs8Base64);
+
+        return RsaCrypto.FromBase64Pkcs8(File.ReadAllText(path));
+    }
+
+    private static void EnsureRsaKeyExists(
+        string path,
+        int keySize,
+        RsaKeyExportFormat exportFormat)
+    {
         if (File.Exists(path))
         {
-            return RsaCrypto.FromPkcs8File(path);
+            return;
         }
 
         var directory = Path.GetDirectoryName(path);
@@ -201,12 +198,19 @@ public sealed class ClientCrypto : IDisposable
             Directory.CreateDirectory(directory);
         }
 
-        using var rsa = RSA.Create(2048);
-        var pem = rsa.ExportPkcs8PrivateKeyPem();
+        using var rsa = RSA.Create(keySize);
 
-        File.WriteAllText(path, pem);
+        var key = exportFormat switch {
+            RsaKeyExportFormat.Pkcs8Pem =>
+                rsa.ExportPkcs8PrivateKeyPem(),
 
-        return RsaCrypto.FromPkcs8File(path);
+            RsaKeyExportFormat.Pkcs8Base64 =>
+                Convert.ToBase64String(rsa.ExportPkcs8PrivateKey()),
+
+            _ => throw new ArgumentOutOfRangeException(nameof(exportFormat))
+        };
+
+        File.WriteAllText(path, key);
     }
 
     private static string ReadResource(Assembly assembly, string name)
@@ -215,5 +219,11 @@ public sealed class ClientCrypto : IDisposable
                            ?? throw new InvalidOperationException($"Embedded crypto resource '{name}' was not found.");
         using var reader = new StreamReader(stream);
         return reader.ReadToEnd();
+    }
+
+    private enum RsaKeyExportFormat
+    {
+        Pkcs8Pem,
+        Pkcs8Base64
     }
 }
