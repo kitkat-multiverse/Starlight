@@ -151,6 +151,11 @@ public sealed class ClientCrypto : IDisposable
 
     private static RSA LoadOrCreateSigningKey(Assembly assembly, bool generateRsaKeys, string? path)
     {
+        if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
+        {
+            return RsaKeyLoader.LoadPrivateKeyFile(path);
+        }
+
         if (!generateRsaKeys)
         {
             var pem = ReadResource(assembly, $"{ResourcePrefix}signing.pem");
@@ -168,6 +173,11 @@ public sealed class ClientCrypto : IDisposable
 
     private static RsaCrypto LoadOrCreateSdkKey(Assembly assembly, bool generateRsaKeys, string? path)
     {
+        if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
+        {
+            return RsaCrypto.FromBase64Pkcs8(File.ReadAllText(path));
+        }
+
         if (!generateRsaKeys)
         {
             var key = ReadResource(assembly, $"{ResourcePrefix}sdk.pem");
