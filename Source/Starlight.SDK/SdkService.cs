@@ -74,6 +74,7 @@ public static partial class ServiceExtensions
         builder.MapAbTestEndpoints();
         builder.MapPassportEndpoints();
         builder.MapLogEndpoints();
+        builder.MapStarlightPatchEndpoints();
         return builder;
     }
 }
