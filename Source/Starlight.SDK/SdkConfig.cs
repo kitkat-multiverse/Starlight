@@ -41,8 +41,9 @@ public sealed class SdkConfig
     /// <summary>
     /// Filesystem path to the PKCS#8 RSA private key the shield login
     /// endpoint uses to decrypt passwords sent with <c>is_crypto=true</c>.
-    /// Leave empty to use the SDK key embedded in
-    /// <c>Starlight.Crypto.Client</c>.
+    /// Relative paths are resolved from the application content root. When empty,
+    /// <c>GenerateRsaKeys=true</c> uses <c>keys/sdk.pem</c>; otherwise the embedded
+    /// SDK key is used.
     /// </summary>
     public string? PasswordRsaKeyPath { get; set; } = "";
 

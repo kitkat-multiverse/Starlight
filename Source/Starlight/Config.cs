@@ -19,6 +19,11 @@ namespace Starlight;
 public sealed class Config
 {
     public LogEventLevel LogLevel { get; set; } = LogEventLevel.Information;
+    /// <summary>
+    /// Generates missing configured RSA keys, or the default files under <c>keys/</c>
+    /// when no paths are configured. When disabled, empty paths use embedded keys and
+    /// configured paths must already exist.
+    /// </summary>
     public bool GenerateRsaKeys { get; set; } = true;
     public GameConfig Game { get; set; } = new();
     public GateConfig Gate { get; set; } = new();

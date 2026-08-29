@@ -29,6 +29,7 @@ public static class ClientCryptoHostExtensions
         }
 
         state = new KeyState();
+        state.Options.BasePath = builder.Environment.ContentRootPath;
         builder.Properties[StateKey] = state;
         return state;
     }
@@ -59,7 +60,7 @@ public static class ClientCryptoHostExtensions
         {
             state.Options.SigningKeyPath = path;
             state.SigningKeyOwner = serviceName;
-        } else
+        } else if (!PathsEqual(state.Options.SigningKeyPath, path, state.Options.BasePath))
         {
             WarnConflict("signing", state.SigningKeyOwner, state.Options.SigningKeyPath, serviceName, path);
         }
@@ -85,7 +86,7 @@ public static class ClientCryptoHostExtensions
         {
             state.Options.SdkKeyPath = path;
             state.SdkKeyOwner = serviceName;
-        } else
+        } else if (!PathsEqual(state.Options.SdkKeyPath, path, state.Options.BasePath))
         {
             WarnConflict("SDK", state.SdkKeyOwner, state.Options.SdkKeyPath, serviceName, path);
         }
@@ -93,10 +94,20 @@ public static class ClientCryptoHostExtensions
         return builder;
     }
 
+    private static bool PathsEqual(string? left, string? right, string? basePath)
+    {
+        if (string.IsNullOrWhiteSpace(left) || string.IsNullOrWhiteSpace(right))
+            return false;
+
+        basePath ??= Directory.GetCurrentDirectory();
+        var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        return string.Equals(Path.GetFullPath(left, basePath), Path.GetFullPath(right, basePath), comparison);
+    }
+
     private static void WarnConflict(string keyName, string? owner, string? ownerPath, string serviceName, string ignoredPath)
-        => Log.Debug(
+        => Log.Warning(
             "ClientCrypto {KeyName} key path already set to '{OwnerPath}' by {Owner}; ignoring '{IgnoredPath}' from {Service}. "
-            + "Per-service configs duplicate key paths and the first to register wins (SDK server takes precedence over the gate server). "
+            + "Per-service configs duplicate key paths and the first non-empty path to register wins. "
             + "If this is unexpected, align the key paths across service configs.",
             keyName, ownerPath, owner, ignoredPath, serviceName);
 }

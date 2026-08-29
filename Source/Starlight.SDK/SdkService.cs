@@ -21,9 +21,18 @@ public static partial class ServiceExtensions
     {
         var config = builder.Configuration.GetSection("Sdk").Get<SdkConfig>() ?? new SdkConfig();
 
+        if (config.SkipRsaDecryption != config.MaPassport.Login.SkipRsaDecryption)
+        {
+            throw new InvalidOperationException(
+                "Sdk:SkipRsaDecryption and Sdk:MaPassport:Login:SkipRsaDecryption must match because "
+                + "the patch configuration exposes one shared useSdkRsa setting to the client.");
+        }
+
         builder.TrySetSdkKeyPath("SDK server", config.PasswordRsaKeyPath);
 
         builder.Services.AddStarlightDbContext<SdkDbContext>(config.Database);
+
+        builder.Services.AddHostedService<AccountRpcService>();
 
         if (!config.SkipSignatureCheck && string.IsNullOrEmpty(config.HmacKey))
         {

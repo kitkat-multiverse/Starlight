@@ -14,7 +14,7 @@ namespace Starlight.Crypto.Client;
 public sealed class ClientCrypto : IDisposable
 {
     private const string ResourcePrefix = "Starlight.Crypto.Client.Resources";
-    private const string ContentKeyPrefix = ResourcePrefix + "Keys";
+    private const string ContentKeyPrefix = ResourcePrefix + ".Keys";
     private const string PemSuffix = "pem";
 
     private readonly DispatchRsaCrypto _dispatch;
@@ -46,15 +46,19 @@ public sealed class ClientCrypto : IDisposable
     {
         options ??= new ClientCryptoOptions();
         var assembly = typeof(ClientCrypto).Assembly;
+        var basePath = options.BasePath ?? Directory.GetCurrentDirectory();
+
+        var signingKeyPath = ResolvePath(options.SigningKeyPath, basePath);
+        var sdkKeyPath = ResolvePath(options.SdkKeyPath, basePath);
 
         var contentKeys = LoadContentKeys(assembly);
-        var signingKey = LoadOrCreateSigningKey(assembly, generateRsaKeys, options.SigningKeyPath);
+        var signingKey = LoadOrCreateSigningKey(assembly, generateRsaKeys, signingKeyPath, basePath);
 
         RsaCrypto sdk;
 
         try
         {
-            sdk = LoadOrCreateSdkKey(assembly, generateRsaKeys, options.SdkKeyPath);
+            sdk = LoadOrCreateSdkKey(assembly, generateRsaKeys, sdkKeyPath, basePath);
         }
         catch
         {
@@ -138,7 +142,7 @@ public sealed class ClientCrypto : IDisposable
                 continue;
             }
 
-            var idText = name[ContentKeyPrefix.Length..^PemSuffix.Length];
+            var idText = name[ContentKeyPrefix.Length..^PemSuffix.Length].Trim('.');
 
             if (int.TryParse(idText, out var keyId))
             {
@@ -149,10 +153,21 @@ public sealed class ClientCrypto : IDisposable
         return keys;
     }
 
-    private static RSA LoadOrCreateSigningKey(Assembly assembly, bool generateRsaKeys, string? path)
+    private static RSA LoadOrCreateSigningKey(Assembly assembly, bool generateRsaKeys, string? path, string basePath)
     {
-        if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
+        if (path is not null)
         {
+            if (File.Exists(path))
+            {
+                return RsaKeyLoader.LoadPrivateKeyFile(path);
+            }
+
+            if (!generateRsaKeys)
+            {
+                throw new FileNotFoundException("The configured signing key does not exist.", path);
+            }
+
+            EnsureRsaKeyExists(path, keySize: 2048, RsaKeyExportFormat.Pkcs8Pem);
             return RsaKeyLoader.LoadPrivateKeyFile(path);
         }
 
@@ -164,17 +179,28 @@ public sealed class ClientCrypto : IDisposable
             return rsa;
         }
 
-        path ??= "keys/signing.pem";
+        path = Path.Combine(basePath, "keys", "signing.pem");
 
         EnsureRsaKeyExists(path, keySize: 2048, RsaKeyExportFormat.Pkcs8Pem);
 
         return RsaKeyLoader.LoadPrivateKeyFile(path);
     }
 
-    private static RsaCrypto LoadOrCreateSdkKey(Assembly assembly, bool generateRsaKeys, string? path)
+    private static RsaCrypto LoadOrCreateSdkKey(Assembly assembly, bool generateRsaKeys, string? path, string basePath)
     {
-        if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
+        if (path is not null)
         {
+            if (File.Exists(path))
+            {
+                return RsaCrypto.FromBase64Pkcs8(File.ReadAllText(path));
+            }
+
+            if (!generateRsaKeys)
+            {
+                throw new FileNotFoundException("The configured SDK password key does not exist.", path);
+            }
+
+            EnsureRsaKeyExists(path, keySize: 2048, RsaKeyExportFormat.Pkcs8Base64);
             return RsaCrypto.FromBase64Pkcs8(File.ReadAllText(path));
         }
 
@@ -184,11 +210,21 @@ public sealed class ClientCrypto : IDisposable
             return RsaCrypto.FromBase64Pkcs8(key);
         }
 
-        path ??= "keys/sdk.pem";
+        path = Path.Combine(basePath, "keys", "sdk.pem");
 
         EnsureRsaKeyExists(path, keySize: 2048, RsaKeyExportFormat.Pkcs8Base64);
 
         return RsaCrypto.FromBase64Pkcs8(File.ReadAllText(path));
+    }
+
+    private static string? ResolvePath(string? path, string basePath)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return null;
+        }
+
+        return Path.GetFullPath(path, basePath);
     }
 
     private static void EnsureRsaKeyExists(

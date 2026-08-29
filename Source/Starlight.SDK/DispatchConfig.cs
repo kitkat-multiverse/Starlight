@@ -52,8 +52,9 @@ public sealed class DispatchConfig
     /// Filesystem path to the PKCS#8 RSA private key used for signing
     /// the region payload.
     /// <br/>
-    /// Leave empty to use the signing ('cur') key embedded in
-    /// <c>Starlight.Crypto.Client</c>.
+    /// Relative paths are resolved from the application content root. When empty,
+    /// <c>GenerateRsaKeys=true</c> uses <c>keys/signing.pem</c>; otherwise the
+    /// embedded signing ('cur') key is used.
     /// </summary>
     public string? RsaSigningKeyPath { get; set; } = "";
 

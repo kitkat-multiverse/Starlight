@@ -52,7 +52,7 @@ public static partial class ServiceExtensions
     {
         var config = builder.Configuration.GetSection("Dispatch").Get<DispatchConfig>() ?? new DispatchConfig();
 
-        builder.TrySetSigningKeyPath("SDK server", config.RsaSigningKeyPath);
+        builder.TrySetSigningKeyPath("Dispatch server", config.RsaSigningKeyPath);
 
         builder.Services
             .AddSingleton(config)
