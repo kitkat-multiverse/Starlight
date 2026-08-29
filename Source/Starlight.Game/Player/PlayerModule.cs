@@ -14,7 +14,8 @@ public sealed class PlayerModule(
     RpcTransport rpc,
     PlayerManager players,
     ILogger<PlayerModule> logger,
-    IPlayer player) : IModule
+    IPlayer player
+) : IModule
 {
     /// <summary>
     /// Authenticates the player and loads their data, then hands off to every

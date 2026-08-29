@@ -62,6 +62,7 @@ internal sealed class PlayerStateSchemaUpgradeService(IServiceScopeFactory scope
         try
         {
             await using var tableCommand = db.Database.GetDbConnection().CreateCommand();
+
             tableCommand.CommandText =
                 "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'Players';";
 
@@ -72,6 +73,7 @@ internal sealed class PlayerStateSchemaUpgradeService(IServiceScopeFactory scope
             columnsCommand.CommandText = "SELECT name FROM pragma_table_info('Players');";
 
             var hasState = false;
+
             await using (var reader = await columnsCommand.ExecuteReaderAsync(cancellationToken))
             {
                 while (await reader.ReadAsync(cancellationToken))

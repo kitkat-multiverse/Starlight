@@ -26,6 +26,7 @@ public sealed class KcpConnection
     public IPEndPoint Remote { get; }
     public uint Conv => _kcp.Conv;
     public uint Token => _kcp.Token;
+
     /// <summary>
     /// True once an unacknowledged dead-link condition has survived the recovery grace period.
     /// KCP can hit its retransmit threshold during a burst just before the delayed ACK arrives.
@@ -85,12 +86,12 @@ public sealed class KcpConnection
     /// </summary>
     public async Task WaitForSendCapacityAsync(int maxPendingSegments, CancellationToken ct = default)
     {
-        ArgumentOutOfRangeException.ThrowIfLessThan(maxPendingSegments, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(maxPendingSegments, other: 1);
 
         while (PendingSendSegments >= maxPendingSegments)
         {
             ct.ThrowIfCancellationRequested();
-            await Task.Delay(10, ct);
+            await Task.Delay(millisecondsDelay: 10, ct);
         }
     }
 
@@ -170,8 +171,7 @@ public sealed class KcpConnection
                     // period expired. Other packets may still be queued, but the link is alive.
                     _kcp.State = 0;
                     _deadLinkSince = null;
-                }
-                else
+                } else
                 {
                     _deadLinkSince ??= timestamp;
 
@@ -181,8 +181,7 @@ public sealed class KcpConnection
                         disconnected = true;
                     }
                 }
-            }
-            else
+            } else
             {
                 _deadLinkSince = null;
             }

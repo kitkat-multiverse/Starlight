@@ -34,20 +34,20 @@ public sealed class GiveCommandTests
         var command = new GiveCommand(players, data);
         await command.ExecuteAsync(["1001", "100015", "3"], CancellationToken.None);
 
-        Assert.True(inventory.TryGetMaterial(100015, out var material));
-        Assert.Equal(3u, material.Count);
+        Assert.True(inventory.TryGetMaterial(itemId: 100015, out var material));
+        Assert.Equal(expected: 3u, material.Count);
 
-        Assert.Equal(2, sent.Count);
+        Assert.Equal(expected: 2, sent.Count);
 
         var change = Assert.IsType<StoreItemChangeNotify>(sent[0]);
         var item = Assert.Single(change.ItemList);
-        Assert.Equal(100015u, item.ItemId);
-        Assert.Equal(3u, item.Material?.Count);
+        Assert.Equal(expected: 100015u, item.ItemId);
+        Assert.Equal(expected: 3u, item.Material?.Count);
 
         var hint = Assert.IsType<ItemAddHintNotify>(sent[1]);
         var added = Assert.Single(hint.ItemList);
-        Assert.Equal(100015u, added.ItemId);
-        Assert.Equal(3u, added.Count);
+        Assert.Equal(expected: 100015u, added.ItemId);
+        Assert.Equal(expected: 3u, added.Count);
     }
 
     [Fact]
@@ -63,8 +63,8 @@ public sealed class GiveCommandTests
         await command.ExecuteAsync(["1001", "100015"], CancellationToken.None);
 
         var inventory = player.Module<InventoryModule>();
-        Assert.True(inventory.TryGetMaterial(100015, out var material));
-        Assert.Equal(1u, material.Count);
+        Assert.True(inventory.TryGetMaterial(itemId: 100015, out var material));
+        Assert.Equal(expected: 1u, material.Count);
     }
 
     [Fact]
@@ -74,6 +74,7 @@ public sealed class GiveCommandTests
         var (player, sent) = Player(uid: 1001);
         var inventory = player.Module<InventoryModule>();
         var data = Data();
+
         data.WeaponData[11501] = new WeaponData {
             Id = 11501,
             SkillAffix = [1234]
@@ -86,18 +87,20 @@ public sealed class GiveCommandTests
         var command = new GiveCommand(players, data);
         await command.ExecuteAsync(["1001", "11501", "lvl90r5x2"], CancellationToken.None);
 
-        Assert.Equal(2, inventory.Weapons.Count);
+        Assert.Equal(expected: 2, inventory.Weapons.Count);
+
         Assert.All(inventory.Weapons, weapon => {
-            Assert.Equal(90u, weapon.Level);
-            Assert.Equal(6u, weapon.PromoteLevel);
-            Assert.Equal(5u, weapon.Refinement);
+            Assert.Equal(expected: 90u, weapon.Level);
+            Assert.Equal(expected: 6u, weapon.PromoteLevel);
+            Assert.Equal(expected: 5u, weapon.Refinement);
         });
 
         var change = Assert.IsType<StoreItemChangeNotify>(sent[0]);
-        Assert.Equal(2, change.ItemList.Count);
+        Assert.Equal(expected: 2, change.ItemList.Count);
+
         Assert.All(change.ItemList, item => {
-            Assert.Equal(90u, item.Equip?.Weapon?.Level);
-            Assert.Equal(4u, item.Equip?.Weapon?.AffixMap[1234]);
+            Assert.Equal(expected: 90u, item.Equip?.Weapon?.Level);
+            Assert.Equal(expected: 4u, item.Equip?.Weapon?.AffixMap[1234]);
         });
     }
 
@@ -123,12 +126,13 @@ public sealed class GiveCommandTests
         await command.ExecuteAsync(["1001", "materials", "x7"], CancellationToken.None);
         await command.ExecuteAsync(["1001", "weapons", "lvl40r3x2"], CancellationToken.None);
 
-        Assert.Equal(2, inventory.Materials.Count);
-        Assert.All(inventory.Materials, material => Assert.Equal(7u, material.Count));
-        Assert.Equal(2, inventory.Weapons.Count);
+        Assert.Equal(expected: 2, inventory.Materials.Count);
+        Assert.All(inventory.Materials, material => Assert.Equal(expected: 7u, material.Count));
+        Assert.Equal(expected: 2, inventory.Weapons.Count);
+
         Assert.All(inventory.Weapons, weapon => {
-            Assert.Equal(40u, weapon.Level);
-            Assert.Equal(3u, weapon.Refinement);
+            Assert.Equal(expected: 40u, weapon.Level);
+            Assert.Equal(expected: 3u, weapon.Refinement);
         });
         Assert.DoesNotContain(sent, message => message is ItemAddHintNotify);
     }
@@ -139,6 +143,7 @@ public sealed class GiveCommandTests
         var players = new PlayerManager();
         var data = Data();
         data.WeaponData[11501] = new WeaponData { Id = 11501, SkillAffix = [1234] };
+
         data.AvatarData[10000007] = new AvatarData {
             Id = 10000007,
             InitialWeapon = 11501,
@@ -149,6 +154,7 @@ public sealed class GiveCommandTests
             CritChanceBase = 0.05f,
             CritDamageBase = 0.5f
         };
+
         data.AvatarSkillDepotData[700] = new AvatarSkillDepotData {
             Id = 700,
             Skills = [701, 702],
@@ -166,9 +172,10 @@ public sealed class GiveCommandTests
         await command.ExecuteAsync(["1001", "10000007", "lvl80c4"], CancellationToken.None);
 
         var avatar = player.Module<AvatarModule>().Avatars[10000007];
-        Assert.Equal(80u, avatar.Level);
-        Assert.Equal(4u, avatar.Constellation);
-        Assert.Equal(4, avatar.Talents.Count);
+        Assert.Equal(expected: 80u, avatar.Level);
+        Assert.Equal(expected: 4u, avatar.Constellation);
+        Assert.Equal(expected: 4, avatar.Talents.Count);
+
         Assert.Contains(player.Module<InventoryModule>().Weapons,
             weapon => weapon.Guid == avatar.WeaponGuid);
 
@@ -181,12 +188,12 @@ public sealed class GiveCommandTests
         var equip = Assert.IsType<AvatarEquipChangeNotify>(sent[1]);
         Assert.Equal(avatar.Guid, equip.AvatarGuid);
         Assert.Equal(avatar.WeaponGuid, equip.EquipGuid);
-        Assert.Equal(6u, equip.EquipType);
+        Assert.Equal(expected: 6u, equip.EquipType);
 
         var added = Assert.IsType<AvatarAddNotify>(sent[^1]);
-        Assert.Equal(80, added.Avatar?.PropMap[(uint)PlayerProperty.Level].Val);
-        Assert.Equal(5, added.Avatar?.PropMap[(uint)PlayerProperty.BreakLevel].Val);
-        Assert.Equal(4, added.Avatar?.TalentIdList.Count);
+        Assert.Equal(expected: 80, added.Avatar?.PropMap[(uint)PlayerProperty.Level].Val);
+        Assert.Equal(expected: 5, added.Avatar?.PropMap[(uint)PlayerProperty.BreakLevel].Val);
+        Assert.Equal(expected: 4, added.Avatar?.TalentIdList.Count);
 
         var persisted = NetPlayerState.Parser.ParseFrom(player.State.ToByteArray());
         var (reconnected, _) = Player(uid: 1001, data);
@@ -196,9 +203,10 @@ public sealed class GiveCommandTests
             .AddAvatar(10000007);
 
         Assert.False(wasAdded);
-        Assert.Equal(80u, restored.Level);
-        Assert.Equal(4u, restored.Constellation);
+        Assert.Equal(expected: 80u, restored.Level);
+        Assert.Equal(expected: 4u, restored.Constellation);
         await reconnected.Module<InventoryModule>().OnLogin();
+
         Assert.True(reconnected.Module<InventoryModule>()
             .TryGetWeapon(restored.WeaponGuid, out _));
     }

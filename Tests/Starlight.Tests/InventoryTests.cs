@@ -31,8 +31,8 @@ public sealed class InventoryTests
         var store = Assert.IsType<PlayerStoreNotify>(sent[1]);
         var item = Assert.Single(store.ItemList);
         Assert.Equal(material.Guid, item.Guid);
-        Assert.Equal(100015u, item.ItemId);
-        Assert.Equal(3u, item.Material?.Count);
+        Assert.Equal(expected: 100015u, item.ItemId);
+        Assert.Equal(expected: 3u, item.Material?.Count);
     }
 
     [Fact]
@@ -45,19 +45,19 @@ public sealed class InventoryTests
 
         await inventory.AddMaterial(itemId: 100015, count: 2);
 
-        Assert.Equal(2, sent.Count);
+        Assert.Equal(expected: 2, sent.Count);
 
         var change = Assert.IsType<StoreItemChangeNotify>(sent[0]);
         var item = Assert.Single(change.ItemList);
-        Assert.Equal(2u, item.Material?.Count);
+        Assert.Equal(expected: 2u, item.Material?.Count);
 
         var hint = Assert.IsType<ItemAddHintNotify>(sent[1]);
         Assert.Equal((uint)ActionReasonType.ACTION_REASON_TYPE_GM, hint.Reason);
         var added = Assert.Single(hint.ItemList);
         Assert.True(added.IsNew);
         Assert.Equal(item.Guid, added.Guid);
-        Assert.Equal(100015u, added.ItemId);
-        Assert.Equal(2u, added.Count);
+        Assert.Equal(expected: 100015u, added.ItemId);
+        Assert.Equal(expected: 2u, added.Count);
     }
 
     [Fact]
@@ -85,13 +85,13 @@ public sealed class InventoryTests
         sent.Clear();
 
         var added = await inventory.AddMaterials(
-            Enumerable.Range(100000, 2001).Select(id => (uint)id),
+            Enumerable.Range(start: 100000, count: 2001).Select(id => (uint)id),
             count: 1,
             showHint: false);
 
-        Assert.Equal(2000, added.Count);
-        Assert.Equal(2000, inventory.Materials.Count);
-        Assert.Equal(20, sent.Count);
+        Assert.Equal(expected: 2000, added.Count);
+        Assert.Equal(expected: 2000, inventory.Materials.Count);
+        Assert.Equal(expected: 20, sent.Count);
         Assert.All(sent, message => Assert.IsType<StoreItemChangeNotify>(message));
     }
 
@@ -102,6 +102,7 @@ public sealed class InventoryTests
         var firstInventory = new InventoryModule(firstPlayer);
 
         await firstInventory.AddMaterial(itemId: 100015, count: 7);
+
         var weapon = await firstInventory.AddWeapons(
             [new WeaponData { Id = 11501, GadgetId = 500001, SkillAffix = [1234] }],
             level: 90,
@@ -114,16 +115,16 @@ public sealed class InventoryTests
 
         await secondInventory.OnLogin();
 
-        Assert.True(secondInventory.TryGetMaterial(100015, out var material));
-        Assert.Equal(7u, material.Count);
+        Assert.True(secondInventory.TryGetMaterial(itemId: 100015, out var material));
+        Assert.Equal(expected: 7u, material.Count);
 
         Assert.True(secondInventory.TryGetWeapon(weapon[0].Guid, out var restoredWeapon));
-        Assert.Equal(90u, restoredWeapon.Level);
-        Assert.Equal(5u, restoredWeapon.Refinement);
-        Assert.Equal(500001u, restoredWeapon.GadgetId);
+        Assert.Equal(expected: 90u, restoredWeapon.Level);
+        Assert.Equal(expected: 5u, restoredWeapon.Refinement);
+        Assert.Equal(expected: 500001u, restoredWeapon.GadgetId);
 
         var store = Assert.IsType<PlayerStoreNotify>(sent[1]);
-        Assert.Equal(2, store.ItemList.Count);
+        Assert.Equal(expected: 2, store.ItemList.Count);
     }
 
     private static (StarlightPlayer Player, List<IMessage> Sent) Player(uint uid)

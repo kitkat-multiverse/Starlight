@@ -15,9 +15,9 @@ public sealed class PlayerManagerTests
         var player = Player(uid: 1001);
 
         Assert.True(manager.Add(player));
-        Assert.True(manager.TryGet(1001, out var found));
+        Assert.True(manager.TryGet(uid: 1001, out var found));
         Assert.Same(player, found);
-        Assert.Equal(1, manager.Count);
+        Assert.Equal(expected: 1, manager.Count);
     }
 
     [Fact]
@@ -29,7 +29,7 @@ public sealed class PlayerManagerTests
 
         Assert.True(manager.Add(original));
         Assert.False(manager.Add(duplicate));
-        Assert.True(manager.TryGet(1001, out var found));
+        Assert.True(manager.TryGet(uid: 1001, out var found));
         Assert.Same(original, found);
     }
 
@@ -45,7 +45,7 @@ public sealed class PlayerManagerTests
         Assert.True(manager.Add(newSession));
 
         Assert.False(manager.Remove(oldSession));
-        Assert.True(manager.TryGet(1001, out var found));
+        Assert.True(manager.TryGet(uid: 1001, out var found));
         Assert.Same(newSession, found);
     }
 

@@ -47,14 +47,15 @@ public sealed class Avatar
         uint level = 1,
         uint constellation = 0,
         uint bornTime = 0,
-        ulong weaponGuid = 0)
+        ulong weaponGuid = 0
+    )
     {
         var config = data.AvatarData[avatarId];
         var depot = data.AvatarSkillDepotData[config.SkillDepotId];
         var weapon = data.WeaponData[config.InitialWeapon];
 
-        level = Math.Clamp(level, 1u, 90u);
-        constellation = Math.Clamp(constellation, 0u, 6u);
+        level = Math.Clamp(level, min: 1u, max: 90u);
+        constellation = Math.Clamp(constellation, min: 0u, max: 6u);
 
         return new Avatar {
             AvatarId = avatarId,

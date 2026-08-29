@@ -75,6 +75,7 @@ public sealed class AvatarModule(IPlayer player, GameData data) : IModule
         };
 
         var avatar = _avatars.Values.FirstOrDefault(candidate => candidate.Guid == msg.AvatarGuid);
+
         if (avatar is null)
         {
             response.Retcode = (int)Retcode.RETCODE_ITEM_INVALID_TARGET;
@@ -125,7 +126,8 @@ public sealed class AvatarModule(IPlayer player, GameData data) : IModule
     public async Task<(Avatar Avatar, bool Added)> AddAvatar(
         uint avatarId,
         uint level = 1,
-        uint constellation = 0)
+        uint constellation = 0
+    )
     {
         LoadState();
 
@@ -137,6 +139,7 @@ public sealed class AvatarModule(IPlayer player, GameData data) : IModule
         AdvanceGuid(avatar.Guid); // Reserve the following GUID for its starter weapon.
 
         _avatars.Add(avatarId, avatar);
+
         var state = new NetAvatar {
             AvatarId = avatar.AvatarId,
             Guid = avatar.Guid,
@@ -212,6 +215,7 @@ public sealed class AvatarModule(IPlayer player, GameData data) : IModule
 
             var guid = (ulong)player.Uid << 32 | (uint)(slot * 2 + 1);
             var avatar = Avatar.Create(data, avatarId, guid);
+
             var state = new NetAvatar {
                 AvatarId = avatar.AvatarId,
                 Guid = avatar.Guid,

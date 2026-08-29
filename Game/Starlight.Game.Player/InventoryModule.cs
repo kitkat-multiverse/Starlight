@@ -57,7 +57,8 @@ public sealed class InventoryModule(IPlayer player) : IModule
     public async Task<IReadOnlyList<MaterialItem>> AddMaterials(
         IEnumerable<uint> itemIds,
         uint count,
-        bool showHint = true)
+        bool showHint = true
+    )
     {
         LoadState();
         ArgumentOutOfRangeException.ThrowIfZero(count);
@@ -82,12 +83,13 @@ public sealed class InventoryModule(IPlayer player) : IModule
         uint amount = 1,
         uint level = 1,
         uint refinement = 1,
-        bool showHint = true)
+        bool showHint = true
+    )
     {
         LoadState();
         ArgumentOutOfRangeException.ThrowIfZero(amount);
-        level = Math.Clamp(level, 1u, 90u);
-        refinement = Math.Clamp(refinement, 1u, 5u);
+        level = Math.Clamp(level, min: 1u, max: 90u);
+        refinement = Math.Clamp(refinement, min: 1u, max: 5u);
 
         var changes = new List<AddedItem>();
 
@@ -115,9 +117,11 @@ public sealed class InventoryModule(IPlayer player) : IModule
         ulong guid,
         uint level = 1,
         uint refinement = 1,
-        bool showHint = true)
+        bool showHint = true
+    )
     {
         LoadState();
+
         if (_weapons.TryGetValue(guid, out var existing))
             return existing;
 
@@ -127,8 +131,8 @@ public sealed class InventoryModule(IPlayer player) : IModule
         var change = AddWeaponCore(
             data,
             guid,
-            Math.Clamp(level, 1u, 90u),
-            Math.Clamp(refinement, 1u, 5u));
+            Math.Clamp(level, min: 1u, max: 90u),
+            Math.Clamp(refinement, min: 1u, max: 5u));
 
         await NotifyAdded([change], showHint);
         return (WeaponItem)change.Item;
@@ -137,6 +141,7 @@ public sealed class InventoryModule(IPlayer player) : IModule
     public async Task<bool> RemoveMaterial(uint itemId, uint count)
     {
         LoadState();
+
         if (!_materials.TryGetValue(itemId, out var item) || count == 0 || item.Count < count)
             return false;
 
@@ -156,8 +161,7 @@ public sealed class InventoryModule(IPlayer player) : IModule
                     GuidList = { item.Guid }
                 });
             }
-        }
-        else
+        } else
         {
             _materialState[itemId].Count = item.Count;
 
@@ -233,6 +237,7 @@ public sealed class InventoryModule(IPlayer player) : IModule
         };
 
         _weapons.Add(guid, item);
+
         var state = new NetWeapon {
             ItemId = item.ItemId,
             Guid = item.Guid,
@@ -279,8 +284,8 @@ public sealed class InventoryModule(IPlayer player) : IModule
                 ItemId = state.ItemId,
                 Guid = state.Guid,
                 GadgetId = state.GadgetId,
-                Level = Math.Clamp(state.Level, 1u, 90u),
-                Refinement = Math.Clamp(state.Refinement, 1u, 5u),
+                Level = Math.Clamp(state.Level, min: 1u, max: 90u),
+                Refinement = Math.Clamp(state.Refinement, min: 1u, max: 5u),
                 PromoteLevel = state.PromoteLevel,
                 AffixId = state.AffixId
             });

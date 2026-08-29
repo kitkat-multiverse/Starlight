@@ -21,7 +21,7 @@ public sealed class AvatarEquipTests
     public async Task WearEquip_UpdatesAvatarNotifiesAndPersists()
     {
         var data = Data();
-        var (player, sent) = Player(1001, data);
+        var (player, sent) = Player(uid: 1001, data);
         var avatars = player.Module<AvatarModule>();
         var inventory = player.Module<InventoryModule>();
 
@@ -31,12 +31,13 @@ public sealed class AvatarEquipTests
         sent.Clear();
 
         var avatar = avatars.Avatars[10000005];
+
         var response = await avatars.OnWearEquip(new WearEquipReq {
             AvatarGuid = avatar.Guid,
             EquipGuid = weapon.Guid
         });
 
-        Assert.Equal(0, response.Retcode);
+        Assert.Equal(expected: 0, response.Retcode);
         Assert.Equal(avatar.Guid, response.AvatarGuid);
         Assert.Equal(weapon.Guid, response.EquipGuid);
         Assert.Equal(weapon.Guid, avatar.WeaponGuid);
@@ -45,13 +46,13 @@ public sealed class AvatarEquipTests
         Assert.Equal(avatar.Guid, notify.AvatarGuid);
         Assert.Equal(weapon.Guid, notify.EquipGuid);
         Assert.Equal(weapon.ItemId, notify.ItemId);
-        Assert.Equal(6u, notify.EquipType);
+        Assert.Equal(expected: 6u, notify.EquipType);
 
         var persistedAvatar = Assert.Single(player.State.Avatars);
         Assert.Equal(weapon.Guid, persistedAvatar.WeaponGuid);
 
         var persisted = NetPlayerState.Parser.ParseFrom(player.State.ToByteArray());
-        var (reconnected, _) = Player(1001, data);
+        var (reconnected, _) = Player(uid: 1001, data);
         reconnected.State = persisted;
         await reconnected.Module<AvatarModule>().OnLogin();
 
@@ -64,7 +65,7 @@ public sealed class AvatarEquipTests
     public async Task WearEquip_WeaponOwnedByAnotherAvatar_SwapsWeapons()
     {
         var data = Data();
-        var (player, sent) = Player(1001, data);
+        var (player, sent) = Player(uid: 1001, data);
         var avatars = player.Module<AvatarModule>();
         var inventory = player.Module<InventoryModule>();
 
@@ -83,7 +84,7 @@ public sealed class AvatarEquipTests
             EquipGuid = secondWeapon
         });
 
-        Assert.Equal(0, response.Retcode);
+        Assert.Equal(expected: 0, response.Retcode);
         Assert.Equal(secondWeapon, first.WeaponGuid);
         Assert.Equal(firstWeapon, second.WeaponGuid);
 
@@ -92,7 +93,7 @@ public sealed class AvatarEquipTests
             message => {
                 var unequip = Assert.IsType<AvatarEquipChangeNotify>(message);
                 Assert.Equal(second.Guid, unequip.AvatarGuid);
-                Assert.Equal(0ul, unequip.EquipGuid);
+                Assert.Equal(expected: 0ul, unequip.EquipGuid);
             },
             message => {
                 var equip = Assert.IsType<AvatarEquipChangeNotify>(message);
@@ -107,6 +108,7 @@ public sealed class AvatarEquipTests
 
         Assert.Equal(secondWeapon,
             player.State.Avatars.Single(state => state.AvatarId == first.AvatarId).WeaponGuid);
+
         Assert.Equal(firstWeapon,
             player.State.Avatars.Single(state => state.AvatarId == second.AvatarId).WeaponGuid);
     }
@@ -121,6 +123,7 @@ public sealed class AvatarEquipTests
 
         var (client, server) = DirectTunnel.CreatePair();
         var sent = new List<IMessage>();
+
         _ = client.Subscribe(GameSubjects.OutboundPacket, message => {
             sent.Add(message.Decode<IMessage>());
             return Task.CompletedTask;
@@ -132,19 +135,21 @@ public sealed class AvatarEquipTests
     private static GameData Data()
     {
         var data = new GameData(new ConfigurationBuilder().Build());
+
         data.WeaponData[11501] = new WeaponData {
             Id = 11501,
             GadgetId = 500001,
             SkillAffix = [111]
         };
+
         data.WeaponData[11502] = new WeaponData {
             Id = 11502,
             GadgetId = 500002,
             SkillAffix = [112]
         };
 
-        AddAvatar(data, 10000005, 500, 11501);
-        AddAvatar(data, 10000007, 700, 11502);
+        AddAvatar(data, avatarId: 10000005, depotId: 500, weaponId: 11501);
+        AddAvatar(data, avatarId: 10000007, depotId: 700, weaponId: 11502);
         return data;
     }
 
@@ -160,6 +165,7 @@ public sealed class AvatarEquipTests
             CritChanceBase = 0.05f,
             CritDamageBase = 0.5f
         };
+
         data.AvatarSkillDepotData[depotId] = new AvatarSkillDepotData {
             Id = depotId,
             Skills = [depotId + 1],

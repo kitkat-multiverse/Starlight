@@ -58,6 +58,7 @@ public sealed class GiveCommand(PlayerManager players, GameData data) : ICommand
                 cancellationToken.ThrowIfCancellationRequested();
                 await GiveWeapons(inventory, options);
                 cancellationToken.ThrowIfCancellationRequested();
+
                 await GiveAvatars(
                     player.Module<AvatarModule>(), options, defaultConstellation: 6);
                 return;
@@ -98,9 +99,9 @@ public sealed class GiveCommand(PlayerManager players, GameData data) : ICommand
         {
             await inventory.AddWeapons(
                 [weapon],
-                amount: options.Amount,
-                level: options.Level,
-                refinement: options.Refinement);
+                options.Amount,
+                options.Level,
+                options.Refinement);
             return;
         }
 
@@ -130,7 +131,7 @@ public sealed class GiveCommand(PlayerManager players, GameData data) : ICommand
     // inventory entries.
     private static bool IsIllegalMaterial(uint id)
         => id is 100086 or 100087 or 105001 or 105004 or 107011 or 108000
-            or 220050 or 220054
+               or 220050 or 220054
            || id is >= 100100 and <= 101000
            || id is >= 101106 and <= 101110
            || id is >= 101500 and <= 104000
@@ -145,7 +146,8 @@ public sealed class GiveCommand(PlayerManager players, GameData data) : ICommand
             .Where(weapon => weapon.Id is >= 11100 and <= 16000)
             .OrderBy(weapon => weapon.Id);
 
-        var amount = Math.Min(options.Amount, 5u);
+        var amount = Math.Min(options.Amount, val2: 5u);
+
         var items = await inventory.AddWeapons(
             resources,
             amount,
@@ -158,7 +160,8 @@ public sealed class GiveCommand(PlayerManager players, GameData data) : ICommand
     private async Task<int> GiveAvatars(
         AvatarModule avatars,
         GiveOptions options,
-        uint defaultConstellation)
+        uint defaultConstellation
+    )
     {
         var constellation = options.HasConstellation ? options.Constellation : defaultConstellation;
         var count = 0;
@@ -169,6 +172,7 @@ public sealed class GiveCommand(PlayerManager players, GameData data) : ICommand
                      .Order())
         {
             var (_, added) = await avatars.AddAvatar(avatarId, options.Level, constellation);
+
             if (added)
                 count++;
         }
@@ -231,13 +235,11 @@ public sealed class GiveCommand(PlayerManager players, GameData data) : ICommand
             {
                 modifier = Modifier.Level;
                 offset += 3;
-            }
-            else if (input[offset..].StartsWith("lv", StringComparison.OrdinalIgnoreCase))
+            } else if (input[offset..].StartsWith("lv", StringComparison.OrdinalIgnoreCase))
             {
                 modifier = Modifier.Level;
                 offset += 2;
-            }
-            else
+            } else
             {
                 modifier = char.ToLowerInvariant(input[offset]) switch {
                     'l' => Modifier.Level,
@@ -253,6 +255,7 @@ public sealed class GiveCommand(PlayerManager players, GameData data) : ICommand
                 return false;
 
             var numberStart = offset;
+
             while (offset < input.Length && char.IsAsciiDigit(input[offset]))
                 offset++;
 
