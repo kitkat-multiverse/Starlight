@@ -8,12 +8,9 @@ public sealed class AvatarData : Data
     [JsonPropertyName("id")]
     public new uint Id { get; set; }
 
-    /// Used for extracting the avatar's internal name.
-    /// Combined with avatar ability configs to look up the proper data.
     [JsonPropertyName("iconName")]
     public string IconName { get; set; } = string.Empty;
 
-    /// The ID of the default weapon the avatar spawns with.
     [JsonPropertyName("initialWeapon")]
     public uint InitialWeapon { get; set; }
 
@@ -35,9 +32,6 @@ public sealed class AvatarData : Data
     [JsonPropertyName("criticalHurt")]
     public float CritDamageBase { get; set; }
 
-    /// The internal name of the avatar comes at the end of the string.
-    /// <br/>
-    /// Example: <c>UI_AvatarIcon_[name]</c>
     public string AvatarName => IconName.Split('_').Last();
 }
 
@@ -52,6 +46,9 @@ public sealed class AvatarSkillDepotData : Data
 
     [JsonPropertyName("energySkill")]
     public uint EnergySkill { get; set; }
+
+    [JsonPropertyName("talents")]
+    public List<uint> Talents { get; set; } = [];
 
     [JsonPropertyName("talentStarName")]
     public string TalentStarName { get; set; } = string.Empty;

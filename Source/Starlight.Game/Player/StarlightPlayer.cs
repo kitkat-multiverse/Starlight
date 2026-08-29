@@ -4,6 +4,7 @@ using Starlight.Game.Modules;
 using Starlight.Kcp;
 using Starlight.Protocol;
 using Starlight.Rpc;
+using Starlight.Rpc.Proto;
 using Starlight.Rpc.Tunnel;
 using IMessage = Starlight.Protobuf.Core.IMessage;
 
@@ -26,6 +27,8 @@ public sealed class StarlightPlayer : IPlayer
 
     public uint Uid { get; set; }
     public string AccountUid { get; set; } = string.Empty;
+    public CancellationToken Closing => _tunnel.Closed;
+    public NetPlayerState State { get; set; } = new();
 
     /// <inheritdoc/>
     public TModule Module<TModule>() where TModule : class, IModule

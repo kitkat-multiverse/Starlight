@@ -20,6 +20,7 @@ public sealed class DbGateService(
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         _subscriptions.Add(await rpc.Subscribe<FetchPlayerReq>(GameSubjects.FetchPlayer, players.Fetch));
+        _subscriptions.Add(await rpc.Subscribe<SavePlayerReq>(GameSubjects.SavePlayer, players.Save));
         logger.LogInformation("DB Gate is now listening for requests...");
     }
 
@@ -40,6 +41,7 @@ public static class ServiceExtensions
         var config = builder.Configuration.GetSection("DbGate").Get<DbGateConfig>() ?? new DbGateConfig();
 
         builder.Services
+            .AddHostedService<PlayerStateSchemaUpgradeService>()
             .AddStarlightDbContext<StarlightDbContext>(config)
             .AddSingleton<PlayerService>()
             .AddHostedService<DbGateService>();

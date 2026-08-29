@@ -52,6 +52,9 @@ public interface INetworkSession
     /// Sends a message to the connected client, optionally with a <see cref="PacketHead"/>.
     void Send(IMessage message, PacketHead? metadata = null);
 
+    /// Sends after waiting for capacity in the reliable transport's outbound window.
+    Task SendAsync(IMessage message, PacketHead? metadata = null);
+
     /// Drops the client with <paramref name="reason"/>. When <paramref name="flush"/> is set, the
     /// connection lingers until all queued packets are acknowledged so a final packet is delivered.
     void Disconnect(uint reason, bool flush);

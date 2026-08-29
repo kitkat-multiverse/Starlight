@@ -84,9 +84,15 @@ public sealed class LoginModule(INetworkSession session)
             GameSubjects.GateConnection, sessionInfo, ReplyTimeout, ct: session.Closing);
 
         // Relay packets the game server emits back down to the client.
-        _ = gameTunnel.Subscribe(GameSubjects.OutboundPacket, raw => {
-            session.Send(raw.Decode<Starlight.Protobuf.Core.IMessage>());
-            return Task.CompletedTask;
+        _ = gameTunnel.Subscribe(GameSubjects.OutboundPacket, async raw => {
+            try
+            {
+                await session.SendAsync(raw.Decode<Starlight.Protobuf.Core.IMessage>());
+            }
+            catch (OperationCanceledException) when (session.Closing.IsCancellationRequested)
+            {
+                // The connection closed while this packet was waiting for transport capacity.
+            }
         });
 
         // Drop the client when the game server asks us to.

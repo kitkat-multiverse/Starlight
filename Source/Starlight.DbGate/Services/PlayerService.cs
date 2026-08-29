@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Google.Protobuf;
 using Starlight.Database;
 using Starlight.DbGate.Models;
 using Starlight.Rpc;
@@ -83,5 +84,31 @@ public sealed class PlayerService(IServiceScopeFactory scopes, ILogger<PlayerSer
             Retcode = StarlightRetcode.Success,
             Player = player.Serialize()
         });
+    }
+
+    public async Task Save(SavePlayerReq msg, RpcMessage rpc)
+    {
+        using var scope = scopes.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<StarlightDbContext>();
+
+        var player = await db.Players.FirstOrDefaultAsync(player => player.Id == msg.Uid);
+
+        if (player is null)
+        {
+            await rpc.Reply(new SavePlayerRsp { Retcode = StarlightRetcode.PlayerNotFound });
+            return;
+        }
+
+        try
+        {
+            player.State = (msg.State ?? new NetPlayerState()).ToByteArray();
+            await db.SaveChangesAsync();
+            await rpc.Reply(new SavePlayerRsp { Retcode = StarlightRetcode.Success });
+        }
+        catch (DbUpdateException ex)
+        {
+            logger.LogError(ex, "Failed to save player '{PlayerId}'", msg.Uid);
+            await rpc.Reply(new SavePlayerRsp { Retcode = StarlightRetcode.ServerError });
+        }
     }
 }

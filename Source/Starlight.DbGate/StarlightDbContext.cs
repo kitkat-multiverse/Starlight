@@ -1,5 +1,8 @@
 using System.Reflection;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Starlight.DbGate.Models;
 
 namespace Starlight.DbGate;
@@ -38,4 +41,65 @@ public sealed class StarlightDbContext(DbContextOptions options) : DbContext(opt
         modelBuilder.Entity<Player>()
             .HasAlternateKey(p => p.AccountId);
     }
+}
+
+/// <summary>
+/// Preserves early-development databases when player state is introduced. The generic schema
+/// checker intentionally archives drifted files, but this change is safely additive.
+/// </summary>
+internal sealed class PlayerStateSchemaUpgradeService(IServiceScopeFactory scopes) : IHostedService
+{
+    public async Task StartAsync(CancellationToken cancellationToken)
+    {
+        using var scope = scopes.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<StarlightDbContext>();
+
+        if (!db.Database.IsSqlite())
+            return;
+
+        await db.Database.OpenConnectionAsync(cancellationToken);
+
+        try
+        {
+            await using var tableCommand = db.Database.GetDbConnection().CreateCommand();
+            tableCommand.CommandText =
+                "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'Players';";
+
+            if (Convert.ToInt32(await tableCommand.ExecuteScalarAsync(cancellationToken)) == 0)
+                return;
+
+            await using var columnsCommand = db.Database.GetDbConnection().CreateCommand();
+            columnsCommand.CommandText = "SELECT name FROM pragma_table_info('Players');";
+
+            var hasState = false;
+            await using (var reader = await columnsCommand.ExecuteReaderAsync(cancellationToken))
+            {
+                while (await reader.ReadAsync(cancellationToken))
+                {
+                    if (reader.GetString(0).Equals("State", StringComparison.OrdinalIgnoreCase))
+                    {
+                        hasState = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!hasState)
+            {
+                await db.Database.ExecuteSqlRawAsync(
+                    "ALTER TABLE Players ADD COLUMN State BLOB NOT NULL DEFAULT X'';",
+                    cancellationToken);
+            }
+        }
+        catch (SqliteException)
+        {
+            // Let the normal schema service produce its detailed drift/startup error.
+        }
+        finally
+        {
+            await db.Database.CloseConnectionAsync();
+        }
+    }
+
+    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }

@@ -18,6 +18,7 @@ file static class Session
     public static IServiceProvider Services() => new ServiceCollection()
         .AddLogging()
         .AddSingleton<RpcTransport, DirectRpcTransport>()
+        .AddSingleton<PlayerManager>()
         .AddSingleton<WorldManager>()
         .BuildServiceProvider();
 

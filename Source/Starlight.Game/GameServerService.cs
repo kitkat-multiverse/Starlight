@@ -94,6 +94,7 @@ public static class GameServerExtensions
 
         builder.Services
             .AddSingleton(registry)
+            .AddSingleton<PlayerManager>()
             .AddHostedService<GameServerService>();
         return builder;
     }

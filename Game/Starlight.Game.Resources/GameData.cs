@@ -14,6 +14,7 @@ public sealed class GameData(IConfiguration config) : IHostedService
     [UsedImplicitly] public readonly Dictionary<uint, AvatarSkillDepotData> AvatarSkillDepotData = new();
     [UsedImplicitly] public readonly Dictionary<uint, AvatarTalentData> AvatarTalentData = new();
     [UsedImplicitly] public readonly Dictionary<uint, WeaponData> WeaponData = new();
+    [UsedImplicitly] public readonly Dictionary<uint, MaterialData> MaterialData = new();
     [UsedImplicitly] public readonly Dictionary<uint, CoopPointData> CoopPointData = new();
 
     #endregion

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Google.Protobuf;
 using Microsoft.EntityFrameworkCore;
 using Starlight.Rpc;
 using Starlight.Rpc.Proto;
@@ -21,9 +22,13 @@ public sealed record Player : IRpcSerializable<NetPlayer>
 
     public PlayerProfile Profile { get; set; } = new();
 
+    /// <summary>Opaque game-owned state. DbGate stores it without knowing module internals.</summary>
+    public byte[] State { get; set; } = [];
+
     public NetPlayer Serialize() => new() {
         Uid = Id,
         AccountId = AccountId,
-        Profile = Profile.Serialize()
+        Profile = Profile.Serialize(),
+        State = State.Length == 0 ? new NetPlayerState() : NetPlayerState.Parser.ParseFrom(State)
     };
 }

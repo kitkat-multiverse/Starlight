@@ -10,7 +10,11 @@ namespace Starlight.Game.Player;
 /// <summary>
 /// Primary data operations module used across everything.
 /// </summary>
-public sealed class PlayerModule(RpcTransport rpc, ILogger<PlayerModule> logger, IPlayer player) : IModule
+public sealed class PlayerModule(
+    RpcTransport rpc,
+    PlayerManager players,
+    ILogger<PlayerModule> logger,
+    IPlayer player) : IModule
 {
     /// <summary>
     /// Authenticates the player and loads their data, then hands off to every
@@ -37,7 +41,16 @@ public sealed class PlayerModule(RpcTransport rpc, ILogger<PlayerModule> logger,
 
             // Set player properties.
             player.Uid = data.Uid;
+            player.State = data.State ?? new NetPlayerState();
             nickname = data.Profile?.Nickname ?? string.Empty;
+
+            if (!players.Add(player))
+            {
+                logger.LogWarning("Rejected a second session for player '{PlayerId}'.", player.Uid);
+
+                throw new KickException(DisconnectReason.ServerKick,
+                    new PlayerLoginRsp { Retcode = (int)Retcode.RETCODE_REPEAT_LOGIN });
+            }
 
             logger.LogInformation("Player '{PlayerId}' logged in.", player.Uid);
         }
@@ -73,6 +86,30 @@ public sealed class PlayerModule(RpcTransport rpc, ILogger<PlayerModule> logger,
             GameBiz = "hk4e_global",
             CountryCode = "US"
         };
+    }
+
+    [Lifecycle(LifecycleEvent.PlayerDisconnect)]
+    public async Task OnDisconnect()
+    {
+        // A rejected duplicate session must not overwrite the live session's state.
+        if (!players.Remove(player))
+            return;
+
+        try
+        {
+            var response = await rpc.Request<SavePlayerReq, SavePlayerRsp>(
+                GameSubjects.SavePlayer,
+                new SavePlayerReq { Uid = player.Uid, State = player.State });
+
+            if (response.Retcode != StarlightRetcode.Success)
+                logger.LogError("Failed to save player '{PlayerId}': {Retcode}", player.Uid, response.Retcode);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to save player '{PlayerId}' during disconnect", player.Uid);
+        }
+
+        logger.LogInformation("Player '{PlayerId}' logged out.", player.Uid);
     }
 
     /// <summary>Unlocks everything the client gates behind an open state.</summary>

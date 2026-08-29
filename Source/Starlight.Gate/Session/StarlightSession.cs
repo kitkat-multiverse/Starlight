@@ -21,6 +21,7 @@ public sealed class StarlightSession : INetworkSession
     /// A client that outruns <see cref="ConsumeInbound"/> gets dropped rather than growing
     /// the queue until the process runs out of memory.
     private const int MaxQueuedPackets = 1024;
+    private const int MaxPendingSendSegments = 32;
 
     private readonly KcpConnection _connection;
 
@@ -244,6 +245,12 @@ public sealed class StarlightSession : INetworkSession
             CryptoHelper.Xor(bytes, _xorPad);
             _connection.Send(bytes);
         }
+    }
+
+    public async Task SendAsync(IMessage message, PacketHead? metadata = null)
+    {
+        await _connection.WaitForSendCapacityAsync(MaxPendingSendSegments, Closing);
+        Send(message, metadata);
     }
 
     public void Disconnect(uint reason, bool flush)

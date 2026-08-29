@@ -5,6 +5,8 @@ namespace Starlight.Kcp;
 
 public sealed class KcpConnection
 {
+    private const long DeadLinkGraceMilliseconds = 1000;
+
     private readonly Internals.Kcp _kcp;
 
     /// The KCP state is reached from three threads -- the socket receive loop, the 10ms update
@@ -18,11 +20,38 @@ public sealed class KcpConnection
     private readonly Action<KcpConnection, uint> _onDisconnect;
 
     private uint? _lingerReason;
+    private long? _deadLinkSince;
+    private bool _isDead;
 
     public IPEndPoint Remote { get; }
     public uint Conv => _kcp.Conv;
     public uint Token => _kcp.Token;
-    public bool IsDead => _kcp.State == -1;
+    /// <summary>
+    /// True once an unacknowledged dead-link condition has survived the recovery grace period.
+    /// KCP can hit its retransmit threshold during a burst just before the delayed ACK arrives.
+    /// </summary>
+    public bool IsDead
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _isDead;
+            }
+        }
+    }
+
+    /// <summary>The number of outbound segments waiting to be sent or acknowledged.</summary>
+    public int PendingSendSegments
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _kcp.SndQueue.Count + _kcp.SndBuf.Count;
+            }
+        }
+    }
 
     internal KcpConnection(
         uint conv,
@@ -47,6 +76,21 @@ public sealed class KcpConnection
         {
             _kcp.Send(data);
             FlushNow();
+        }
+    }
+
+    /// <summary>
+    /// Waits until KCP has room for another application packet. This keeps bulk producers from
+    /// building an unbounded send queue while the peer is still acknowledging an earlier window.
+    /// </summary>
+    public async Task WaitForSendCapacityAsync(int maxPendingSegments, CancellationToken ct = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(maxPendingSegments, 1);
+
+        while (PendingSendSegments >= maxPendingSegments)
+        {
+            ct.ThrowIfCancellationRequested();
+            await Task.Delay(10, ct);
         }
     }
 
@@ -110,10 +154,38 @@ public sealed class KcpConnection
     internal void Update(long timestamp)
     {
         uint? drained = null;
+        var disconnected = false;
 
         lock (_gate)
         {
             _kcp.Update(timestamp);
+
+            if (_kcp.State == -1)
+            {
+                var hasDeadSegment = _kcp.SndBuf.Any(segment => segment.Xmit >= _kcp.DeadLink);
+
+                if (!hasDeadSegment)
+                {
+                    // The segment which reached DeadLink was acknowledged before the grace
+                    // period expired. Other packets may still be queued, but the link is alive.
+                    _kcp.State = 0;
+                    _deadLinkSince = null;
+                }
+                else
+                {
+                    _deadLinkSince ??= timestamp;
+
+                    if (timestamp - _deadLinkSince.Value >= DeadLinkGraceMilliseconds)
+                    {
+                        _isDead = true;
+                        disconnected = true;
+                    }
+                }
+            }
+            else
+            {
+                _deadLinkSince = null;
+            }
 
             // A pending graceful disconnect fires once the send buffers have drained,
             // i.e. the client has acked everything we queued before the kick.
@@ -130,7 +202,8 @@ public sealed class KcpConnection
             return;
         }
 
-        if (IsDead) _handler.OnDisconnected(this, (uint)DisconnectReason.ServerKillClient);
+        if (disconnected)
+            _handler.OnDisconnected(this, (uint)DisconnectReason.ServerKillClient);
     }
 
     private sealed class WriterAdapter(KcpConnection conn) : IWriter

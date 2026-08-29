@@ -13,6 +13,7 @@ public static class GameSubjects
     public const string Disconnect = "game.gate.disconnect";
 
     public const string FetchPlayer = "game.player.fetch";
+    public const string SavePlayer = "game.player.save";
 }
 
 public static class GateSubjects

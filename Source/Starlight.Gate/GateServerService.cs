@@ -120,7 +120,13 @@ public sealed class GateServerService(
             session.OnClose(reason);
         }
 
-        logger.LogDebug("Client disconnected: {Remote} (conv={Conv})", conn.Remote, conn.Conv);
+        logger.LogInformation(
+            "Client disconnected: {Remote} (conv={Conv}, reason={Reason}, reasonCode={ReasonCode}, pendingSendSegments={PendingSendSegments})",
+            conn.Remote,
+            conn.Conv,
+            (DisconnectReason)reason,
+            reason,
+            conn.PendingSendSegments);
     }
 
     public void OnReceive(KcpConnection conn, byte[] data)

@@ -1,5 +1,6 @@
 using Starlight.Game.Modules;
 using Starlight.Protocol;
+using Starlight.Rpc.Proto;
 using IMessage = Starlight.Protobuf.Core.IMessage;
 
 namespace Starlight.Game.Player;
@@ -11,6 +12,12 @@ public interface IPlayer
     /// The SDK account behind this player. Set from the gate's connect notify, since the
     /// account uid on PlayerLoginReq comes through empty.
     string AccountUid { get; internal set; }
+
+    /// <summary>Fires when the player's gate tunnel closes.</summary>
+    CancellationToken Closing { get; }
+
+    /// <summary>Game-owned state loaded from and saved through DbGate.</summary>
+    NetPlayerState State { get; internal set; }
 
     /// <summary>Resolves this player's instance of <typeparamref name="TModule"/>.</summary>
     TModule Module<TModule>() where TModule : class, IModule;

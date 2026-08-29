@@ -12,6 +12,7 @@ message NetPlayer {
   // The account ID. Assigned by the SDK server.
   string account_id = 2;
   NetPlayerProfile profile = 3;
+  NetPlayerState state = 4;
 }
 
 message NetPlayerProfile {
@@ -19,6 +20,37 @@ message NetPlayerProfile {
   string signature = 2;
   uint32 picture_id = 3;
   uint32 name_card_id = 4;
+}
+
+message NetPlayerState {
+  repeated NetMaterial materials = 1;
+  repeated NetWeapon weapons = 2;
+  repeated NetAvatar avatars = 3;
+}
+
+message NetMaterial {
+  uint32 item_id = 1;
+  uint64 guid = 2;
+  uint32 count = 3;
+}
+
+message NetWeapon {
+  uint32 item_id = 1;
+  uint64 guid = 2;
+  uint32 level = 3;
+  uint32 refinement = 4;
+  uint32 promote_level = 5;
+  uint32 affix_id = 6;
+  uint32 gadget_id = 7;
+}
+
+message NetAvatar {
+  uint32 avatar_id = 1;
+  uint64 guid = 2;
+  uint32 level = 3;
+  uint32 constellation = 4;
+  uint32 born_time = 5;
+  uint64 weapon_guid = 6;
 }
 
 // --- MESSAGES START --- \\
@@ -44,6 +76,19 @@ message FetchPlayerReq {
 message FetchPlayerRsp {
   StarlightRetcode retcode = 1;
   optional NetPlayer player = 2;
+}
+
+// Path: Game Server -> DB Gate
+// Subject: `game.player.save`
+message SavePlayerReq {
+  uint32 uid = 1;
+  NetPlayerState state = 2;
+}
+
+// Path: DB Gate -> Game Server
+// Subject: `game.player.save`
+message SavePlayerRsp {
+  StarlightRetcode retcode = 1;
 }
 
 // Sent as a metadata payload for informing the game server
