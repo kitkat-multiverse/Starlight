@@ -79,7 +79,7 @@ public sealed class AccountCommand(
             await db.SaveChangesAsync(cancellationToken);
         }
         catch (DbUpdateException ex) when (!cancellationToken.IsCancellationRequested &&
-                                                   DatabaseErrors.IsUniqueViolation(ex))
+                                           DatabaseErrors.IsUniqueViolation(ex))
         {
             Log.Warning("An account named '{Username}' already exists.", username);
             return;

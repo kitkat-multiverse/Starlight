@@ -60,9 +60,7 @@ public sealed class AccountRpcService(
 
         if (retcode == StarlightRetcode.Success)
         {
-            response.CountryCode = string.IsNullOrWhiteSpace(account!.Country)
-                ? config.DefaultCountryCode
-                : account.Country;
+            response.CountryCode = string.IsNullOrWhiteSpace(account!.Country) ? config.DefaultCountryCode : account.Country;
         }
 
         await message.Reply(response);
