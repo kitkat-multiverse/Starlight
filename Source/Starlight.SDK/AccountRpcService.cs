@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -51,7 +53,7 @@ public sealed class AccountRpcService(
 
         var retcode = account switch {
             null => StarlightRetcode.AccountNotFound,
-            _ when !string.Equals(account.ComboToken, request.AccountToken, StringComparison.Ordinal)
+            _ when !TokensMatch(account.ComboToken, request.AccountToken)
                 => StarlightRetcode.AccountInvalidToken,
             _ => StarlightRetcode.Success
         };
@@ -64,5 +66,14 @@ public sealed class AccountRpcService(
         }
 
         await message.Reply(response);
+    }
+
+    private static bool TokensMatch(string expected, string actual)
+    {
+        var expectedBytes = Encoding.UTF8.GetBytes(expected);
+        var actualBytes = Encoding.UTF8.GetBytes(actual);
+
+        return expectedBytes.Length == actualBytes.Length &&
+               CryptographicOperations.FixedTimeEquals(expectedBytes, actualBytes);
     }
 }

@@ -51,9 +51,11 @@ public sealed class AccountCommand(
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(password) || password.Length < sdkConfig.MinPasswordLength)
+        if (string.IsNullOrWhiteSpace(password) || password.Length < sdkConfig.MinPasswordLength ||
+            password.Length > sdkConfig.MaPassport.Login.MaxPasswordLength)
         {
-            Log.Warning("Password must contain at least {MinLength} characters.", sdkConfig.MinPasswordLength);
+            Log.Warning("Password must contain at least {MinLength} and at most {MaxLength} characters.", sdkConfig.MinPasswordLength,
+                sdkConfig.MaPassport.Login.MaxPasswordLength);
             return;
         }
 
