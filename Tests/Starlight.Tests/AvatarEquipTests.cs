@@ -19,6 +19,40 @@ namespace Starlight.Tests;
 public sealed class AvatarEquipTests
 {
     [Fact]
+    public async Task SetPlayerBornData_ConcurrentRequests_OnlyInitializeOneTraveler()
+    {
+        var data = Data();
+        var (player, sent) = Player(uid: 1001, data);
+        player.State.BornState = NetPlayerState.Types.PlayerBornState.Pending;
+        var born = player.Module<BornModule>();
+
+        await Task.WhenAll(
+            born.OnSetPlayerBornData(new SetPlayerBornDataReq {
+                AvatarId = 10000005,
+                NickName = "Aether"
+            }),
+            born.OnSetPlayerBornData(new SetPlayerBornDataReq {
+                AvatarId = 10000007,
+                NickName = "Lumine"
+            }));
+
+        var responses = sent.OfType<SetPlayerBornDataRsp>().ToArray();
+        Assert.Equal(expected: 2, responses.Length);
+        Assert.Single(responses, response => response.Retcode == 0);
+
+        Assert.Single(
+            responses,
+            response => response.Retcode == (int)Retcode.RETCODE_REPEAT_SET_PLAYER_BORN_DATA);
+
+        var traveler = Assert.Single(player.State.Avatars);
+        Assert.Equal(traveler.AvatarId, player.State.BornAvatarId);
+
+        Assert.Equal(
+            traveler.AvatarId == 10000005 ? "Aether" : "Lumine",
+            player.Profile.Nickname);
+    }
+
+    [Fact]
     public async Task SetPlayerBornData_PersistsNicknameAndSelectedTraveler()
     {
         var data = Data();

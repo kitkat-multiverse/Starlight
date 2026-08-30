@@ -6,10 +6,26 @@ namespace Starlight.Game.Player;
 
 public sealed class BornModule(IPlayer player) : IModule
 {
+    private readonly SemaphoreSlim _gate = new(initialCount: 1, maxCount: 1);
+
     [Opcode]
     public async Task OnSetPlayerBornData(
         SetPlayerBornDataReq message
     )
+    {
+        await _gate.WaitAsync();
+
+        try
+        {
+            await SetPlayerBornData(message);
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    private async Task SetPlayerBornData(SetPlayerBornDataReq message)
     {
         bool alreadyBorn;
 

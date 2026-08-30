@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Starlight.Game.Modules;
 using Starlight.Game.Player;
+using Starlight.Protocol;
 using Starlight.Rpc.Tunnel;
 using Xunit;
 
@@ -8,6 +9,15 @@ namespace Starlight.Tests;
 
 public sealed class PlayerManagerTests
 {
+    [Fact]
+    public void LifecycleEvent_ExistingValuesRemainStable()
+    {
+        Assert.Equal(expected: 0, (int)LifecycleEvent.PlayerLogin);
+        Assert.Equal(expected: 1, (int)LifecycleEvent.PlayerDisconnect);
+        Assert.Equal(expected: 2, (int)LifecycleEvent.PlayerSaving);
+        Assert.Equal(expected: 3, (int)LifecycleEvent.PlayerBorn);
+    }
+
     [Fact]
     public void Add_IndexesPlayerByUid()
     {
