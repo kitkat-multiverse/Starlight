@@ -16,6 +16,7 @@ public sealed class PlayerManagerTests
         Assert.Equal(expected: 1, (int)LifecycleEvent.PlayerDisconnect);
         Assert.Equal(expected: 2, (int)LifecycleEvent.PlayerSaving);
         Assert.Equal(expected: 3, (int)LifecycleEvent.PlayerBorn);
+        Assert.Equal(expected: 4, (int)LifecycleEvent.PlayerTeamChanged);
     }
 
     [Fact]

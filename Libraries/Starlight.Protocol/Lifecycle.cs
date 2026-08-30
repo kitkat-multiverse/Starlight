@@ -24,7 +24,9 @@ public enum LifecycleEvent
     /// Sent when the player data is being saved to the database, before a PlayerDisconnect.
     PlayerSaving = 2,
     /// Sent after a new player has selected their Traveler and nickname.
-    PlayerBorn = 3
+    PlayerBorn = 3,
+    /// Sent after the active avatar team changes and its scene representation must be refreshed.
+    PlayerTeamChanged = 4
 }
 
 public enum LifecycleOrder
