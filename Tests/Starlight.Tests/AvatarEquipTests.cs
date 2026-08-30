@@ -7,6 +7,7 @@ using Starlight.Game.Player;
 using Starlight.Game.Resources;
 using Starlight.Game.Resources.Binary;
 using Starlight.Game.Resources.Excel;
+using Starlight.Game.World;
 using Starlight.Protocol;
 using Starlight.Rpc;
 using Starlight.Rpc.Proto;
@@ -388,6 +389,76 @@ public sealed class AvatarEquipTests
         Assert.Equal(second.Guid, reconnected.Module<TeamModule>().Current.CurrentAvatarGuid);
     }
 
+    [Theory]
+    [InlineData("change")]
+    [InlineData("setup")]
+    [InlineData("choose")]
+    public async Task TeamChange_ReplacementAppearReferencesDisappearedEntity(string operation)
+    {
+        var data = Data();
+        var (player, _) = Player(uid: 1001, data, includeWorld: true);
+        var avatars = player.Module<AvatarModule>();
+        var teams = player.Module<TeamModule>();
+        var world = player.Module<WorldModule>();
+        var scene = player.Module<SceneModule>();
+
+        await avatars.OnLogin();
+        var first = avatars.Avatars[10000005];
+        var (second, added) = await avatars.AddAvatar(10000007);
+        Assert.True(added);
+        Assert.NotNull(second);
+
+        if (operation == "change")
+        {
+            await teams.OnSetUpAvatarTeam(new SetUpAvatarTeamReq {
+                TeamId = 1,
+                CurAvatarGuid = first.Guid,
+                AvatarTeamGuidList = { first.Guid, second.Guid }
+            });
+        } else if (operation == "choose")
+        {
+            await teams.OnSetUpAvatarTeam(new SetUpAvatarTeamReq {
+                TeamId = 2,
+                CurAvatarGuid = second.Guid,
+                AvatarTeamGuidList = { second.Guid }
+            });
+        }
+
+        world.EnterOwnWorld();
+        _ = scene.OnEnterSceneReady(new EnterSceneReadyReq { EnterSceneToken = 1 }).ToArray();
+
+        var enter = Assert.Single(
+            scene.OnSceneInit(new SceneInitFinishReq { EnterSceneToken = 1 })
+                .OfType<PlayerEnterSceneInfoNotify>());
+
+        switch (operation)
+        {
+            case "change":
+                await teams.OnChangeAvatar(new ChangeAvatarReq { Guid = second.Guid });
+                break;
+            case "setup":
+                await teams.OnSetUpAvatarTeam(new SetUpAvatarTeamReq {
+                    TeamId = 1,
+                    CurAvatarGuid = second.Guid,
+                    AvatarTeamGuidList = { first.Guid, second.Guid }
+                });
+                break;
+            case "choose":
+                await teams.OnChooseCurAvatarTeam(new ChooseCurAvatarTeamReq { TeamId = 2 });
+                break;
+        }
+
+        var notifications = scene.OnTeamChanged().ToArray();
+        var disappear = Assert.Single(notifications.OfType<SceneEntityDisappearNotify>());
+        var appear = Assert.Single(notifications.OfType<SceneEntityAppearNotify>());
+        var disappearedEntityId = Assert.Single(disappear.EntityList);
+
+        Assert.Equal(VisionType.VISION_TYPE_REPLACE, disappear.DisappearType);
+        Assert.Equal(VisionType.VISION_TYPE_REPLACE, appear.AppearType);
+        Assert.Equal(enter.CurAvatarEntityId, disappearedEntityId);
+        Assert.Equal(disappearedEntityId, appear.Param);
+    }
+
     [Fact]
     public async Task ChangeAvatar_AvatarOutsideCurrentTeam_IsRejected()
     {
@@ -535,7 +606,11 @@ public sealed class AvatarEquipTests
         Assert.Single(player.State.Avatars, state => state.AvatarId == 10000007);
     }
 
-    private static (StarlightPlayer Player, List<IMessage> Sent) Player(uint uid, GameData data)
+    private static (StarlightPlayer Player, List<IMessage> Sent) Player(
+        uint uid,
+        GameData data,
+        bool includeWorld = false
+    )
     {
         var services = new ServiceCollection().AddLogging().BuildServiceProvider();
         var registry = new ModuleRegistry();
@@ -544,6 +619,14 @@ public sealed class AvatarEquipTests
         registry.AddModule<AvatarModule>((_, player) => new AvatarModule(player, data, guidManager));
         registry.AddModule<TeamModule>((_, player) => new TeamModule(player));
         registry.AddModule<BornModule>((_, player) => new BornModule(player));
+
+        if (includeWorld)
+        {
+            var worlds = new WorldManager();
+            registry.AddModule<WorldModule>((_, player) => new WorldModule(player, worlds));
+            registry.AddModule<SceneModule>((_, player) => new SceneModule(player));
+        }
+
         registry.Build();
 
         var (client, server) = DirectTunnel.CreatePair();

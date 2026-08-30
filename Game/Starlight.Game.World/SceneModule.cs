@@ -101,10 +101,11 @@ public sealed class SceneModule(IPlayer player) : IModule
             };
         }
 
-        if (currentChanged && current is not null)
+        if (currentChanged && previous is not null && current is not null)
         {
             yield return new SceneEntityAppearNotify {
                 AppearType = VisionType.VISION_TYPE_REPLACE,
+                Param = previous.EntityId,
                 EntityList = { current.Info }
             };
         }
