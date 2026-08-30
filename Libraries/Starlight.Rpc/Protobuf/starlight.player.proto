@@ -1,4 +1,4 @@
-﻿syntax = "proto3";
+syntax = "proto3";
 
 package starlight.player;
 
@@ -23,9 +23,19 @@ message NetPlayerProfile {
 }
 
 message NetPlayerState {
+  enum PlayerBornState {
+    PLAYER_BORN_STATE_UNSPECIFIED = 0;
+    PLAYER_BORN_STATE_PENDING = 1;
+    PLAYER_BORN_STATE_COMPLETE = 2;
+    PLAYER_BORN_STATE_AUTOMATIC = 3;
+  }
+
   repeated NetMaterial materials = 1;
   repeated NetWeapon weapons = 2;
   repeated NetAvatar avatars = 3;
+
+  PlayerBornState born_state = 4;
+  uint32 born_avatar_id = 5;
 }
 
 message NetMaterial {
@@ -83,6 +93,7 @@ message FetchPlayerRsp {
 message SavePlayerReq {
   uint32 uid = 1;
   NetPlayerState state = 2;
+  NetPlayerProfile profile = 3;
 }
 
 // Path: DB Gate -> Game Server

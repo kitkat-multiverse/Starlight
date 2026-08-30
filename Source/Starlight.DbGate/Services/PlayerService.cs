@@ -91,7 +91,9 @@ public sealed class PlayerService(IServiceScopeFactory scopes, ILogger<PlayerSer
         using var scope = scopes.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<StarlightDbContext>();
 
-        var player = await db.Players.FirstOrDefaultAsync(player => player.Id == msg.Uid);
+        var player = await db.Players
+            .Include(player => player.Profile)
+            .FirstOrDefaultAsync(player => player.Id == msg.Uid);
 
         if (player is null)
         {
@@ -102,6 +104,15 @@ public sealed class PlayerService(IServiceScopeFactory scopes, ILogger<PlayerSer
         try
         {
             player.State = (msg.State ?? new NetPlayerState()).ToByteArray();
+
+            if (msg.Profile is {} profile)
+            {
+                player.Profile.Nickname = profile.Nickname;
+                player.Profile.Signature = profile.Signature;
+                player.Profile.PictureId = profile.PictureId;
+                player.Profile.NameCardId = profile.NameCardId;
+            }
+
             await db.SaveChangesAsync();
             await rpc.Reply(new SavePlayerRsp { Retcode = StarlightRetcode.Success });
         }

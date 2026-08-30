@@ -29,6 +29,7 @@ public sealed class StarlightPlayer : IPlayer
     public string AccountUid { get; set; } = string.Empty;
     public CancellationToken Closing => _tunnel.Closed;
     public NetPlayerState State { get; set; } = new();
+    public NetPlayerProfile Profile { get; set; } = new();
     public object StateLock { get; } = new();
 
     /// <inheritdoc/>

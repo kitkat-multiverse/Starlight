@@ -49,7 +49,10 @@ public sealed class StarlightDbContext(DbContextOptions options) : DbContext(opt
 /// Preserves early-development databases when player state is introduced. The generic schema
 /// checker intentionally archives drifted files, but this change is safely additive.
 /// </summary>
-internal sealed class PlayerStateSchemaUpgradeService(IServiceScopeFactory scopes, ILogger logger) : IHostedService
+internal sealed class PlayerStateSchemaUpgradeService(
+    IServiceScopeFactory scopes,
+    ILogger<PlayerStateSchemaUpgradeService> logger
+) : IHostedService
 {
     public async Task StartAsync(CancellationToken cancellationToken)
     {

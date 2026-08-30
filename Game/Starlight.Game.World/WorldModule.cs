@@ -1,6 +1,7 @@
 using Starlight.Game.Modules;
 using Starlight.Game.Player;
 using Starlight.Protocol;
+using Starlight.Rpc.Proto;
 
 namespace Starlight.Game.World;
 
@@ -23,7 +24,11 @@ public sealed class WorldModule(IPlayer player, WorldManager worlds) : IModule
     public Scene? Scene { get; internal set; }
 
     [Lifecycle(LifecycleEvent.PlayerLogin)]
-    public void OnLogin() => EnterOwnWorld();
+    public void OnLogin()
+    {
+        if (player.State.BornState != NetPlayerState.Types.PlayerBornState.Pending)
+            EnterOwnWorld();
+    }
 
     /// <summary>Puts this player into their own world. Call once login has assigned their uid.</summary>
     public void EnterOwnWorld() => Enter(worlds.Open(player));

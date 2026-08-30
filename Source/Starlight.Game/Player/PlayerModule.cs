@@ -28,6 +28,7 @@ public sealed class PlayerModule(
     public async Task<PlayerLoginRsp> OnLogin(PlayerLoginReq msg)
     {
         string nickname;
+        bool isNewPlayer;
 
         try
         {
@@ -49,8 +50,20 @@ public sealed class PlayerModule(
             lock (player.StateLock)
             {
                 player.State = data.State ?? new NetPlayerState();
+                player.Profile = data.Profile ?? new NetPlayerProfile();
+
+                if (player.State.BornState == NetPlayerState.Types.PlayerBornState.Unspecified)
+                {
+                    player.State.BornState = player.State.Avatars.Count > 0 ?
+                        NetPlayerState.Types.PlayerBornState.Complete :
+                        NetPlayerState.Types.PlayerBornState.Pending;
+                }
+
+                isNewPlayer =
+                    player.State.BornState == NetPlayerState.Types.PlayerBornState.Pending;
+
+                nickname = player.Profile.Nickname;
             }
-            nickname = data.Profile?.Nickname ?? string.Empty;
 
             if (!players.Add(player))
             {
@@ -88,11 +101,15 @@ public sealed class PlayerModule(
         // Everything that has to be in place before the client is told it is logged in.
         await player.Emit(LifecycleEvent.PlayerLogin);
 
+        if (isNewPlayer)
+            await player.Send(new DoSetPlayerBornDataNotify());
+
         return new PlayerLoginRsp {
             IsUseAbilityHash = true,
             AbilityHashCode = 1844674,
             GameBiz = "hk4e_global",
-            CountryCode = "US"
+            CountryCode = "US",
+            IsNewPlayer = isNewPlayer
         };
     }
 
@@ -109,17 +126,20 @@ public sealed class PlayerModule(
         try
         {
             NetPlayerState state;
+            NetPlayerProfile profile;
 
             lock (player.StateLock)
             {
                 state = NetPlayerState.Parser.ParseFrom(player.State.ToByteArray());
+                profile = NetPlayerProfile.Parser.ParseFrom(player.Profile.ToByteArray());
             }
 
             var response = await rpc.Request<SavePlayerReq, SavePlayerRsp>(
                 GameSubjects.SavePlayer,
                 new SavePlayerReq {
                     Uid = player.Uid,
-                    State = state
+                    State = state,
+                    Profile = profile
                 });
 
             if (response.Retcode != StarlightRetcode.Success)

@@ -87,7 +87,7 @@ public sealed class AvatarModule(IPlayer player, GameData data, GuidManager guid
         {
             return new AvatarDataNotify {
                 CurAvatarTeamId = TeamId,
-                ChooseAvatarGuid = _team[0].Guid,
+                ChooseAvatarGuid = _team.FirstOrDefault()?.Guid ?? 0,
                 OwnedFlycloakList = [Avatar.DefaultFlycloak],
                 AvatarList = [.. _avatars.Values.Select(avatar => avatar.Info())],
                 AvatarTeamMap = {
@@ -172,7 +172,8 @@ public sealed class AvatarModule(IPlayer player, GameData data, GuidManager guid
     public async Task<(Avatar? Avatar, bool Added)> AddAvatar(
         uint avatarId,
         uint level = 1,
-        uint constellation = 0
+        uint constellation = 0,
+        bool isInTeam = false
     )
     {
         Avatar avatar;
@@ -229,7 +230,7 @@ public sealed class AvatarModule(IPlayer player, GameData data, GuidManager guid
 
         await player.Send(new AvatarAddNotify {
             Avatar = avatarInfo,
-            IsInTeam = false
+            IsInTeam = isInTeam
         });
 
         return (avatar, true);
@@ -267,31 +268,37 @@ public sealed class AvatarModule(IPlayer player, GameData data, GuidManager guid
                 _avatarState.Add(avatar.AvatarId, state);
             }
 
-            // A brand-new player receives the starter roster once. It immediately becomes part of
-            // the persisted state, so reconnects preserve its GUID and born time.
-            foreach (var (slot, avatarId) in TeamAvatarIds.Index())
+            var initialTeamAvatarIds =
+                player.State.BornAvatarId is AetherId or LumineId ? [player.State.BornAvatarId] : TeamAvatarIds;
+
+            if (player.State.BornState != NetPlayerState.Types.PlayerBornState.Pending)
             {
-                if (_avatars.ContainsKey(avatarId) || !CanCreate(avatarId))
-                    continue;
+                // A brand-new player receives the starter roster once. It immediately becomes part of
+                // the persisted state, so reconnects preserve its GUID and born time.
+                foreach (var (slot, avatarId) in initialTeamAvatarIds.Index())
+                {
+                    if (_avatars.ContainsKey(avatarId) || !CanCreate(avatarId))
+                        continue;
 
-                var guid = (ulong)player.Uid << 32 | (uint)(slot * 2 + 1);
-                var avatar = Avatar.Create(data, avatarId, guid);
+                    var guid = (ulong)player.Uid << 32 | (uint)(slot * 2 + 1);
+                    var avatar = Avatar.Create(data, avatarId, guid);
 
-                var state = new NetAvatar {
-                    AvatarId = avatar.AvatarId,
-                    Guid = avatar.Guid,
-                    Level = avatar.Level,
-                    Constellation = avatar.Constellation,
-                    BornTime = avatar.BornTime,
-                    WeaponGuid = avatar.WeaponGuid
-                };
+                    var state = new NetAvatar {
+                        AvatarId = avatar.AvatarId,
+                        Guid = avatar.Guid,
+                        Level = avatar.Level,
+                        Constellation = avatar.Constellation,
+                        BornTime = avatar.BornTime,
+                        WeaponGuid = avatar.WeaponGuid
+                    };
 
-                _avatars.Add(avatarId, avatar);
-                _avatarState.Add(avatarId, state);
-                player.State.Avatars.Add(state);
+                    _avatars.Add(avatarId, avatar);
+                    _avatarState.Add(avatarId, state);
+                    player.State.Avatars.Add(state);
+                }
             }
 
-            _team = TeamAvatarIds
+            _team = initialTeamAvatarIds
                 .Where(_avatars.ContainsKey)
                 .Select(id => _avatars[id])
                 .ToArray();
@@ -305,6 +312,56 @@ public sealed class AvatarModule(IPlayer player, GameData data, GuidManager guid
             avatar.EquipWeapon(weapon);
             _avatarState[avatar.AvatarId].WeaponGuid = weapon.Guid;
         }
+    }
+
+    private const uint AetherId = 10000005;
+    private const uint LumineId = 10000007;
+
+    public async Task<Avatar?> InitializeTraveler(uint avatarId)
+    {
+        // Prevent players from getting a different avatar via modifying packets.
+        if (avatarId is not AetherId and not LumineId)
+            return null;
+
+        lock (player.StateLock)
+        {
+            LoadState();
+
+            if (player.State.BornState !=
+                NetPlayerState.Types.PlayerBornState.Pending)
+            {
+                return null;
+            }
+        }
+
+        var (avatar, _) = await AddAvatar(avatarId, level: 1, constellation: 0, isInTeam: true);
+
+        if (avatar is null)
+            return null;
+
+        AvatarTeamUpdateNotify notify;
+
+        lock (player.StateLock)
+        {
+            _team = [avatar];
+
+            player.State.BornAvatarId = avatarId;
+
+            player.State.BornState =
+                NetPlayerState.Types.PlayerBornState.Complete;
+
+            notify = new AvatarTeamUpdateNotify {
+                AvatarTeamMap = {
+                    [TeamId] = new AvatarTeam {
+                        TeamName = $"Team {TeamId}",
+                        AvatarGuidList = { avatar.Guid }
+                    }
+                }
+            };
+        }
+
+        await player.Send(notify);
+        return avatar;
     }
 
     private static AvatarEquipChangeNotify CreateWeaponChangeNotify(Avatar avatar, WeaponItem weapon)

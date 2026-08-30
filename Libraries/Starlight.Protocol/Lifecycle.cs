@@ -19,6 +19,8 @@ public enum LifecycleEvent
 {
     /// Sent once <c>PlayerLoginReq</c> has loaded the player's data, before <c>PlayerLoginRsp</c> goes out.
     PlayerLogin,
+    /// Sent after a new player has selected their Traveler and nickname.
+    PlayerBorn,
     /// Sent when the KCP session is dropped. The tunnel is gone by now, so sends are discarded.
     PlayerDisconnect,
     /// Sent when the player data is being saved to the database, before a PlayerDisconnect.

@@ -19,6 +19,9 @@ public interface IPlayer
     /// <summary>Game-owned state loaded from and saved through DbGate.</summary>
     NetPlayerState State { get; internal set; }
 
+    /// <summary>Player profile loaded from and saved through DbGate.</summary>
+    NetPlayerProfile Profile { get; internal set; }
+
     /// <summary>Synchronizes access to this player's live module and persisted state.</summary>
     object StateLock { get; }
 

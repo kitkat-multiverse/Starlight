@@ -5,6 +5,7 @@ using Starlight.Game.Player;
 using Starlight.Game.World;
 using Starlight.Protocol;
 using Starlight.Rpc;
+using Starlight.Rpc.Proto;
 using Starlight.Rpc.Tunnel;
 using Xunit;
 
@@ -38,6 +39,26 @@ file static class Session
 
 public sealed class WorldPeerTests
 {
+    [Fact]
+    public void PendingPlayer_WaitsForBornSelectionBeforeEnteringWorld()
+    {
+        var services = Session.Services();
+        var registry = Session.Registry();
+        var player = Session.Player(services, registry, uid: 1001);
+        player.State.BornState = NetPlayerState.Types.PlayerBornState.Pending;
+
+        player.Module<WorldModule>().OnLogin();
+        var loginScene = player.Module<SceneModule>().OnLogin();
+
+        Assert.Equal(expected: 0u, player.Module<WorldModule>().PeerId);
+        Assert.Null(loginScene);
+
+        var bornScene = player.Module<SceneModule>().OnBorn();
+
+        Assert.Equal(expected: 1u, player.Module<WorldModule>().PeerId);
+        Assert.Equal(expected: 3u, bornScene.SceneId);
+    }
+
     [Fact]
     public void EnterOwnWorld_Owner_TakesHostPeerId()
     {

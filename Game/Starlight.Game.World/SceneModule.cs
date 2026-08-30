@@ -2,6 +2,7 @@ using Starlight.Game.Modules;
 using Starlight.Game.Player;
 using Starlight.Protobuf.Core;
 using Starlight.Protocol;
+using Starlight.Rpc.Proto;
 
 namespace Starlight.Game.World;
 
@@ -20,11 +21,15 @@ public sealed class SceneModule(IPlayer player) : IModule
     #endregion
 
     [Lifecycle(LifecycleEvent.PlayerLogin)]
-    public PlayerEnterSceneNotify OnLogin() => new() {
-        Type = EnterType.ENTER_TYPE_ENTER_SELF,
-        SceneId = SpawnSceneId,
-        Pos = SpawnPosition
-    };
+    public PlayerEnterSceneNotify? OnLogin()
+        => player.State.BornState == NetPlayerState.Types.PlayerBornState.Pending ? null : EnterScene();
+
+    [Lifecycle(LifecycleEvent.PlayerBorn)]
+    public PlayerEnterSceneNotify OnBorn()
+    {
+        player.Module<WorldModule>().EnterOwnWorld();
+        return EnterScene();
+    }
 
     [Opcode]
     public IEnumerable<IMessage> OnEnterSceneReady(EnterSceneReadyReq msg)
@@ -130,4 +135,10 @@ public sealed class SceneModule(IPlayer player) : IModule
     public PostEnterSceneRsp OnPostEnterScene(PostEnterSceneReq msg) =>
         // TODO: Validate `enter_scene_token`.
         new() { EnterSceneToken = msg.EnterSceneToken };
+
+    private static PlayerEnterSceneNotify EnterScene() => new() {
+        Type = EnterType.ENTER_TYPE_ENTER_SELF,
+        SceneId = SpawnSceneId,
+        Pos = SpawnPosition
+    };
 }
