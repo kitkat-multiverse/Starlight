@@ -51,7 +51,7 @@ public sealed class GateServerService(
 
         try
         {
-            var server = new KcpServer(Config.BindAddress, Config.BindPort, LogMessage, this);
+            using var server = new KcpServer(Config.BindAddress, Config.BindPort, LogMessage, this);
 
             logger.LogInformation("Starting GameServer at {Address}:{Port}",
                 Config.BindAddress, Config.BindPort);

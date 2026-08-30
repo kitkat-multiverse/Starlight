@@ -223,6 +223,11 @@ public sealed class ComponentModuleGenerator : IIncrementalGenerator
             lifecycle.ConstructorArguments[0] is not { Kind: TypedConstantKind.Enum } @event)
             return;
 
+        var order = lifecycle.ConstructorArguments.Length > 1 &&
+                    lifecycle.ConstructorArguments[1] is { Kind: TypedConstantKind.Enum } configuredOrder ?
+            EnumLiteral(configuredOrder) :
+            "global::Starlight.Protocol.LifecycleOrder.Normal";
+
         var moduleFq = module.ToDisplayString(FullyQualified);
         var args = new List<string>();
 
@@ -243,7 +248,7 @@ public sealed class ComponentModuleGenerator : IIncrementalGenerator
 
         var isAsync = ret.Awaitable || ret.Send != SendKind.None;
         var asyncMod = isAsync ? "async " : "";
-        sb.AppendLine($"        registry.AddLifecycle<{moduleFq}>({EventLiteral(@event)}, {asyncMod}static (module, player) =>");
+        sb.AppendLine($"        registry.AddLifecycle<{moduleFq}>({EnumLiteral(@event)}, {order}, {asyncMod}static (module, player) =>");
         sb.AppendLine("        {");
         sb.AppendLine($"            var __m = ({moduleFq})module;");
 
@@ -280,8 +285,8 @@ public sealed class ComponentModuleGenerator : IIncrementalGenerator
         }
     }
 
-    /// <summary>Renders an enum constant as its member name, so the generated source reads as <c>LifecycleEvent.PlayerLogin</c>.</summary>
-    private static string EventLiteral(TypedConstant @event)
+    /// <summary>Renders an enum constant as its named member when possible.</summary>
+    private static string EnumLiteral(TypedConstant @event)
     {
         var type = @event.Type!;
 

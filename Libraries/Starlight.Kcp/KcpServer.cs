@@ -52,6 +52,8 @@ public sealed class KcpServer : IDisposable
             {
                 // Whatever took the server down already came out of the await above.
             }
+
+            DisconnectAll();
         }
     }
 
@@ -74,10 +76,9 @@ public sealed class KcpServer : IDisposable
         {
             var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-            foreach (var (key, conn) in _connections)
+            foreach (var conn in _connections.Values)
             {
                 conn.Update(now);
-                if (conn.IsDead) _connections.TryRemove(key, out _);
             }
         }
     }
@@ -143,8 +144,19 @@ public sealed class KcpServer : IDisposable
 
     private void FinalizeDisconnect(KcpConnection conn, uint reason)
     {
-        _connections.TryRemove((conn.Conv, conn.Token), out _);
+        var pair = new KeyValuePair<(uint Conv, uint Token), KcpConnection>(
+            (conn.Conv, conn.Token), conn);
+
+        if (!((ICollection<KeyValuePair<(uint Conv, uint Token), KcpConnection>>)_connections).Remove(pair))
+            return;
+
         _handler.OnDisconnected(conn, reason);
+    }
+
+    private void DisconnectAll()
+    {
+        foreach (var conn in _connections.Values)
+            FinalizeDisconnect(conn, (uint)DisconnectReason.ServerKillClient);
     }
 
     private void SendTo(byte[] data, EndPoint remote)
@@ -157,5 +169,6 @@ public sealed class KcpServer : IDisposable
     {
         _cts.Cancel();
         _socket.Dispose();
+        DisconnectAll();
     }
 }
