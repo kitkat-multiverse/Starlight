@@ -156,7 +156,9 @@ public sealed class KcpServer : IDisposable
     private void DisconnectAll()
     {
         foreach (var conn in _connections.Values)
+        {
             FinalizeDisconnect(conn, (uint)DisconnectReason.ServerKillClient);
+        }
     }
 
     private void SendTo(byte[] data, EndPoint remote)
