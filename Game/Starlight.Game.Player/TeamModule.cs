@@ -96,9 +96,7 @@ public sealed class TeamModule(IPlayer player) : IModule
             }
 
             var members = msg.AvatarTeamGuidList.Select(guid => owned[guid]).ToArray();
-            var currentAvatarGuid = msg.AvatarTeamGuidList.Contains(msg.CurAvatarGuid)
-                ? msg.CurAvatarGuid
-                : members[0].Guid;
+            var currentAvatarGuid = msg.AvatarTeamGuidList.Contains(msg.CurAvatarGuid) ? msg.CurAvatarGuid : members[0].Guid;
 
             response.CurAvatarGuid = currentAvatarGuid;
 
@@ -121,8 +119,7 @@ public sealed class TeamModule(IPlayer player) : IModule
                 _teams.Add(team.Id, team);
                 _teamState.Add(team.Id, newState);
                 player.State.AvatarTeams.Add(newState);
-            }
-            else
+            } else
             {
                 team.Avatars = members;
                 team.CurrentAvatarGuid = currentAvatarGuid;
@@ -136,7 +133,9 @@ public sealed class TeamModule(IPlayer player) : IModule
             notification = new AvatarTeamUpdateNotify();
 
             foreach (var savedTeam in _teams.Values)
+            {
                 notification.AvatarTeamMap.Add(savedTeam.Id, savedTeam.Info());
+            }
 
             activeTeamChanged = team.Id == _currentTeamId;
         }
@@ -299,9 +298,7 @@ public sealed class TeamModule(IPlayer player) : IModule
             if (_teams.ContainsKey(teamId))
                 continue;
 
-            Avatar[] members = teamId == DefaultTeamId && starter is not null
-                ? new[] { starter }
-                : [];
+            var members = teamId == DefaultTeamId && starter is not null ? new[] { starter } : [];
 
             AddTeam(teamId, members);
         }
@@ -310,6 +307,7 @@ public sealed class TeamModule(IPlayer player) : IModule
     private void AddTeam(uint teamId, Avatar[] members)
     {
         var currentAvatarGuid = members.FirstOrDefault()?.Guid ?? 0;
+
         var state = new NetAvatarTeam {
             TeamId = teamId,
             Name = $"Team {teamId}",
@@ -343,6 +341,7 @@ public sealed class TeamModule(IPlayer player) : IModule
     private void PersistTeams()
     {
         player.State.AvatarTeams.Clear();
+
         player.State.AvatarTeams.Add(
             _teamState.OrderBy(pair => pair.Key).Select(pair => pair.Value));
     }

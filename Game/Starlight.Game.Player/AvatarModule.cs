@@ -66,6 +66,7 @@ public sealed class AvatarModule(IPlayer player, GameData data, GuidManager guid
         {
             var teams = player.Module<TeamModule>().Teams;
             var current = teams.GetValueOrDefault(player.State.CurrentAvatarTeamId);
+
             var notify = new AvatarDataNotify {
                 CurAvatarTeamId = current?.Id ?? 0,
                 ChooseAvatarGuid = current?.CurrentAvatarGuid ?? 0,
@@ -74,7 +75,9 @@ public sealed class AvatarModule(IPlayer player, GameData data, GuidManager guid
             };
 
             foreach (var team in teams.Values)
+            {
                 notify.AvatarTeamMap.Add(team.Id, team.Info());
+            }
 
             return notify;
         }
@@ -250,9 +253,7 @@ public sealed class AvatarModule(IPlayer player, GameData data, GuidManager guid
 
             if (player.State.BornState != NetPlayerState.Types.PlayerBornState.Pending)
             {
-                var starterAvatarId = player.State.BornAvatarId is AetherId or LumineId
-                    ? player.State.BornAvatarId
-                    : AetherId;
+                var starterAvatarId = player.State.BornAvatarId is AetherId or LumineId ? player.State.BornAvatarId : AetherId;
 
                 // A brand-new player receives the starter roster once. It immediately becomes part of
                 // the persisted state, so reconnects preserve its GUID and born time.
@@ -328,7 +329,9 @@ public sealed class AvatarModule(IPlayer player, GameData data, GuidManager guid
             notify = new AvatarTeamUpdateNotify();
 
             foreach (var team in teams.Values)
+            {
                 notify.AvatarTeamMap.Add(team.Id, team.Info());
+            }
         }
 
         await player.Send(notify);

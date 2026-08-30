@@ -119,6 +119,7 @@ public sealed class AvatarEquipTests
         Assert.Equal(restoredTeam.Id, login.CurAvatarTeamId);
         Assert.Equal(restoredTeam.CurrentAvatarGuid, login.ChooseAvatarGuid);
         Assert.Equal(restoredTeam.Name, login.AvatarTeamMap[restoredTeam.Id].TeamName);
+
         Assert.Equal(
             restoredTeam.Avatars.Select(avatar => avatar.Guid),
             login.AvatarTeamMap[restoredTeam.Id].AvatarGuidList);
@@ -237,6 +238,7 @@ public sealed class AvatarEquipTests
         Assert.Empty(sent);
 
         var current = teams.Current;
+
         Assert.Equal(original.Avatars.Select(avatar => avatar.Guid),
             current.Avatars.Select(avatar => avatar.Guid));
         Assert.Equal(original.CurrentAvatarGuid, current.CurrentAvatarGuid);
@@ -303,6 +305,7 @@ public sealed class AvatarEquipTests
 
         var team = teams.Teams[2];
         Assert.Equal(second.Guid, team.CurrentAvatarGuid);
+
         Assert.Equal(
             second.Guid,
             player.State.AvatarTeams.Single(state => state.TeamId == 2).CurrentAvatarGuid);
@@ -325,9 +328,7 @@ public sealed class AvatarEquipTests
 
         var responses = await Task.WhenAll(
             Enumerable.Range(start: 0, count: 100).Select(index => {
-                var members = index % 2 == 0
-                    ? new[] { first.Guid, second.Guid }
-                    : [second.Guid, first.Guid];
+                var members = index % 2 == 0 ? new[] { first.Guid, second.Guid } : [second.Guid, first.Guid];
 
                 return teams.OnSetUpAvatarTeam(new SetUpAvatarTeamReq {
                     TeamId = 1,
@@ -374,6 +375,7 @@ public sealed class AvatarEquipTests
         Assert.Equal(second.Guid, response.CurGuid);
         Assert.Equal(expected: 123u, response.SkillId);
         Assert.Equal(second.Guid, teams.Current.CurrentAvatarGuid);
+
         Assert.Equal(
             second.Guid,
             player.State.AvatarTeams.Single(state => state.TeamId == 1).CurrentAvatarGuid);
@@ -404,6 +406,7 @@ public sealed class AvatarEquipTests
 
         Assert.Equal((int)Retcode.RETCODE_AVATAR_NOT_EXIST_IN_TEAM, response.Retcode);
         Assert.Equal(original.CurrentAvatarGuid, teams.Current.CurrentAvatarGuid);
+
         Assert.Equal(
             original.CurrentAvatarGuid,
             player.State.AvatarTeams.Single(state => state.TeamId == 1).CurrentAvatarGuid);
@@ -548,7 +551,9 @@ public sealed class AvatarEquipTests
 
         _ = client.Subscribe(GameSubjects.OutboundPacket, message => {
             lock (sent)
+            {
                 sent.Add(message.Decode<IMessage>());
+            }
 
             return Task.CompletedTask;
         });

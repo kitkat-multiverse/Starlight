@@ -7,7 +7,7 @@ public sealed class PlayerTeam
     public required Avatar[] Avatars { get; set; }
     public required ulong CurrentAvatarGuid { get; set; }
 
-    public Starlight.Protocol.AvatarTeam Info() => new() {
+    public Protocol.AvatarTeam Info() => new() {
         TeamName = Name,
         AvatarGuidList = [.. Avatars.Select(avatar => avatar.Guid)]
     };

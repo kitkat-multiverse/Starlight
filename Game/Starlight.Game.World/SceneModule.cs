@@ -85,7 +85,9 @@ public sealed class SceneModule(IPlayer player) : IModule
         _teamEntities.Clear();
 
         foreach (var (guid, entity) in nextEntities)
+        {
             _teamEntities.Add(guid, entity);
+        }
 
         _currentAvatarGuid = team.CurrentAvatarGuid;
 
