@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Google.Protobuf;
+using Starlight.Common;
 using Starlight.Commands;
 using Starlight.Game.Modules;
 using Starlight.Game.Player;
@@ -22,10 +23,10 @@ public sealed class GiveCommandTests
     public async Task Execute_OnlinePlayer_AddsMaterialAndSendsChange()
     {
         var players = new PlayerManager();
-        var (player, sent) = Player(uid: 1001);
-        var inventory = player.Module<InventoryModule>();
         var data = Data();
-        data.MaterialData[100015] = new MaterialData { Id = 100015 };
+        data.MaterialData[100015] = new MaterialData { Id = 100015, StackLimit = 9999 };
+        var (player, sent) = Player(uid: 1001, data);
+        var inventory = player.Module<InventoryModule>();
 
         Assert.True(players.Add(player));
         await inventory.OnLogin();
@@ -54,9 +55,9 @@ public sealed class GiveCommandTests
     public async Task Execute_MissingCount_DefaultsToOne()
     {
         var players = new PlayerManager();
-        var (player, _) = Player(uid: 1001);
         var data = Data();
-        data.MaterialData[100015] = new MaterialData { Id = 100015 };
+        data.MaterialData[100015] = new MaterialData { Id = 100015, StackLimit = 9999 };
+        var (player, _) = Player(uid: 1001, data);
         Assert.True(players.Add(player));
 
         var command = new GiveCommand(players, data);
@@ -71,9 +72,9 @@ public sealed class GiveCommandTests
     public async Task Execute_WeaponModifiers_CreateLeveledRefinedCopies()
     {
         var players = new PlayerManager();
-        var (player, sent) = Player(uid: 1001);
-        var inventory = player.Module<InventoryModule>();
         var data = Data();
+        var (player, sent) = Player(uid: 1001, data);
+        var inventory = player.Module<InventoryModule>();
 
         data.WeaponData[11501] = new WeaponData {
             Id = 11501,
@@ -108,15 +109,15 @@ public sealed class GiveCommandTests
     public async Task Execute_BulkSelectors_GrantParsedMaterialsAndWeapons()
     {
         var players = new PlayerManager();
-        var (player, sent) = Player(uid: 1001);
-        var inventory = player.Module<InventoryModule>();
         var data = Data();
-        data.MaterialData[100015] = new MaterialData { Id = 100015 };
-        data.MaterialData[100016] = new MaterialData { Id = 100016 };
+        data.MaterialData[100015] = new MaterialData { Id = 100015, StackLimit = 9999 };
+        data.MaterialData[100016] = new MaterialData { Id = 100016, StackLimit = 9999 };
         data.MaterialData[100017] = new MaterialData { Id = 100017, ItemType = "ITEM_VIRTUAL" };
         data.MaterialData[100018] = new MaterialData { Id = 100018, UseOnGain = true };
-        data.MaterialData[100100] = new MaterialData { Id = 100100 };
+        data.MaterialData[100100] = new MaterialData { Id = 100100, StackLimit = 9999 };
         data.WeaponData[11501] = new WeaponData { Id = 11501, SkillAffix = [1234] };
+        var (player, sent) = Player(uid: 1001, data);
+        var inventory = player.Module<InventoryModule>();
 
         Assert.True(players.Add(player));
         await inventory.OnLogin();
@@ -211,17 +212,18 @@ public sealed class GiveCommandTests
             .TryGetWeapon(restored.WeaponGuid, out _));
     }
 
-    private static (StarlightPlayer Player, List<IMessage> Sent) Player(uint uid, GameData? data = null)
+    private static (StarlightPlayer Player, List<IMessage> Sent) Player(uint uid, GameData data)
     {
         var services = new ServiceCollection()
             .AddLogging()
             .BuildServiceProvider();
 
         var registry = new ModuleRegistry();
-        registry.AddModule<InventoryModule>(static (_, player) => new InventoryModule(player));
+        var guidManager = new GuidManager(serverId: 1);
+        registry.AddModule<InventoryModule>((_, player) => new InventoryModule(player, guidManager, data));
 
-        if (data is not null)
-            registry.AddModule<AvatarModule>((_, player) => new AvatarModule(player, data));
+        if (data.AvatarData.Count > 0)
+            registry.AddModule<AvatarModule>((_, player) => new AvatarModule(player, data, guidManager));
 
         registry.Build();
 

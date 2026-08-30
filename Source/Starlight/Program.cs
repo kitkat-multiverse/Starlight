@@ -21,6 +21,7 @@ using Starlight.Rpc.Tunnel;
 using Starlight.Rpc.Tunnel.Connection;
 using Starlight.SDK;
 using Starlight.SDK.Http.Endpoints;
+using Starlight.Common;
 
 namespace Starlight;
 
@@ -117,6 +118,7 @@ internal static class Program
                 .AddSerilog()
                 .AddCommands()
                 .AddSingleton<GameData>()
+                .AddSingleton<GuidManager>(_ => new GuidManager(serverId: 1))
                 .AddHostedService(s => s.GetRequiredService<GameData>())
                 .AddSingleton<WorldManager>()
                 // Client crypto contains the RSA keys used in dispatch, gate, & on the client.

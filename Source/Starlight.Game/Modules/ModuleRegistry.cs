@@ -59,7 +59,7 @@ public sealed class ModuleRegistry
     }
 
     /// <summary>Registers a handler for <paramref name="event"/> living on <typeparamref name="TModule"/>.</summary>
-    public void AddLifecycle<TModule>(LifecycleEvent @event, LifecycleHandler handler)
+    public void AddLifecycle<TModule>(LifecycleEvent @event, LifecycleOrder order, LifecycleHandler handler)
         where TModule : class, IModule
     {
         ThrowIfImmutable();
@@ -67,7 +67,17 @@ public sealed class ModuleRegistry
         if (!_lifecycles.TryGetValue(@event, out var list))
             _lifecycles[@event] = list = [];
 
-        list.Add(new PendingLifecycle(typeof(TModule), handler));
+        list.Add(new PendingLifecycle(typeof(TModule), order, handler));
+    }
+
+    /// <summary>Compatibility for callers that don't specify an order</summary>
+    public void AddLifecycle<TModule>(
+        LifecycleEvent @event,
+        LifecycleHandler handler
+    )
+        where TModule : class, IModule
+    {
+        AddLifecycle<TModule>(@event, LifecycleOrder.Normal, handler);
     }
 
     /// <summary>Freezes the registry into its read-only lookup form, returning it. Call once, after all components register.</summary>
@@ -78,11 +88,20 @@ public sealed class ModuleRegistry
 
         _table = _handlers.ToFrozenDictionary(
             pair => pair.Key,
-            pair => pair.Value.Select(h => new CompiledHandler(Resolve(h.ModuleType), h.Handler)).ToArray());
+            pair => pair.Value
+                .Select(handler => new CompiledHandler(
+                    Resolve(handler.ModuleType),
+                    handler.Handler))
+                .ToArray());
 
         _lifecycleTable = _lifecycles.ToFrozenDictionary(
             pair => pair.Key,
-            pair => pair.Value.Select(h => new CompiledLifecycle(Resolve(h.ModuleType), h.Handler)).ToArray());
+            pair => pair.Value
+                .OrderBy(handler => handler.Order)
+                .Select(handler => new CompiledLifecycle(
+                    Resolve(handler.ModuleType),
+                    handler.Handler))
+                .ToArray());
 
         Immutable = true;
 
@@ -148,7 +167,7 @@ public sealed class ModuleRegistry
 
     private readonly record struct PendingHandler(Type ModuleType, ModuleHandler Handler);
 
-    private readonly record struct PendingLifecycle(Type ModuleType, LifecycleHandler Handler);
+    private readonly record struct PendingLifecycle(Type ModuleType, LifecycleOrder Order, LifecycleHandler Handler);
 
     private readonly record struct CompiledHandler(int ModuleIndex, ModuleHandler Invoke);
 

@@ -1,3 +1,4 @@
+using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Starlight.Game.Modules;
 using Starlight.Kcp;
@@ -17,6 +18,8 @@ public sealed class PlayerModule(
     IPlayer player
 ) : IModule
 {
+    private bool _removedFromPlayerManager;
+
     /// <summary>
     /// Authenticates the player and loads their data, then hands off to every
     /// <see cref="LifecycleEvent.PlayerLogin"/> handler before answering the client.
@@ -42,7 +45,11 @@ public sealed class PlayerModule(
 
             // Set player properties.
             player.Uid = data.Uid;
-            player.State = data.State ?? new NetPlayerState();
+
+            lock (player.StateLock)
+            {
+                player.State = data.State ?? new NetPlayerState();
+            }
             nickname = data.Profile?.Nickname ?? string.Empty;
 
             if (!players.Add(player))
@@ -89,28 +96,57 @@ public sealed class PlayerModule(
         };
     }
 
-    [Lifecycle(LifecycleEvent.PlayerDisconnect)]
-    public async Task OnDisconnect()
+    [Lifecycle(LifecycleEvent.PlayerSaving, LifecycleOrder.First)]
+    public async Task OnSaving()
     {
-        // A rejected duplicate session must not overwrite the live session's state.
+        // Only the registered session may persist this player's state.
+        // A rejected duplicate session will fail this exact-instance removal.
         if (!players.Remove(player))
             return;
 
+        _removedFromPlayerManager = true;
+
         try
         {
+            NetPlayerState state;
+
+            lock (player.StateLock)
+            {
+                state = NetPlayerState.Parser.ParseFrom(player.State.ToByteArray());
+            }
+
             var response = await rpc.Request<SavePlayerReq, SavePlayerRsp>(
                 GameSubjects.SavePlayer,
-                new SavePlayerReq { Uid = player.Uid, State = player.State });
+                new SavePlayerReq {
+                    Uid = player.Uid,
+                    State = state
+                });
 
             if (response.Retcode != StarlightRetcode.Success)
-                logger.LogError("Failed to save player '{PlayerId}': {Retcode}", player.Uid, response.Retcode);
+            {
+                logger.LogError(
+                    "Failed to save player '{PlayerId}': {Retcode}",
+                    player.Uid,
+                    response.Retcode);
+            }
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to save player '{PlayerId}' during disconnect", player.Uid);
+            logger.LogError(
+                ex,
+                "Failed to save player '{PlayerId}' during disconnect",
+                player.Uid);
         }
+    }
 
-        logger.LogInformation("Player '{PlayerId}' logged out.", player.Uid);
+    [Lifecycle(LifecycleEvent.PlayerDisconnect, LifecycleOrder.First)]
+    public Task OnDisconnect()
+    {
+        // Do not report rejected duplicate sessions as logged out.
+        if (_removedFromPlayerManager)
+            logger.LogInformation("Player '{PlayerId}' logged out.", player.Uid);
+
+        return Task.CompletedTask;
     }
 
     /// <summary>Unlocks everything the client gates behind an open state.</summary>

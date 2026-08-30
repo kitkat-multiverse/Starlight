@@ -3,6 +3,8 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Serilog.Core;
 using Starlight.DbGate.Models;
 
 namespace Starlight.DbGate;
@@ -47,7 +49,7 @@ public sealed class StarlightDbContext(DbContextOptions options) : DbContext(opt
 /// Preserves early-development databases when player state is introduced. The generic schema
 /// checker intentionally archives drifted files, but this change is safely additive.
 /// </summary>
-internal sealed class PlayerStateSchemaUpgradeService(IServiceScopeFactory scopes) : IHostedService
+internal sealed class PlayerStateSchemaUpgradeService(IServiceScopeFactory scopes, ILogger logger) : IHostedService
 {
     public async Task StartAsync(CancellationToken cancellationToken)
     {
@@ -93,9 +95,13 @@ internal sealed class PlayerStateSchemaUpgradeService(IServiceScopeFactory scope
                     cancellationToken);
             }
         }
-        catch (SqliteException)
+        catch (SqliteException ex) when (ex.SqliteErrorCode == 1) // SQLITE_ERROR
         {
             // Let the normal schema service produce its detailed drift/startup error.
+        }
+        catch (SqliteException ex)
+        {
+            logger.LogWarning(ex, "Player state schema upgrade failed, falling back to the generic schema service.");
         }
         finally
         {

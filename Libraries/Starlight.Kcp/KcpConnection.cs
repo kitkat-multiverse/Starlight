@@ -88,6 +88,7 @@ public sealed class KcpConnection
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(maxPendingSegments, other: 1);
 
+        // TODO: replace polling with signal-based wakeup
         while (PendingSendSegments >= maxPendingSegments)
         {
             ct.ThrowIfCancellationRequested();

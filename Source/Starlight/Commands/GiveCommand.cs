@@ -127,6 +127,7 @@ public sealed class GiveCommand(PlayerManager players, GameData data) : ICommand
         return items.Count;
     }
 
+    // TODO: Remove these hardcoded illegal material IDs once the game data is cleaned up.
     // These resource rows are placeholders, internal-use items, or known to produce invalid
     // inventory entries.
     private static bool IsIllegalMaterial(uint id)

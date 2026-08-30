@@ -1,13 +1,16 @@
 using System.Diagnostics.CodeAnalysis;
+using Starlight.Common;
 using Starlight.Game.Modules;
+using Starlight.Game.Resources;
 using Starlight.Game.Resources.Excel;
 using Starlight.Protocol;
 using Starlight.Rpc.Proto;
+using IMessage = Starlight.Protobuf.Core.IMessage;
 
 namespace Starlight.Game.Player;
 
 /// <summary>Owns one player's material stacks and equipment instances.</summary>
-public sealed class InventoryModule(IPlayer player) : IModule
+public sealed class InventoryModule(IPlayer player, GuidManager guidManager, GameData data) : IModule
 {
     private const uint PackWeightLimit = 30000;
     private const int MaterialCountLimit = 2000;
@@ -19,38 +22,69 @@ public sealed class InventoryModule(IPlayer player) : IModule
     private readonly Dictionary<ulong, WeaponItem> _weapons = [];
     private readonly Dictionary<uint, NetMaterial> _materialState = [];
     private readonly Dictionary<ulong, NetWeapon> _weaponState = [];
-
-    // The low range is currently occupied by starter avatars and their weapons. This partition
-    // keeps temporary inventory GUIDs separate until the allocator is persisted in DbGate.
-    private ulong _nextGuid = 0x20000000;
     private bool _loaded;
     private bool _loggedIn;
 
-    public IReadOnlyCollection<MaterialItem> Materials => _materials.Values;
-    public IReadOnlyCollection<WeaponItem> Weapons => _weapons.Values;
+    public IReadOnlyCollection<MaterialItem> Materials
+    {
+        get
+        {
+            lock (player.StateLock)
+            {
+                LoadState();
+                return [.. _materials.Values];
+            }
+        }
+    }
+
+    public IReadOnlyCollection<WeaponItem> Weapons
+    {
+        get
+        {
+            lock (player.StateLock)
+            {
+                LoadState();
+                return [.. _weapons.Values];
+            }
+        }
+    }
 
     public bool TryGetMaterial(uint itemId, [NotNullWhen(true)] out MaterialItem? item)
     {
-        LoadState();
-        return _materials.TryGetValue(itemId, out item);
+        lock (player.StateLock)
+        {
+            LoadState();
+            return _materials.TryGetValue(itemId, out item);
+        }
     }
 
     public bool TryGetWeapon(ulong guid, [NotNullWhen(true)] out WeaponItem? item)
     {
-        LoadState();
-        return _weapons.TryGetValue(guid, out item);
+        lock (player.StateLock)
+        {
+            LoadState();
+            return _weapons.TryGetValue(guid, out item);
+        }
     }
 
     public async Task<MaterialItem> AddMaterial(uint itemId, uint count)
     {
-        LoadState();
         ArgumentOutOfRangeException.ThrowIfZero(count);
+        AddedItem change;
 
-        if (!_materials.ContainsKey(itemId) && _materials.Count >= MaterialCountLimit)
-            throw new InvalidOperationException("The material inventory is full.");
+        lock (player.StateLock)
+        {
+            LoadState();
 
-        var change = AddMaterialCore(itemId, count);
-        await NotifyAdded([change]);
+            if (!_materials.ContainsKey(itemId) && _materials.Count >= MaterialCountLimit)
+                throw new InvalidOperationException("The material inventory is full.");
+
+            change = AddMaterialCore(itemId, count);
+        }
+
+        if (change.Count > 0)
+            await NotifyAdded([change]);
+
         return (MaterialItem)change.Item;
     }
 
@@ -60,18 +94,25 @@ public sealed class InventoryModule(IPlayer player) : IModule
         bool showHint = true
     )
     {
-        LoadState();
         ArgumentOutOfRangeException.ThrowIfZero(count);
 
         var changes = new List<AddedItem>();
 
-        foreach (var itemId in itemIds.Distinct())
+        lock (player.StateLock)
         {
-            // Existing stacks can still be updated when every material slot is occupied.
-            if (!_materials.ContainsKey(itemId) && _materials.Count >= MaterialCountLimit)
-                continue;
+            LoadState();
 
-            changes.Add(AddMaterialCore(itemId, count));
+            foreach (var itemId in itemIds.Distinct())
+            {
+                // Existing stacks can still be updated when every material slot is occupied.
+                if (!_materials.ContainsKey(itemId) && _materials.Count >= MaterialCountLimit)
+                    continue;
+
+                var change = AddMaterialCore(itemId, count);
+
+                if (change.Count > 0)
+                    changes.Add(change);
+            }
         }
 
         await NotifyAdded(changes, showHint);
@@ -86,25 +127,29 @@ public sealed class InventoryModule(IPlayer player) : IModule
         bool showHint = true
     )
     {
-        LoadState();
         ArgumentOutOfRangeException.ThrowIfZero(amount);
         level = Math.Clamp(level, min: 1u, max: 90u);
         refinement = Math.Clamp(refinement, min: 1u, max: 5u);
 
         var changes = new List<AddedItem>();
 
-        foreach (var data in weapons)
+        lock (player.StateLock)
         {
-            for (var copy = 0u; copy < amount; copy++)
+            LoadState();
+
+            foreach (var weaponData in weapons)
             {
+                for (var copy = 0u; copy < amount; copy++)
+                {
+                    if (_weapons.Count >= WeaponCountLimit)
+                        break;
+
+                    changes.Add(AddWeaponCore(weaponData, NextGuid(), level, refinement));
+                }
+
                 if (_weapons.Count >= WeaponCountLimit)
                     break;
-
-                changes.Add(AddWeaponCore(data, NextGuid(), level, refinement));
             }
-
-            if (_weapons.Count >= WeaponCountLimit)
-                break;
         }
 
         await NotifyAdded(changes, showHint);
@@ -120,67 +165,92 @@ public sealed class InventoryModule(IPlayer player) : IModule
         bool showHint = true
     )
     {
-        LoadState();
+        AddedItem? change = null;
+        WeaponItem item;
 
-        if (_weapons.TryGetValue(guid, out var existing))
-            return existing;
+        lock (player.StateLock)
+        {
+            LoadState();
 
-        if (_weapons.Count >= WeaponCountLimit)
-            throw new InvalidOperationException("The weapon inventory is full.");
+            if (_weapons.TryGetValue(guid, out var existing))
+                return existing;
 
-        var change = AddWeaponCore(
-            data,
-            guid,
-            Math.Clamp(level, min: 1u, max: 90u),
-            Math.Clamp(refinement, min: 1u, max: 5u));
+            if (_weapons.Count >= WeaponCountLimit)
+                throw new InvalidOperationException("The weapon inventory is full.");
 
-        await NotifyAdded([change], showHint);
-        return (WeaponItem)change.Item;
+            change = AddWeaponCore(
+                data,
+                guid,
+                Math.Clamp(level, min: 1u, max: 90u),
+                Math.Clamp(refinement, min: 1u, max: 5u));
+            item = (WeaponItem)change.Value.Item;
+        }
+
+        await NotifyAdded([change.Value], showHint);
+        return item;
     }
 
     public async Task<bool> RemoveMaterial(uint itemId, uint count)
     {
-        LoadState();
+        IMessage? notification = null;
 
-        if (!_materials.TryGetValue(itemId, out var item) || count == 0 || item.Count < count)
-            return false;
-
-        item.Count -= count;
-
-        if (item.Count == 0)
+        lock (player.StateLock)
         {
-            _materials.Remove(itemId);
+            LoadState();
 
-            if (_materialState.Remove(itemId, out var state))
-                player.State.Materials.Remove(state);
+            if (!_materials.TryGetValue(itemId, out var item) || count == 0 || item.Count < count)
+                return false;
 
-            if (_loggedIn)
+            item.Count -= count;
+
+            if (item.Count == 0)
             {
-                await player.Send(new StoreItemDelNotify {
-                    StoreType = StoreType.STORE_TYPE_PACK,
-                    GuidList = { item.Guid }
-                });
-            }
-        } else
-        {
-            _materialState[itemId].Count = item.Count;
+                _materials.Remove(itemId);
 
-            if (_loggedIn)
+                if (_materialState.Remove(itemId, out var state))
+                    player.State.Materials.Remove(state);
+
+                if (_loggedIn)
+                {
+                    notification = new StoreItemDelNotify {
+                        StoreType = StoreType.STORE_TYPE_PACK,
+                        GuidList = { item.Guid }
+                    };
+                }
+            } else
             {
-                await player.Send(new StoreItemChangeNotify {
-                    StoreType = StoreType.STORE_TYPE_PACK,
-                    ItemList = { item.ToProtocol() }
-                });
+                _materialState[itemId].Count = item.Count;
+
+                if (_loggedIn)
+                {
+                    notification = new StoreItemChangeNotify {
+                        StoreType = StoreType.STORE_TYPE_PACK,
+                        ItemList = { item.ToProtocol() }
+                    };
+                }
             }
         }
+
+        if (notification is not null)
+            await player.Send(notification);
 
         return true;
     }
 
-    [Lifecycle(LifecycleEvent.PlayerLogin)]
+    [Lifecycle(LifecycleEvent.PlayerLogin, LifecycleOrder.HighPriority)]
     public async Task OnLogin()
     {
-        LoadState();
+        List<Item> items;
+
+        lock (player.StateLock)
+        {
+            LoadState();
+
+            items = [
+                .. _materials.Values.Select(item => item.ToProtocol()),
+                .. _weapons.Values.Select(item => item.ToProtocol())
+            ];
+        }
 
         await player.Send(new StoreWeightLimitNotify {
             StoreType = StoreType.STORE_TYPE_PACK,
@@ -190,38 +260,59 @@ public sealed class InventoryModule(IPlayer player) : IModule
             WeightLimit = PackWeightLimit
         });
 
-        var items = _materials.Values.Select(item => item.ToProtocol())
-            .Concat(_weapons.Values.Select(item => item.ToProtocol()));
-
         await player.Send(new PlayerStoreNotify {
             StoreType = StoreType.STORE_TYPE_PACK,
             WeightLimit = PackWeightLimit,
-            ItemList = [.. items]
+            ItemList = items
         });
 
-        _loggedIn = true;
+        lock (player.StateLock)
+        {
+            _loggedIn = true;
+        }
     }
 
-    private AddedItem AddMaterialCore(uint itemId, uint count)
+    private AddedItem AddMaterialCore(uint itemId, uint requestedCount)
     {
+        if (!data.MaterialData.TryGetValue(itemId, out var materialData))
+            throw new ArgumentException($"Material {itemId} does not exist.", nameof(itemId));
+
+        var stackLimit = Math.Max(materialData.StackLimit, val2: 1u);
+
         if (!_materials.TryGetValue(itemId, out var item))
         {
+            var addedCount = Math.Min(requestedCount, stackLimit);
+
             item = new MaterialItem {
                 ItemId = itemId,
                 Guid = NextGuid(),
-                Count = count
+                Count = addedCount
             };
 
             _materials.Add(itemId, item);
-            var state = new NetMaterial { ItemId = item.ItemId, Guid = item.Guid, Count = item.Count };
+
+            var state = new NetMaterial {
+                ItemId = item.ItemId,
+                Guid = item.Guid,
+                Count = item.Count
+            };
+
             _materialState.Add(itemId, state);
             player.State.Materials.Add(state);
-            return new AddedItem(item, count, IsNew: true);
+
+            return new AddedItem(item, item.ToProtocol(), addedCount, IsNew: true);
         }
 
-        item.Count = checked(item.Count + count);
+        if (item.Count >= stackLimit)
+            return new AddedItem(item, item.ToProtocol(), Count: 0, IsNew: false);
+
+        var availableSpace = stackLimit - item.Count;
+        var added = Math.Min(requestedCount, availableSpace);
+
+        item.Count += added;
         _materialState[itemId].Count = item.Count;
-        return new AddedItem(item, count, IsNew: false);
+
+        return new AddedItem(item, item.ToProtocol(), added, IsNew: false);
     }
 
     private AddedItem AddWeaponCore(WeaponData data, ulong guid, uint level, uint refinement)
@@ -249,61 +340,65 @@ public sealed class InventoryModule(IPlayer player) : IModule
         };
         _weaponState.Add(guid, state);
         player.State.Weapons.Add(state);
-        return new AddedItem(item, Count: 1, IsNew: true);
+        return new AddedItem(item, item.ToProtocol(), Count: 1, IsNew: true);
     }
 
     /// <summary>Hydrates the module once from the state DbGate attached to the player.</summary>
     internal void LoadState()
     {
-        if (_loaded)
-            return;
-
-        _loaded = true;
-
-        foreach (var state in player.State.Materials.Take(MaterialCountLimit))
+        lock (player.StateLock)
         {
-            if (state.ItemId == 0 || state.Guid == 0 || state.Count == 0
-                || _materials.ContainsKey(state.ItemId))
-                continue;
+            if (_loaded)
+                return;
 
-            _materials.Add(state.ItemId, new MaterialItem {
-                ItemId = state.ItemId,
-                Guid = state.Guid,
-                Count = state.Count
-            });
-            _materialState.Add(state.ItemId, state);
-            AdvanceGuid(state.Guid);
+            _loaded = true;
+
+            foreach (var state in player.State.Materials.Take(MaterialCountLimit))
+            {
+                if (state.ItemId == 0 || state.Guid == 0 || state.Count == 0
+                    || _materials.ContainsKey(state.ItemId))
+                    continue;
+
+                if (!data.MaterialData.TryGetValue(state.ItemId, out var materialData))
+                    continue;
+
+                var stackLimit = Math.Max(materialData.StackLimit, val2: 1u);
+                state.Count = Math.Min(state.Count, stackLimit);
+
+                _materials.Add(state.ItemId, new MaterialItem {
+                    ItemId = state.ItemId,
+                    Guid = state.Guid,
+                    Count = state.Count
+                });
+                _materialState.Add(state.ItemId, state);
+            }
+
+            foreach (var state in player.State.Weapons.Take(WeaponCountLimit))
+            {
+                if (state.ItemId == 0 || state.Guid == 0 || _weapons.ContainsKey(state.Guid))
+                    continue;
+
+                _weapons.Add(state.Guid, new WeaponItem {
+                    ItemId = state.ItemId,
+                    Guid = state.Guid,
+                    GadgetId = state.GadgetId,
+                    Level = Math.Clamp(state.Level, min: 1u, max: 90u),
+                    Refinement = Math.Clamp(state.Refinement, min: 1u, max: 5u),
+                    PromoteLevel = state.PromoteLevel,
+                    AffixId = state.AffixId
+                });
+                _weaponState.Add(state.Guid, state);
+            }
         }
-
-        foreach (var state in player.State.Weapons.Take(WeaponCountLimit))
-        {
-            if (state.ItemId == 0 || state.Guid == 0 || _weapons.ContainsKey(state.Guid))
-                continue;
-
-            _weapons.Add(state.Guid, new WeaponItem {
-                ItemId = state.ItemId,
-                Guid = state.Guid,
-                GadgetId = state.GadgetId,
-                Level = Math.Clamp(state.Level, min: 1u, max: 90u),
-                Refinement = Math.Clamp(state.Refinement, min: 1u, max: 5u),
-                PromoteLevel = state.PromoteLevel,
-                AffixId = state.AffixId
-            });
-            _weaponState.Add(state.Guid, state);
-            AdvanceGuid(state.Guid);
-        }
-    }
-
-    private void AdvanceGuid(ulong guid)
-    {
-        if ((uint)(guid >> 32) == player.Uid)
-            _nextGuid = Math.Max(_nextGuid, (uint)guid);
     }
 
     private async Task NotifyAdded(IEnumerable<AddedItem> added, bool showHint = true)
     {
-        if (!_loggedIn)
-            return;
+        lock (player.StateLock)
+        {
+            if (!_loggedIn)
+                return;
+        }
 
         var chunks = added.Chunk(NotifyChunkSize).ToArray();
 
@@ -311,7 +406,7 @@ public sealed class InventoryModule(IPlayer player) : IModule
         {
             await player.Send(new StoreItemChangeNotify {
                 StoreType = StoreType.STORE_TYPE_PACK,
-                ItemList = [.. chunk.Select(change => change.Item.ToProtocol())]
+                ItemList = [.. chunk.Select(change => change.Protocol)]
             });
 
             if (showHint)
@@ -335,7 +430,12 @@ public sealed class InventoryModule(IPlayer player) : IModule
         }
     }
 
-    private ulong NextGuid() => (ulong)player.Uid << 32 | ++_nextGuid;
+    private ulong NextGuid() => guidManager.GenGuid(GuidManager.GuidType.Item);
 
-    private readonly record struct AddedItem(InventoryItem Item, uint Count, bool IsNew);
+    private readonly record struct AddedItem(
+        InventoryItem Item,
+        Item Protocol,
+        uint Count,
+        bool IsNew
+    );
 }

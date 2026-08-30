@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Google.Protobuf;
+using Starlight.Common;
 using Starlight.Game.Modules;
 using Starlight.Game.Player;
 using Starlight.Game.Resources;
@@ -113,12 +114,29 @@ public sealed class AvatarEquipTests
             player.State.Avatars.Single(state => state.AvatarId == second.AvatarId).WeaponGuid);
     }
 
+    [Fact]
+    public async Task AddAvatar_ConcurrentCalls_AddOnlyOneAvatar()
+    {
+        var data = Data();
+        var (player, _) = Player(uid: 1001, data);
+        var avatars = player.Module<AvatarModule>();
+
+        var results = await Task.WhenAll(
+            Enumerable.Range(start: 0, count: 100)
+                .Select(_ => Task.Run(() => avatars.AddAvatar(10000007))));
+
+        Assert.Single(results, result => result.Added);
+        Assert.Single(avatars.Avatars.Values, avatar => avatar.AvatarId == 10000007);
+        Assert.Single(player.State.Avatars, state => state.AvatarId == 10000007);
+    }
+
     private static (StarlightPlayer Player, List<IMessage> Sent) Player(uint uid, GameData data)
     {
         var services = new ServiceCollection().AddLogging().BuildServiceProvider();
         var registry = new ModuleRegistry();
-        registry.AddModule<InventoryModule>(static (_, player) => new InventoryModule(player));
-        registry.AddModule<AvatarModule>((_, player) => new AvatarModule(player, data));
+        var guidManager = new GuidManager(serverId: 1);
+        registry.AddModule<InventoryModule>((_, player) => new InventoryModule(player, guidManager, data));
+        registry.AddModule<AvatarModule>((_, player) => new AvatarModule(player, data, guidManager));
         registry.Build();
 
         var (client, server) = DirectTunnel.CreatePair();

@@ -1,7 +1,10 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Google.Protobuf;
+using Starlight.Common;
 using Starlight.Game.Modules;
 using Starlight.Game.Player;
+using Starlight.Game.Resources;
 using Starlight.Game.Resources.Excel;
 using Starlight.Protocol;
 using Starlight.Rpc;
@@ -18,7 +21,7 @@ public sealed class InventoryTests
     public async Task OnLogin_SendsTheSeededInventory()
     {
         var (player, sent) = Player(uid: 1001);
-        var inventory = new InventoryModule(player);
+        var inventory = Inventory(player, Data());
 
         var material = await inventory.AddMaterial(itemId: 100015, count: 3);
         Assert.Empty(sent);
@@ -39,7 +42,7 @@ public sealed class InventoryTests
     public async Task AddMaterial_AfterLogin_SendsAChange()
     {
         var (player, sent) = Player(uid: 1001);
-        var inventory = new InventoryModule(player);
+        var inventory = Inventory(player, Data());
         await inventory.OnLogin();
         sent.Clear();
 
@@ -64,7 +67,7 @@ public sealed class InventoryTests
     public async Task RemoveMaterial_LastItem_SendsADeletion()
     {
         var (player, sent) = Player(uid: 1001);
-        var inventory = new InventoryModule(player);
+        var inventory = Inventory(player, Data());
         var material = await inventory.AddMaterial(itemId: 100015, count: 2);
         await inventory.OnLogin();
         sent.Clear();
@@ -80,7 +83,14 @@ public sealed class InventoryTests
     public async Task AddMaterials_StopsAtAdvertisedMaterialCapacity()
     {
         var (player, sent) = Player(uid: 1001);
-        var inventory = new InventoryModule(player);
+        var data = Data();
+
+        foreach (var itemId in Enumerable.Range(start: 100000, count: 2001))
+        {
+            data.MaterialData[(uint)itemId] = new MaterialData { Id = (uint)itemId, StackLimit = 1 };
+        }
+
+        var inventory = Inventory(player, data);
         await inventory.OnLogin();
         sent.Clear();
 
@@ -99,7 +109,8 @@ public sealed class InventoryTests
     public async Task OnLogin_RestoresInventoryFromPersistedPlayerState()
     {
         var (firstPlayer, _) = Player(uid: 1001);
-        var firstInventory = new InventoryModule(firstPlayer);
+        var data = Data();
+        var firstInventory = Inventory(firstPlayer, data);
 
         await firstInventory.AddMaterial(itemId: 100015, count: 7);
 
@@ -111,7 +122,7 @@ public sealed class InventoryTests
         var persisted = NetPlayerState.Parser.ParseFrom(firstPlayer.State.ToByteArray());
         var (secondPlayer, sent) = Player(uid: 1001);
         secondPlayer.State = persisted;
-        var secondInventory = new InventoryModule(secondPlayer);
+        var secondInventory = Inventory(secondPlayer, data);
 
         await secondInventory.OnLogin();
 
@@ -125,6 +136,75 @@ public sealed class InventoryTests
 
         var store = Assert.IsType<PlayerStoreNotify>(sent[1]);
         Assert.Equal(expected: 2, store.ItemList.Count);
+    }
+
+    [Fact]
+    public async Task AddMaterial_ExistingStack_ClampsToStackLimit()
+    {
+        var (player, sent) = Player(uid: 1001);
+        var data = Data(stackLimit: 10);
+        var inventory = Inventory(player, data);
+
+        await inventory.AddMaterial(itemId: 100015, count: 8);
+        await inventory.OnLogin();
+        sent.Clear();
+
+        var material = await inventory.AddMaterial(itemId: 100015, count: 100);
+
+        Assert.Equal(expected: 10u, material.Count);
+        Assert.Equal(expected: 10u, Assert.Single(player.State.Materials).Count);
+
+        var change = Assert.IsType<StoreItemChangeNotify>(sent[0]);
+        Assert.Equal(expected: 10u, Assert.Single(change.ItemList).Material?.Count);
+
+        var hint = Assert.IsType<ItemAddHintNotify>(sent[1]);
+        Assert.Equal(expected: 2u, Assert.Single(hint.ItemList).Count);
+    }
+
+    [Fact]
+    public async Task OnLogin_ClampsPersistedMaterialCountToStackLimit()
+    {
+        var (player, sent) = Player(uid: 1001);
+        var data = Data(stackLimit: 9999);
+
+        player.State.Materials.Add(new NetMaterial {
+            ItemId = 100015,
+            Guid = 123,
+            Count = 99999999
+        });
+
+        var inventory = Inventory(player, data);
+        await inventory.OnLogin();
+
+        Assert.True(inventory.TryGetMaterial(itemId: 100015, out var material));
+        Assert.Equal(expected: 9999u, material.Count);
+        Assert.Equal(expected: 9999u, Assert.Single(player.State.Materials).Count);
+
+        var store = Assert.IsType<PlayerStoreNotify>(sent[1]);
+        Assert.Equal(expected: 9999u, Assert.Single(store.ItemList).Material?.Count);
+    }
+
+    [Fact]
+    public async Task ConcurrentMutations_KeepInventoryAndStateConsistent()
+    {
+        var (player, _) = Player(uid: 1001);
+        var data = Data(stackLimit: 1000);
+        var inventory = Inventory(player, data);
+        var weaponData = new WeaponData { Id = 11501, GadgetId = 500001 };
+
+        var materialTasks = Enumerable.Range(start: 0, count: 200)
+            .Select(_ => Task.Run(() => inventory.AddMaterial(itemId: 100015, count: 1)));
+
+        var weaponTasks = Enumerable.Range(start: 0, count: 200)
+            .Select(_ => Task.Run(() => inventory.AddWeapons([weaponData])));
+
+        await Task.WhenAll(materialTasks.Concat<Task>(weaponTasks));
+
+        Assert.True(inventory.TryGetMaterial(itemId: 100015, out var material));
+        Assert.Equal(expected: 200u, material.Count);
+        Assert.Equal(expected: 200, inventory.Weapons.Count);
+        Assert.Equal(expected: 200u, Assert.Single(player.State.Materials).Count);
+        Assert.Equal(expected: 200, player.State.Weapons.Count);
     }
 
     private static (StarlightPlayer Player, List<IMessage> Sent) Player(uint uid)
@@ -143,5 +223,15 @@ public sealed class InventoryTests
         });
 
         return (new StarlightPlayer(services, registry, server) { Uid = uid }, sent);
+    }
+
+    private static InventoryModule Inventory(StarlightPlayer player, GameData data)
+        => new(player, new GuidManager(serverId: 1), data);
+
+    private static GameData Data(uint stackLimit = 9999)
+    {
+        var data = new GameData(new ConfigurationBuilder().Build());
+        data.MaterialData[100015] = new MaterialData { Id = 100015, StackLimit = stackLimit };
+        return data;
     }
 }
