@@ -10,8 +10,10 @@ using Starlight.DbGate;
 using Starlight.Console;
 using Starlight.Crypto.Client;
 using Starlight.Game;
+using Starlight.Game.Ability;
 using Starlight.Game.Modules;
 using Starlight.Protocol.V70;
+using Starlight.Protobuf.Registry;
 using Starlight.Gate;
 using Starlight.Game.Player;
 using Starlight.Game.Resources;
@@ -98,9 +100,12 @@ internal static class Program
             LogLevel.MinimumLevel = builder.Configuration
                 .GetValue("LogLevel", LogEventLevel.Information);
 
+            var protocol = new V70ProtocolRegistry();
+
             var moduleRegistry = new ModuleRegistry()
                 .AddGameComponent()
                 .AddPlayerComponent()
+                .AddAbilityComponent()
                 .AddWorldComponent()
                 .Build();
 
@@ -110,7 +115,7 @@ internal static class Program
                 .AddSdkServer()
                 .AddDispatchServer()
                 .AddDbGate()
-                .AddGateServer(new V70ProtocolRegistry())
+                .AddGateServer(protocol)
                 .AddGameServer(moduleRegistry)
                 // Add dependency services.
                 // The server services use these to operate.
@@ -118,6 +123,11 @@ internal static class Program
                 .AddSerilog()
                 .AddCommands()
                 .AddSingleton<GameData>()
+                .AddSingleton<ProtocolRegistry>(protocol)
+                .AddSingleton<AbilityInitializer>()
+                .AddSingleton<WorldAbilityRouter>()
+                .AddSingleton<IAbilityScopeResolver>(services => services.GetRequiredService<WorldAbilityRouter>())
+                .AddSingleton<IAbilityForwarder>(services => services.GetRequiredService<WorldAbilityRouter>())
                 .AddSingleton<GuidManager>(_ => new GuidManager(serverId: 1))
                 .AddHostedService(s => s.GetRequiredService<GameData>())
                 .AddSingleton<WorldManager>()

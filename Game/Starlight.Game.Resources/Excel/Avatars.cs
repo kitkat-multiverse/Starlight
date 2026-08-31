@@ -52,6 +52,15 @@ public sealed class AvatarSkillDepotData : Data
 
     [JsonPropertyName("talentStarName")]
     public string TalentStarName { get; set; } = string.Empty;
+
+    [JsonPropertyName("skillDepotAbilityGroup")]
+    public string SkillDepotAbilityGroup { get; set; } = string.Empty;
+
+    [JsonPropertyName("extraAbilities")]
+    public List<string> ExtraAbilities { get; set; } = [];
+
+    [JsonPropertyName("inherentProudSkillOpens")]
+    public List<InherentProudSkillOpenData> InherentProudSkillOpens { get; set; } = [];
 }
 
 [GameResource("AvatarTalentExcelConfigData.json")]
@@ -62,4 +71,13 @@ public sealed class AvatarTalentData : Data
 
     [JsonPropertyName("openConfig")]
     public string ConfigName { get; set; } = string.Empty;
+}
+
+public sealed class InherentProudSkillOpenData
+{
+    [JsonPropertyName("proudSkillGroupId")]
+    public uint ProudSkillGroupId { get; set; }
+
+    [JsonPropertyName("needAvatarPromoteLevel")]
+    public uint NeedAvatarPromoteLevel { get; set; }
 }

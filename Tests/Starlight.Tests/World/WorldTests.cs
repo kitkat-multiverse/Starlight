@@ -1,7 +1,10 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Starlight.Game;
+using Starlight.Game.Ability;
 using Starlight.Game.Modules;
 using Starlight.Game.Player;
+using Starlight.Game.Resources;
 using Starlight.Game.World;
 using Starlight.Protocol;
 using Starlight.Rpc;
@@ -16,12 +19,19 @@ namespace Starlight.Tests;
 file static class Session
 {
     /// <summary>Mirrors what <c>Program.cs</c> registers, so a broken component wiring fails here too.</summary>
-    public static IServiceProvider Services() => new ServiceCollection()
-        .AddLogging()
-        .AddSingleton<RpcTransport, DirectRpcTransport>()
-        .AddSingleton<PlayerManager>()
-        .AddSingleton<WorldManager>()
-        .BuildServiceProvider();
+    public static IServiceProvider Services()
+    {
+        var data = new GameData(new ConfigurationBuilder().Build());
+
+        return new ServiceCollection()
+            .AddLogging()
+            .AddSingleton(data)
+            .AddSingleton<AbilityInitializer>()
+            .AddSingleton<RpcTransport, DirectRpcTransport>()
+            .AddSingleton<PlayerManager>()
+            .AddSingleton<WorldManager>()
+            .BuildServiceProvider();
+    }
 
     public static ModuleRegistry Registry() => new ModuleRegistry()
         .AddGameComponent()

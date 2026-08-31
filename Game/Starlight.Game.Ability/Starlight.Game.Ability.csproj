@@ -1,17 +1,17 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <RootNamespace>Starlight.Game.World</RootNamespace>
+        <RootNamespace>Starlight.Game.Ability</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\..\Source\Starlight.Game\Starlight.Game.csproj"/>
-        <ProjectReference Include="..\Starlight.Game.Player\Starlight.Game.Player.csproj"/>
-        <ProjectReference Include="..\Starlight.Game.Ability\Starlight.Game.Ability.csproj"/>
+        <ProjectReference Include="..\Starlight.Game.Resources\Starlight.Game.Resources.csproj"/>
         <ProjectReference Include="..\..\Libraries\Starlight.Protocol\Starlight.Protocol.csproj"/>
+        <ProjectReference Include="..\..\Libraries\Starlight.Protobuf\Starlight.Protobuf.csproj"/>
         <ProjectReference Include="..\..\Libraries\Starlight.CodeGen.Component\Starlight.CodeGen.Component.csproj"
                           OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
     </ItemGroup>

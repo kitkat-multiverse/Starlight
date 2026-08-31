@@ -1,7 +1,9 @@
+using Google.Protobuf;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Google.Protobuf;
 using Starlight.Common;
+using Starlight.DbGate.Models;
+using Starlight.Game.Ability;
 using Starlight.Game.Modules;
 using Starlight.Game.Player;
 using Starlight.Game.Resources;
@@ -9,11 +11,12 @@ using Starlight.Game.Resources.Binary;
 using Starlight.Game.Resources.Excel;
 using Starlight.Game.World;
 using Starlight.Protocol;
+using Starlight.Protocol.V70;
 using Starlight.Rpc;
 using Starlight.Rpc.Proto;
 using Starlight.Rpc.Tunnel;
-using IMessage = Starlight.Protobuf.Core.IMessage;
 using Xunit;
+using IMessage = Starlight.Protobuf.Core.IMessage;
 
 namespace Starlight.Tests;
 
@@ -623,8 +626,24 @@ public sealed class AvatarEquipTests
         if (includeWorld)
         {
             var worlds = new WorldManager();
-            registry.AddModule<WorldModule>((_, player) => new WorldModule(player, worlds));
-            registry.AddModule<SceneModule>((_, player) => new SceneModule(player));
+            var protocol = new V70ProtocolRegistry();
+            var router = new WorldAbilityRouter();
+            var initializer = new AbilityInitializer(data);
+
+            registry.AddModule<WorldModule>((_, player) =>
+                new WorldModule(player, worlds));
+
+            registry.AddModule<AbilityModule>((_, player) =>
+                new AbilityModule(
+                    player,
+                    initializer,
+                    data,
+                    protocol,
+                    router,
+                    router));
+
+            registry.AddModule<SceneModule>((_, player) =>
+                new SceneModule(player));
         }
 
         registry.Build();

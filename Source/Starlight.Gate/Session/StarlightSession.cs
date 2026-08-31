@@ -8,6 +8,7 @@ using Starlight.Gate.Crypto;
 using Starlight.Gate.Session.Modules;
 using Starlight.Kcp;
 using Starlight.Protobuf.Registry;
+using Starlight.Protobuf.Serialization;
 using Starlight.Rpc;
 using Starlight.Rpc.Tunnel;
 using IMessage = Starlight.Protobuf.Core.IMessage;
@@ -64,6 +65,9 @@ public sealed class StarlightSession : INetworkSession
 
     public IPEndPoint Remote => _connection.Remote;
     public GateServerService Server { get; }
+    public ProtocolRegistry Registry => _registry
+                                        ?? throw new InvalidOperationException(
+                                            "Cannot access the protocol registry before the session's protocol version has been resolved.");
     public RpcTunnel? GameTunnel { get; private set; }
     public CancellationToken Closing => _closing.Token;
 
@@ -187,6 +191,8 @@ public sealed class StarlightSession : INetworkSession
         {
             Logger.Debug("C>S | Packet: {Message} [{CmdId}] ({Length} bytes)",
                 message.GetType().Name, packet.CmdId, packet.Body.Length);
+            var jsonObj = JsonSerializer.SerializeToObject(message, _registry);
+            Logger.Debug($"{System.Text.Json.JsonSerializer.Serialize(jsonObj)}");
         }
 
         // Dispatch to a local handler; if handled, we're done.
@@ -240,6 +246,8 @@ public sealed class StarlightSession : INetworkSession
             {
                 Logger.Debug("S>C | Packet: {Message} [{CmdId}] ({Length} bytes)",
                     message.GetType().Name, packet.CmdId, packet.Body.Length);
+                var jsonObj = JsonSerializer.SerializeToObject(message, _registry);
+                Logger.Debug($"{System.Text.Json.JsonSerializer.Serialize(jsonObj)}");
             }
 
             CryptoHelper.Xor(bytes, _xorPad);

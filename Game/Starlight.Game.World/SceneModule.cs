@@ -1,3 +1,4 @@
+using Starlight.Game.Ability;
 using Starlight.Game.Modules;
 using Starlight.Game.Player;
 using Starlight.Protobuf.Core;
@@ -42,6 +43,8 @@ public sealed class SceneModule(IPlayer player) : IModule
         if (scene is null)
             yield break;
 
+        var abilities = player.Module<AbilityModule>();
+        var inventory = player.Module<InventoryModule>();
         var team = player.Module<TeamModule>().Current;
         var notification = new SceneTeamUpdateNotify();
         var nextEntities = new Dictionary<ulong, AvatarEntity>();
@@ -60,6 +63,26 @@ public sealed class SceneModule(IPlayer player) : IModule
 
             nextEntities.Add(avatar.Guid, entity);
 
+            if (!abilities.TryGetComponent(entity.EntityId, out var avatarAbilities))
+            {
+                avatarAbilities = abilities.RegisterAvatar(
+                    module.World.Abilities,
+                    new AbilityOwner(entity.EntityId, AbilityOwnerType.Avatar, module.PeerId, player.Uid),
+                    avatar.AvatarId,
+                    avatar.SkillDepotId,
+                    scene.Id,
+                    AbilitySources(avatar, inventory));
+            }
+
+            if (!abilities.TryGetComponent(entity.WeaponEntityId, out var weaponAbilities))
+            {
+                weaponAbilities = abilities.RegisterWeapon(
+                    module.World.Abilities,
+                    new AbilityOwner(entity.WeaponEntityId, AbilityOwnerType.Weapon, module.PeerId, player.Uid),
+                    avatar.WeaponGadgetId);
+            }
+            entity.Info.EntityAuthorityInfo!.AbilityInfo = AbilityProtocol.ToSyncState(avatarAbilities);
+
             var isCurrent = avatar.Guid == team.CurrentAvatarGuid;
 
             notification.SceneTeamAvatarList.Add(new SceneTeamAvatar {
@@ -69,9 +92,9 @@ public sealed class SceneModule(IPlayer player) : IModule
                 EntityId = entity.EntityId,
                 WeaponGuid = avatar.WeaponGuid,
                 WeaponEntityId = entity.WeaponEntityId,
-                AbilityControlBlock = avatar.ControlBlock(),
-                AvatarAbilityInfo = new AbilitySyncStateInfo(),
-                WeaponAbilityInfo = new AbilitySyncStateInfo(),
+                AbilityControlBlock = AbilityProtocol.ToControlBlock(avatarAbilities),
+                AvatarAbilityInfo = AbilityProtocol.ToSyncState(avatarAbilities),
+                WeaponAbilityInfo = AbilityProtocol.ToSyncState(weaponAbilities),
                 SceneEntityInfo = entity.Info,
                 IsOnScene = isCurrent,
                 IsPlayerCurAvatar = isCurrent
@@ -134,22 +157,38 @@ public sealed class SceneModule(IPlayer player) : IModule
     [Opcode]
     public IEnumerable<IMessage> OnSceneInit(SceneInitFinishReq msg)
     {
-        // TODO: Validate `enter_scene_token`.
-
         var module = player.Module<WorldModule>();
         var world = module.World;
         var scene = module.Scene!;
+        var abilities = player.Module<AbilityModule>();
+        var inventory = player.Module<InventoryModule>();
+        var teamEntityId = world.TeamEntityIdOf(player);
+        var levelEntityId = world.LevelEntityId;
+
+        abilities.RegisterScene(
+            world.Abilities,
+            scene.Id,
+            new AbilityOwner(AbilityEntityIds.Scene, AbilityOwnerType.Scene));
+
+        var teamAbilities = abilities.RegisterTeam(
+            world.Abilities,
+            new AbilityOwner(teamEntityId, AbilityOwnerType.Team, module.PeerId, player.Uid),
+            scene.Id);
+
+        var level = abilities.RegisterMpLevel(
+            world.Abilities,
+            new AbilityOwner(levelEntityId, AbilityOwnerType.MpLevel, world.HostPeerId));
 
         var enterInfo = new PlayerEnterSceneInfoNotify {
             EnterSceneToken = msg.EnterSceneToken,
             TeamEnterInfo = new TeamEnterSceneInfo {
-                AbilityControlBlock = new AbilityControlBlock(),
-                TeamAbilityInfo = new AbilitySyncStateInfo(),
-                TeamEntityId = world.NextEntityId(ProtEntityType.PROT_ENTITY_TYPE_TEAM)
+                AbilityControlBlock = AbilityProtocol.ToControlBlock(teamAbilities),
+                TeamAbilityInfo = AbilityProtocol.ToSyncState(teamAbilities),
+                TeamEntityId = teamEntityId
             },
             MpLevelEntityInfo = new MPLevelEntityInfo {
-                EntityId = world.NextEntityId(ProtEntityType.PROT_ENTITY_TYPE_MP_LEVEL),
-                AbilityInfo = new AbilitySyncStateInfo(),
+                EntityId = levelEntityId,
+                AbilityInfo = AbilityProtocol.ToSyncState(level),
                 AuthorityPeerId = world.HostPeerId
             }
         };
@@ -166,6 +205,20 @@ public sealed class SceneModule(IPlayer player) : IModule
             var entity = AvatarEntity.Create(world, player.Uid, module.PeerId, avatar, SpawnPosition);
             _teamEntities.Add(avatar.Guid, entity);
 
+            var avatarAbilities = abilities.RegisterAvatar(
+                world.Abilities,
+                new AbilityOwner(entity.EntityId, AbilityOwnerType.Avatar, module.PeerId, player.Uid),
+                avatar.AvatarId,
+                avatar.SkillDepotId,
+                scene.Id,
+                AbilitySources(avatar, inventory));
+
+            var weaponAbilities = abilities.RegisterWeapon(
+                world.Abilities,
+                new AbilityOwner(entity.WeaponEntityId, AbilityOwnerType.Weapon, module.PeerId, player.Uid),
+                avatar.WeaponGadgetId);
+            entity.Info.EntityAuthorityInfo!.AbilityInfo = AbilityProtocol.ToSyncState(avatarAbilities);
+
             var isCurrent = avatar.Guid == team.CurrentAvatarGuid;
 
             if (isCurrent)
@@ -178,7 +231,9 @@ public sealed class SceneModule(IPlayer player) : IModule
                 AvatarGuid = avatar.Guid,
                 AvatarEntityId = entity.EntityId,
                 WeaponGuid = avatar.WeaponGuid,
-                WeaponEntityId = entity.WeaponEntityId
+                WeaponEntityId = entity.WeaponEntityId,
+                AvatarAbilityInfo = AbilityProtocol.ToSyncState(avatarAbilities),
+                WeaponAbilityInfo = AbilityProtocol.ToSyncState(weaponAbilities)
             });
 
             teamUpdate.SceneTeamAvatarList.Add(new SceneTeamAvatar {
@@ -188,9 +243,9 @@ public sealed class SceneModule(IPlayer player) : IModule
                 EntityId = entity.EntityId,
                 WeaponGuid = avatar.WeaponGuid,
                 WeaponEntityId = entity.WeaponEntityId,
-                AbilityControlBlock = avatar.ControlBlock(),
-                AvatarAbilityInfo = new AbilitySyncStateInfo(),
-                WeaponAbilityInfo = new AbilitySyncStateInfo(),
+                AbilityControlBlock = AbilityProtocol.ToControlBlock(avatarAbilities),
+                AvatarAbilityInfo = AbilityProtocol.ToSyncState(avatarAbilities),
+                WeaponAbilityInfo = AbilityProtocol.ToSyncState(weaponAbilities),
                 SceneEntityInfo = entity.Info,
                 IsOnScene = isCurrent,
                 IsPlayerCurAvatar = isCurrent
@@ -219,6 +274,17 @@ public sealed class SceneModule(IPlayer player) : IModule
     public PostEnterSceneRsp OnPostEnterScene(PostEnterSceneReq msg) =>
         // TODO: Validate `enter_scene_token`.
         new() { EnterSceneToken = msg.EnterSceneToken };
+
+    private static AvatarAbilitySources AbilitySources(Avatar avatar, InventoryModule inventory)
+    {
+        inventory.TryGetWeapon(avatar.WeaponGuid, out var weapon);
+
+        return new AvatarAbilitySources(
+            avatar.Talents,
+            avatar.PromoteLevel,
+            weapon?.AffixId ?? 0,
+            weapon?.Refinement ?? 1);
+    }
 
     private static PlayerEnterSceneNotify EnterScene() => new() {
         Type = EnterType.ENTER_TYPE_ENTER_SELF,

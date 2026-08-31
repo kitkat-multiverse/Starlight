@@ -16,6 +16,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\..\Game\Starlight.Game.Resources\Starlight.Game.Resources.csproj"/>
+        <ProjectReference Include="..\..\Game\Starlight.Game.Ability\Starlight.Game.Ability.csproj"/>
         <ProjectReference Include="..\..\Game\Starlight.Game.Player\Starlight.Game.Player.csproj"/>
         <ProjectReference Include="..\..\Game\Starlight.Game.World\Starlight.Game.World.csproj"/>
         <ProjectReference Include="..\..\Protocol\Starlight.Protocol.V70\Starlight.Protocol.V70.csproj"/>

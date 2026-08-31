@@ -1,5 +1,6 @@
 <Solution>
     <Folder Name="/Game/">
+        <Project Path="Game/Starlight.Game.Ability/Starlight.Game.Ability.csproj"/>
         <Project Path="Game/Starlight.Game.Resources/Starlight.Game.Resources.csproj"/>
         <Project Path="Game/Starlight.Game.Player/Starlight.Game.Player.csproj"/>
         <Project Path="Game/Starlight.Game.World/Starlight.Game.World.csproj"/>

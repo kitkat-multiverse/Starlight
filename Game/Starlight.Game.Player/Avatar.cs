@@ -14,8 +14,6 @@ public sealed class Avatar
     private const uint BaseHp = 1, BaseAttack = 4, BaseDefense = 7, Critical = 20, CriticalHurt = 22;
     private const uint CurHp = 1010, MaxHp = 2000, CurAttack = 2001, CurDefense = 2002;
 
-    private static readonly uint DefaultAbilityHash = Hash("Default");
-
     public uint AvatarId { get; private init; }
     public ulong Guid { get; private init; }
     public uint BornTime { get; private init; }
@@ -23,7 +21,6 @@ public sealed class Avatar
     public uint SkillDepotId { get; private init; }
     public IReadOnlyList<uint> Skills { get; private init; } = [];
     public IReadOnlyList<uint> Talents { get; private init; } = [];
-    public IReadOnlyList<string> Abilities { get; private init; } = [];
 
     public uint Level { get; private init; } = 1;
     public uint PromoteLevel { get; private init; }
@@ -81,8 +78,7 @@ public sealed class Avatar
                 [CurHp] = config.HpBase,
                 [CurAttack] = config.AttackBase,
                 [CurDefense] = config.DefenseBase
-            },
-            Abilities = [.. data.Avatars[avatarId].AbilityNames]
+            }
         };
     }
 
@@ -131,27 +127,4 @@ public sealed class Avatar
 
         return info;
     }
-
-    /// <summary>Binds this avatar's abilities to the embryo slots the client invokes them through.</summary>
-    public AbilityControlBlock ControlBlock()
-    {
-        var block = new AbilityControlBlock();
-
-        foreach (var (index, name) in Abilities.Index())
-        {
-            // Embryos are numbered from one, and the client quotes that number back at us in
-            // every invocation, so this has to follow declaration order exactly.
-            block.AbilityEmbryoList.Add(new AbilityEmbryo {
-                AbilityId = (uint)index + 1,
-                AbilityNameHash = Hash(name),
-                AbilityOverrideNameHash = DefaultAbilityHash
-            });
-        }
-
-        return block;
-    }
-
-    /// <summary>The 131-multiplier string hash the client looks abilities up by. The overflow is part of it.</summary>
-    private static uint Hash(string name)
-        => name.Aggregate(seed: 0u, (hash, character) => hash * 131 + character);
 }

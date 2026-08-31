@@ -16,6 +16,7 @@ public sealed class WorldModule(IPlayer player, WorldManager worlds) : IModule
 
     /// The world this player is in. Only valid once they have entered one.
     public World World => _world!;
+    public World? CurrentWorld => _world;
 
     /// This player's ID inside <see cref="World"/>, or 0 before they enter one.
     public uint PeerId => _world?.PeerIdOf(player) ?? 0;

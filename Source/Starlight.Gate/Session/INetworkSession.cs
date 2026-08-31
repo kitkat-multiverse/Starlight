@@ -1,7 +1,8 @@
-using System.Net;
 using Starlight.Gate.Session.Modules;
+using Starlight.Protobuf.Registry;
 using Starlight.Protocol;
 using Starlight.Rpc.Tunnel;
+using System.Net;
 using IMessage = Starlight.Protobuf.Core.IMessage;
 
 namespace Starlight.Gate.Session;
@@ -12,6 +13,7 @@ public interface INetworkSession
 
     IPEndPoint Remote { get; }
     GateServerService Server { get; }
+    ProtocolRegistry Registry { get; }
 
     /// The connection to the game server.
     /// <br/>

@@ -76,6 +76,13 @@ public sealed class GamePacket
         Body = registry.Serialize(message);
     }
 
+    public GamePacket(ushort cmdId, byte[] rawMetadata, byte[] body)
+    {
+        CmdId = cmdId;
+        RawMetadata = rawMetadata;
+        Body = body;
+    }
+
     public byte[] ToBytes()
     {
         var offset = 0;

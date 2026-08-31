@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Diagnostics;
 using System.Reflection;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Starlight.Common;
 using Serilog;
@@ -18,13 +19,22 @@ internal static partial class DataLoader
         // First pass of data loading.
         Task.WaitAll(
             Task.Run(() => LoadScenePoints(output)),
-            Task.Run(() => LoadExcels(output))
+            Task.Run(() => LoadExcels(output)),
+            Task.Run(() => LoadAbilities(output)),
+            Task.Run(() => LoadAbilityGroups(output)),
+            Task.Run(() => LoadAbilityPaths(output)),
+            Task.Run(() => LoadEntityConfigs(output)),
+            Task.Run(() => LoadLevelEntityConfigs(output)),
+            Task.Run(() => LoadGlobalCombat(output)),
+            Task.Run(() => LoadTalentConfigs(output))
         );
 
         // Second pass of data loading.
         Task.WaitAll(
             Task.Run(() => LoadAvatars(output))
         );
+
+        Log.Information("Finished loading all resources.");
     }
 
     /// <summary>
@@ -96,6 +106,242 @@ internal static partial class DataLoader
     }
 
     #region Binary Data
+
+    private static void LoadAbilities(GameData output)
+    {
+        var stopwatch = Stopwatch.StartNew();
+
+        foreach (var path in Resources.Loader.ListFiles("BinOutput/Ability", "*.json", recursive: true)
+                     .OrderBy(path => path, StringComparer.Ordinal))
+        {
+            byte[] raw;
+
+            try
+            {
+                raw = Resources.Loader.ReadRaw(path);
+            }
+            catch (Exception exception)
+            {
+                Log.Debug(exception, "Failed to read ability resource {Path}", path);
+                continue;
+            }
+
+            ScanServerGlobalValues(raw, output.ServerGlobalValueHashes);
+
+            try
+            {
+                using var document = JsonDocument.Parse(raw);
+
+                if (document.RootElement.ValueKind != JsonValueKind.Array)
+                {
+                    Log.Warning("Ability resource {Path} does not contain an array root.", path);
+                    continue;
+                }
+
+                foreach (var element in document.RootElement.EnumerateArray())
+                {
+                    try
+                    {
+                        var entry = JsonSerializer.Deserialize<AbilityConfigEntry>(element.GetRawText(), Constants.JsonOptions);
+                        var ability = entry?.Default;
+
+                        if (ability is null || string.IsNullOrEmpty(ability.AbilityName))
+                            continue;
+
+                        ability.NameHash = AbilityResourceHash.Compute(ability.AbilityName);
+                        ability.Initialize();
+                        output.Abilities[ability.AbilityName] = ability;
+
+                        if (!output.AbilitiesByHash.TryGetValue(ability.NameHash, out var collisions))
+                            output.AbilitiesByHash[ability.NameHash] = collisions = [];
+                        collisions.Add(ability);
+                    }
+                    catch (Exception exception)
+                    {
+                        Log.Debug(exception, "Failed to load an ability entry from {Path}", path);
+                    }
+                }
+            }
+            catch (JsonException exception)
+            {
+                Log.Debug(exception, "Failed to parse ability resource {Path}", path);
+            }
+        }
+
+        Log.Information("Loaded {Count} abilities in {Elapsed}ms", output.Abilities.Count, stopwatch.ElapsedMilliseconds);
+    }
+
+    private static void LoadAbilityGroups(GameData output)
+    {
+        foreach (var path in Resources.Loader.ListFiles("BinOutput/AbilityGroup", "*.json"))
+        {
+            var groups = Resources.Loader.ReadJson<Dictionary<string, AbilityGroupConfig>>(path);
+
+            if (groups is null)
+                continue;
+
+            foreach (var (name, group) in groups)
+            {
+                output.AbilityGroups[name] = group;
+            }
+        }
+    }
+
+    private static void LoadAbilityPaths(GameData output)
+    {
+        foreach (var path in Resources.Loader.ListFiles("BinOutput/AbilityPath", "*.json"))
+        {
+            var config = Resources.Loader.ReadJson<AbilityPathConfig>(path);
+
+            if (config is null)
+                continue;
+
+            foreach (var (name, abilities) in config.AbilityPaths)
+            {
+                output.AbilityPaths[name] = abilities;
+            }
+        }
+
+        foreach (var path in Resources.Loader.ListFiles("BinOutput/GadgetPath", "*.json"))
+        {
+            var config = Resources.Loader.ReadJson<AbilityPathConfig>(path);
+
+            if (config is null)
+                continue;
+
+            foreach (var (name, abilities) in config.AbilityPaths)
+            {
+                output.GadgetAbilityPaths[name] = abilities;
+            }
+        }
+    }
+
+    private static void LoadEntityConfigs(GameData output)
+    {
+        foreach (var path in Resources.Loader.ListFiles("BinOutput/Gadget", "*.json", recursive: true))
+        {
+            var configs = Resources.Loader.ReadJson<Dictionary<string, ConfigEntityGadget>>(path);
+
+            if (configs is null)
+                continue;
+
+            foreach (var (name, config) in configs)
+            {
+                output.GadgetConfigs[name] = config;
+            }
+        }
+
+        foreach (var path in Resources.Loader.ListFiles("BinOutput/Monster", "*.json"))
+        {
+            var config = Resources.Loader.ReadJson<ConfigEntityMonster>(path);
+
+            if (config is null)
+                continue;
+
+            output.MonsterConfigs[System.IO.Path.GetFileNameWithoutExtension(path).Replace("ConfigMonster_", string.Empty)] = config;
+        }
+    }
+
+    private static void LoadLevelEntityConfigs(GameData output)
+    {
+        foreach (var path in Resources.Loader.ListFiles("BinOutput/LevelEntity", "*.json"))
+        {
+            var configs = Resources.Loader.ReadJson<Dictionary<string, ConfigLevelEntity>>(path);
+
+            if (configs is null)
+                continue;
+
+            foreach (var (name, config) in configs)
+            {
+                output.LevelEntityConfigs[name] = config;
+            }
+        }
+    }
+
+    private static void LoadTalentConfigs(GameData output)
+    {
+        foreach (var path in Resources.Loader.ListFiles("BinOutput/Talent", "*.json", recursive: true)
+                     .OrderBy(path => path, StringComparer.Ordinal))
+        {
+            var talents = Resources.Loader.ReadJson<Dictionary<string, List<TalentConfigEntry>>>(path);
+
+            if (talents is null)
+                continue;
+
+            foreach (var (name, entries) in talents)
+            {
+                output.Talents[name] = entries;
+            }
+        }
+
+        var proudSkills = Resources.Loader.ReadJson<List<ProudSkillResourceData>>(
+            "ExcelBinOutput/ProudSkillExcelConfigData.json") ?? [];
+
+        foreach (var proudSkill in proudSkills)
+        {
+            if (proudSkill.ProudSkillId == 0)
+                continue;
+
+            output.ProudSkills[proudSkill.ProudSkillId] = proudSkill;
+
+            if (proudSkill.ProudSkillGroupId != 0 && proudSkill.Level != 0)
+                output.ProudSkillsByGroupAndLevel[(proudSkill.ProudSkillGroupId, proudSkill.Level)] = proudSkill;
+        }
+
+        var equipAffixes = Resources.Loader.ReadJson<List<EquipAffixResourceData>>(
+            "ExcelBinOutput/EquipAffixExcelConfigData.json") ?? [];
+
+        foreach (var affix in equipAffixes)
+        {
+            if (affix.Id == 0)
+                continue;
+
+            var level = affix.AffixId >= affix.Id * 10 ? affix.AffixId - affix.Id * 10 + 1 : 1;
+            output.EquipAffixesByGroupAndLevel[(affix.Id, level)] = affix;
+        }
+    }
+
+    private static void LoadGlobalCombat(GameData output)
+    {
+        output.GlobalCombat = Resources.Loader.ReadJson<ConfigGlobalCombat>("BinOutput/Common/ConfigGlobalCombat.json") ??
+                              new ConfigGlobalCombat();
+    }
+
+    private static void ScanServerGlobalValues(byte[] raw, HashSet<uint> hashes)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(raw);
+            ScanServerGlobalValues(document.RootElement, hashes);
+        }
+        catch (JsonException)
+        {}
+    }
+
+    private static void ScanServerGlobalValues(JsonElement element, HashSet<uint> hashes)
+    {
+        switch (element.ValueKind)
+        {
+            case JsonValueKind.Array:
+                foreach (var child in element.EnumerateArray())
+                {
+                    ScanServerGlobalValues(child, hashes);
+                }
+                break;
+            case JsonValueKind.Object:
+                foreach (var property in element.EnumerateObject())
+                {
+                    if (property.Name.StartsWith("SGV_", StringComparison.Ordinal))
+                        hashes.Add(AbilityResourceHash.Compute(property.Name));
+                    ScanServerGlobalValues(property.Value, hashes);
+                }
+                break;
+            case JsonValueKind.String:
+                if (element.GetString() is {} value && value.StartsWith("SGV_", StringComparison.Ordinal))
+                    hashes.Add(AbilityResourceHash.Compute(value));
+                break;
+        }
+    }
 
     /// <summary>
     /// Loads every avatar's <c>ConfigAvatar</c> file, keyed by avatar ID.
