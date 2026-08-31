@@ -238,7 +238,7 @@ internal static partial class DataLoader
             if (config is null)
                 continue;
 
-            output.MonsterConfigs[System.IO.Path.GetFileNameWithoutExtension(path).Replace("ConfigMonster_", string.Empty)] = config;
+            output.MonsterConfigs[Path.GetFileNameWithoutExtension(path).Replace("ConfigMonster_", string.Empty)] = config;
         }
     }
 
