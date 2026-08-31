@@ -8,30 +8,9 @@ namespace Starlight.Game.Player;
 
 public sealed class AvatarModule(IPlayer player, GameData data, GuidManager guidManager) : IModule
 {
-    #region Beach Simulator
-
-    private const uint TeamId = 1;
-    private static readonly uint[] TeamAvatarIds = [10000005];
-
-    #endregion
-
-    private Avatar[] _team = [];
     private readonly Dictionary<uint, Avatar> _avatars = [];
     private readonly Dictionary<uint, NetAvatar> _avatarState = [];
     private bool _loaded;
-
-    /// The avatars the player walks in with, in slot order.
-    public IReadOnlyList<Avatar> Team
-    {
-        get
-        {
-            lock (player.StateLock)
-            {
-                LoadState();
-                return [.. _team];
-            }
-        }
-    }
 
     /// Every avatar the player currently owns, keyed by avatar ID.
     public IReadOnlyDictionary<uint, Avatar> Avatars
@@ -85,18 +64,22 @@ public sealed class AvatarModule(IPlayer player, GameData data, GuidManager guid
 
         lock (player.StateLock)
         {
-            return new AvatarDataNotify {
-                CurAvatarTeamId = TeamId,
-                ChooseAvatarGuid = _team.FirstOrDefault()?.Guid ?? 0,
+            var teams = player.Module<TeamModule>().Teams;
+            var current = teams.GetValueOrDefault(player.State.CurrentAvatarTeamId);
+
+            var notify = new AvatarDataNotify {
+                CurAvatarTeamId = current?.Id ?? 0,
+                ChooseAvatarGuid = current?.CurrentAvatarGuid ?? 0,
                 OwnedFlycloakList = [Avatar.DefaultFlycloak],
-                AvatarList = [.. _avatars.Values.Select(avatar => avatar.Info())],
-                AvatarTeamMap = {
-                    [TeamId] = new AvatarTeam {
-                        TeamName = $"Team {TeamId}",
-                        AvatarGuidList = [.._team.Select(avatar => avatar.Guid)]
-                    }
-                }
+                AvatarList = [.. _avatars.Values.Select(avatar => avatar.Info())]
             };
+
+            foreach (var team in teams.Values)
+            {
+                notify.AvatarTeamMap.Add(team.Id, team.Info());
+            }
+
+            return notify;
         }
     }
 
@@ -268,20 +251,16 @@ public sealed class AvatarModule(IPlayer player, GameData data, GuidManager guid
                 _avatarState.Add(avatar.AvatarId, state);
             }
 
-            var initialTeamAvatarIds =
-                player.State.BornAvatarId is AetherId or LumineId ? [player.State.BornAvatarId] : TeamAvatarIds;
-
             if (player.State.BornState != NetPlayerState.Types.PlayerBornState.Pending)
             {
+                var starterAvatarId = player.State.BornAvatarId is AetherId or LumineId ? player.State.BornAvatarId : AetherId;
+
                 // A brand-new player receives the starter roster once. It immediately becomes part of
                 // the persisted state, so reconnects preserve its GUID and born time.
-                foreach (var (slot, avatarId) in initialTeamAvatarIds.Index())
+                if (!_avatars.ContainsKey(starterAvatarId) && CanCreate(starterAvatarId))
                 {
-                    if (_avatars.ContainsKey(avatarId) || !CanCreate(avatarId))
-                        continue;
-
-                    var guid = (ulong)player.Uid << 32 | (uint)(slot * 2 + 1);
-                    var avatar = Avatar.Create(data, avatarId, guid);
+                    var guid = (ulong)player.Uid << 32 | 1;
+                    var avatar = Avatar.Create(data, starterAvatarId, guid);
 
                     var state = new NetAvatar {
                         AvatarId = avatar.AvatarId,
@@ -292,16 +271,11 @@ public sealed class AvatarModule(IPlayer player, GameData data, GuidManager guid
                         WeaponGuid = avatar.WeaponGuid
                     };
 
-                    _avatars.Add(avatarId, avatar);
-                    _avatarState.Add(avatarId, state);
+                    _avatars.Add(starterAvatarId, avatar);
+                    _avatarState.Add(starterAvatarId, state);
                     player.State.Avatars.Add(state);
                 }
             }
-
-            _team = initialTeamAvatarIds
-                .Where(_avatars.ContainsKey)
-                .Select(id => _avatars[id])
-                .ToArray();
         }
     }
 
@@ -343,21 +317,21 @@ public sealed class AvatarModule(IPlayer player, GameData data, GuidManager guid
 
         lock (player.StateLock)
         {
-            _team = [avatar];
-
             player.State.BornAvatarId = avatarId;
 
             player.State.BornState =
                 NetPlayerState.Types.PlayerBornState.Complete;
 
-            notify = new AvatarTeamUpdateNotify {
-                AvatarTeamMap = {
-                    [TeamId] = new AvatarTeam {
-                        TeamName = $"Team {TeamId}",
-                        AvatarGuidList = { avatar.Guid }
-                    }
-                }
-            };
+            player.Module<TeamModule>().Initialize(avatar);
+
+            var teams = player.Module<TeamModule>().Teams;
+
+            notify = new AvatarTeamUpdateNotify();
+
+            foreach (var team in teams.Values)
+            {
+                notify.AvatarTeamMap.Add(team.Id, team.Info());
+            }
         }
 
         await player.Send(notify);

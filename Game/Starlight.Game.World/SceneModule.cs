@@ -17,6 +17,8 @@ public sealed class SceneModule(IPlayer player) : IModule
     private static readonly Vector SpawnPosition = new() { X = 2747, Y = 194, Z = -1719 };
 
     private readonly List<SceneEntityInfo> _spawned = [];
+    private readonly Dictionary<ulong, AvatarEntity> _teamEntities = [];
+    private ulong _currentAvatarGuid;
 
     #endregion
 
@@ -29,6 +31,84 @@ public sealed class SceneModule(IPlayer player) : IModule
     {
         player.Module<WorldModule>().EnterOwnWorld();
         return EnterScene();
+    }
+
+    [Lifecycle(LifecycleEvent.PlayerTeamChanged)]
+    public IEnumerable<IMessage> OnTeamChanged()
+    {
+        var module = player.Module<WorldModule>();
+        var scene = module.Scene;
+
+        if (scene is null)
+            yield break;
+
+        var team = player.Module<TeamModule>().Current;
+        var notification = new SceneTeamUpdateNotify();
+        var nextEntities = new Dictionary<ulong, AvatarEntity>();
+
+        foreach (var avatar in team.Avatars)
+        {
+            if (!_teamEntities.TryGetValue(avatar.Guid, out var entity))
+            {
+                entity = AvatarEntity.Create(
+                    module.World,
+                    player.Uid,
+                    module.PeerId,
+                    avatar,
+                    SpawnPosition);
+            }
+
+            nextEntities.Add(avatar.Guid, entity);
+
+            var isCurrent = avatar.Guid == team.CurrentAvatarGuid;
+
+            notification.SceneTeamAvatarList.Add(new SceneTeamAvatar {
+                PlayerUid = player.Uid,
+                SceneId = scene.Id,
+                AvatarGuid = avatar.Guid,
+                EntityId = entity.EntityId,
+                WeaponGuid = avatar.WeaponGuid,
+                WeaponEntityId = entity.WeaponEntityId,
+                AbilityControlBlock = avatar.ControlBlock(),
+                AvatarAbilityInfo = new AbilitySyncStateInfo(),
+                WeaponAbilityInfo = new AbilitySyncStateInfo(),
+                SceneEntityInfo = entity.Info,
+                IsOnScene = isCurrent,
+                IsPlayerCurAvatar = isCurrent
+            });
+        }
+
+        _teamEntities.TryGetValue(_currentAvatarGuid, out var previous);
+        nextEntities.TryGetValue(team.CurrentAvatarGuid, out var current);
+        var currentChanged = _currentAvatarGuid != team.CurrentAvatarGuid;
+
+        _teamEntities.Clear();
+
+        foreach (var (guid, entity) in nextEntities)
+        {
+            _teamEntities.Add(guid, entity);
+        }
+
+        _currentAvatarGuid = team.CurrentAvatarGuid;
+
+        yield return notification;
+
+        if (currentChanged && previous is not null)
+        {
+            yield return new SceneEntityDisappearNotify {
+                DisappearType = VisionType.VISION_TYPE_REPLACE,
+                EntityList = { previous.EntityId }
+            };
+        }
+
+        if (currentChanged && previous is not null && current is not null)
+        {
+            yield return new SceneEntityAppearNotify {
+                AppearType = VisionType.VISION_TYPE_REPLACE,
+                Param = previous.EntityId,
+                EntityList = { current.Info }
+            };
+        }
     }
 
     [Opcode]
@@ -75,14 +155,18 @@ public sealed class SceneModule(IPlayer player) : IModule
         };
 
         var teamUpdate = new SceneTeamUpdateNotify();
+        var team = player.Module<TeamModule>().Current;
 
         _spawned.Clear();
+        _teamEntities.Clear();
+        _currentAvatarGuid = team.CurrentAvatarGuid;
 
-        foreach (var (slot, avatar) in player.Module<AvatarModule>().Team.Index())
+        foreach (var avatar in team.Avatars)
         {
             var entity = AvatarEntity.Create(world, player.Uid, module.PeerId, avatar, SpawnPosition);
+            _teamEntities.Add(avatar.Guid, entity);
 
-            var isCurrent = slot == 0;
+            var isCurrent = avatar.Guid == team.CurrentAvatarGuid;
 
             if (isCurrent)
             {
