@@ -71,7 +71,7 @@ public sealed class KcpConnection
         _onDisconnect = onDisconnect;
         _kcp = new Internals.Kcp(conv, token, stream: false, new WriterAdapter(this));
         _kcp.SetNodelay(nodelay: true, interval: 10, resend: 2, nc: true);
-        _lastReceiveAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        _lastReceiveAt = Environment.TickCount64;
     }
 
     public void Send(byte[] data)
@@ -142,7 +142,7 @@ public sealed class KcpConnection
             var result = _kcp.Input(new ByteCursor(data));
             if (result.IsFailure) return;
 
-            _lastReceiveAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            _lastReceiveAt = Environment.TickCount64;
 
             // Input only queues the ACKs for what just arrived; nothing sends them.
             FlushNow();
@@ -166,6 +166,7 @@ public sealed class KcpConnection
 
     internal void Update(long timestamp)
     {
+        var idleNow = Environment.TickCount64;
         uint? drained = null;
         var disconnected = false;
 
@@ -173,7 +174,7 @@ public sealed class KcpConnection
         {
             _kcp.Update(timestamp);
 
-            if (!_isDead && timestamp - _lastReceiveAt >= IdleTimeoutMilliseconds)
+            if (!_isDead && idleNow - _lastReceiveAt >= IdleTimeoutMilliseconds)
             {
                 _isDead = true;
                 disconnected = true;

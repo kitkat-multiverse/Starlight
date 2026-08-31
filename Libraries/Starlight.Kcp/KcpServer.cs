@@ -105,6 +105,14 @@ public sealed class KcpServer : IDisposable
             return;
         }
 
+        if (!conn.Remote.Equals(remote))
+        {
+            _logger(LogLevel.Verbose,
+                "Ignored packet from {Remote} for connection bound to {ExpectedRemote}. (conv={ConvId}, token={Token})",
+                remote, conn.Remote, conv, token);
+            return;
+        }
+
         conn.Input(data);
     }
 
