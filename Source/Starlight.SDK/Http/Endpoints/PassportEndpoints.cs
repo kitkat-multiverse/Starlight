@@ -51,6 +51,10 @@ public static class PassportEndpoints
             // Per-platform UI feature flags for the SDK login screen.
             routes.MapGet($"{prefix}/getSwitchStatus", HandleGetSwitchStatus);
         }
+
+        routes.MapPost(
+            "/hk4e_global/account/ma-passport/token/verifySToken",
+            HandleVerifySToken);
     }
 
     private static async Task<IResult> HandleGetConfig(
@@ -80,6 +84,75 @@ public static class PassportEndpoints
             DisableMmt = sdkConfig.MaPassport.DisableMmt,
             ShowBirthday = sdkConfig.MaPassport.ShowBirthday.ToString().ToLowerInvariant()
         }));
+    }
+
+    /// <summary>
+    /// Handles <c>POST /hk4e_global/account/ma-passport/token/verifySToken</c>.
+    /// Validates a previously-issued token and returns it with the masked
+    /// user-info block.
+    /// </summary>
+    private static async Task<IResult> HandleVerifySToken(
+        HttpContext httpContext,
+        [FromBody] MaPassportVerifySTokenRequest? body,
+        [FromHeader(Name = "x-rpc-device_id")] string? deviceId,
+        [FromServices] SdkConfig sdkConfig,
+        [FromServices] IGeoIpLookup geoIp,
+        [FromServices] SdkDbContext db,
+        [FromServices] ILoggerFactory loggerFactory,
+        CancellationToken ct
+    )
+    {
+        // A static type can't be a generic type argument (CS0718), so
+        // ILogger<T> isn't an option here. The factory caches by category,
+        // so this lookup is cheap.
+        var logger = loggerFactory.CreateLogger(typeof(PassportEndpoints).FullName!);
+
+        if (body is null || string.IsNullOrEmpty(body.Mid) || string.IsNullOrEmpty(body.SToken))
+            return Results.Ok(ApiResponse.From(Retcode.MaPassportParameterError));
+
+        if (string.IsNullOrEmpty(deviceId) || !SdkUtils.IsValidDeviceId(deviceId))
+            return Results.Ok(ApiResponse.From(Retcode.MaPassportParameterError));
+
+        var acc = await db.Accounts.FirstOrDefaultAsync(
+            a => a.SessionToken == body.SToken,
+            ct);
+
+        if (acc is null)
+            return Results.Ok(ApiResponse.From(Retcode.MaPassportAccountMismatch));
+
+        var login = sdkConfig.MaPassport.Login;
+
+        if (!login.SkipDeviceIdCheck
+            && acc.KnownDeviceIds.Count > 0
+            && !acc.KnownDeviceIds.Contains(deviceId))
+        {
+            return Results.Ok(ApiResponse.From(Retcode.MaPassportAccountNewDeviceDetected));
+        }
+
+        acc.RegisterDevice(deviceId);
+
+        var country = await geoIp.GetCountryCodeAsync(
+            SdkHttpHelpers.GetClientIp(httpContext),
+            ct).ConfigureAwait(false);
+
+        if (string.IsNullOrWhiteSpace(country))
+            country = acc.Country;
+
+        if (string.IsNullOrWhiteSpace(country))
+            country = sdkConfig.DefaultCountryCode;
+
+        acc.Country = country;
+        await db.SaveChangesAsync(ct);
+
+        logger.LogInformation("Verified stoken for account id {Id}", acc.Id);
+
+        return Results.Ok(ApiResponse.Ok(BuildLoginData(
+            acc,
+            (MaPassportTokenType)login.AuthTicketTokenType,
+            acc.SessionToken,
+            string.Empty,
+            string.Empty,
+            country)));
     }
 
     /// <summary>
@@ -369,7 +442,7 @@ public static class PassportEndpoints
         },
         UserInfo = new MaPassportUserInfo {
             Aid = acc.Id.ToString(),
-            Mid = acc.Id.ToString(),
+            Mid = SdkDefaults.DefaultMid,
             AccountName = acc.Username,
             Email = SdkHttpHelpers.MaskString(acc.Email),
             IsEmailVerify = 0,

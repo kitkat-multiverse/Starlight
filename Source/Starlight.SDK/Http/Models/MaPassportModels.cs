@@ -3,6 +3,21 @@ using System.Text.Json.Serialization;
 namespace Starlight.SDK.Http.Models;
 
 /// <summary>
+/// Body of <c>POST /hk4e_global/account/ma-passport/token/verifySToken</c>.
+/// No encryption occurs in any of the fields. <c>mid</c> is an opaque
+/// passport metadata identifier; Starlight accepts it for wire compatibility
+/// but authenticates the account using <c>stoken</c>.
+/// </summary>
+public sealed class MaPassportVerifySTokenRequest
+{
+    [JsonPropertyName("stoken")]
+    public string? SToken { get; set; }
+
+    [JsonPropertyName("mid")]
+    public string? Mid { get; set; }
+}
+
+/// <summary>
 /// Body of <c>POST /hk4e_global/account/ma-passport/api/appLoginByPassword</c>.
 /// Both <c>account</c> and <c>password</c> are RSA-encrypted by the client
 /// (base64-encoded PKCS#1 v1.5 cipher) and must be decrypted with the
