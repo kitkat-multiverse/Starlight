@@ -144,7 +144,7 @@ public static class PassportEndpoints
         acc.Country = country;
         await db.SaveChangesAsync(ct);
 
-        logger.LogInformation("Verified stoken for account id {Id}", acc.Id);
+        logger.LogInformation("Verified SToken for account id {Id}", acc.Id);
 
         return Results.Ok(ApiResponse.Ok(BuildLoginData(
             acc,
