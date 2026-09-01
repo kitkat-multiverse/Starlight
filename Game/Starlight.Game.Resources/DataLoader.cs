@@ -37,6 +37,21 @@ internal static partial class DataLoader
         Log.Information("Finished loading all resources.");
     }
 
+    private static void ParallelParseThenMerge<TItem>(IReadOnlyList<TItem> items, Func<TItem, Action> parse)
+    {
+        if (items.Count == 0)
+            return;
+
+        var merges = new Action[items.Count];
+
+        Parallel.For(fromInclusive: 0, items.Count, i => merges[i] = parse(items[i]));
+
+        foreach (var merge in merges)
+        {
+            merge();
+        }
+    }
+
     /// <summary>
     /// Loads all ExcelBinOutput (xlsx -> json) files.
     /// </summary>
@@ -50,47 +65,16 @@ internal static partial class DataLoader
             .OrderByDescending(t => t.attr.Priority)
             .ToList();
 
+        var jobs = new List<(Type Type, string FilePath, IDictionary Dictionary)>(resources.Count);
+
         foreach (var (type, info) in resources)
         {
             var filePath = $"ExcelBinOutput/{info.FileName}";
             var typeName = type.Name;
 
-            if (typeof(GameData)
-                    .GetField(typeName, BindingFlags.Public | BindingFlags.Instance)?
-                    .GetValue(output) is not
-                IDictionary dictionary)
-            {
-                Log.Warning("Resource {0} has an invalid type.", typeName);
-                continue;
-            }
-
             switch (filePath.FileExtension())
             {
                 case "json":
-                    var listType = typeof(List<>).MakeGenericType(type);
-
-                    var data = Resources.Loader.ReadJson(filePath, listType);
-
-                    if (data is not IList list)
-                    {
-                        Log.Warning("Failed to load resource file: {0}", filePath);
-                        continue;
-                    }
-
-                    foreach (var item in list)
-                    {
-                        if (item is not Data resource) continue;
-
-                        resource.OnLoad();
-
-                        var id = resource.GetId();
-
-                        if (dictionary.Contains(id))
-                        {
-                            Log.Warning("Resource {0} has a value in the dictionary!", id);
-                        }
-                        dictionary[id] = resource;
-                    }
                     break;
                 case "tsv":
                     throw new Exception("TSV files are not supported.");
@@ -99,6 +83,57 @@ internal static partial class DataLoader
                 default:
                     Log.Warning("Unknown resource file extension: {0}", filePath);
                     continue;
+            }
+
+            if (typeof(GameData)
+                    .GetField(typeName, BindingFlags.Public | BindingFlags.Instance)?
+                    .GetValue(output) is not IDictionary dictionary)
+            {
+                Log.Warning("Resource {0} has an invalid type.", typeName);
+                continue;
+            }
+
+            jobs.Add((type, filePath, dictionary));
+        }
+
+        var lists = new IList?[jobs.Count];
+
+        Parallel.For(fromInclusive: 0, jobs.Count, i => {
+            var (type, filePath, _) = jobs[i];
+            var listType = typeof(List<>).MakeGenericType(type);
+            var data = Resources.Loader.ReadJson(filePath, listType);
+
+            if (data is not IList list)
+            {
+                Log.Warning("Failed to load resource file: {0}", filePath);
+                return;
+            }
+
+            lists[i] = list;
+        });
+
+        for (var i = 0; i < jobs.Count; i++)
+        {
+            var list = lists[i];
+
+            if (list is null)
+                continue;
+
+            var dictionary = jobs[i].Dictionary;
+
+            foreach (var item in list)
+            {
+                if (item is not Data resource) continue;
+
+                resource.OnLoad();
+
+                var id = resource.GetId();
+
+                if (dictionary.Contains(id))
+                {
+                    Log.Warning("Resource {0} has a value in the dictionary!", id);
+                }
+                dictionary[id] = resource;
             }
         }
 
@@ -111,9 +146,11 @@ internal static partial class DataLoader
     {
         var stopwatch = Stopwatch.StartNew();
 
-        foreach (var path in Resources.Loader.ListFiles("BinOutput/Ability", "*.json", recursive: true)
-                     .OrderBy(path => path, StringComparer.Ordinal))
-        {
+        var paths = Resources.Loader.ListFiles("BinOutput/Ability", "*.json", recursive: true)
+            .OrderBy(path => path, StringComparer.Ordinal)
+            .ToArray();
+
+        ParallelParseThenMerge(paths, path => {
             byte[] raw;
 
             try
@@ -123,10 +160,11 @@ internal static partial class DataLoader
             catch (Exception exception)
             {
                 Log.Debug(exception, "Failed to read ability resource {Path}", path);
-                continue;
+                return static () => { };
             }
 
-            ScanServerGlobalValues(raw, output.ServerGlobalValueHashes);
+            var hashes = ScanServerGlobalValues(raw);
+            var entryMerges = new List<Action>();
 
             try
             {
@@ -135,30 +173,33 @@ internal static partial class DataLoader
                 if (document.RootElement.ValueKind != JsonValueKind.Array)
                 {
                     Log.Warning("Ability resource {Path} does not contain an array root.", path);
-                    continue;
-                }
-
-                foreach (var element in document.RootElement.EnumerateArray())
+                } else
                 {
-                    try
+                    foreach (var element in document.RootElement.EnumerateArray())
                     {
-                        var entry = JsonSerializer.Deserialize<AbilityConfigEntry>(element.GetRawText(), Constants.JsonOptions);
-                        var ability = entry?.Default;
+                        try
+                        {
+                            var entry = element.Deserialize<AbilityConfigEntry>(Constants.JsonOptions);
+                            var ability = entry?.Default;
 
-                        if (ability is null || string.IsNullOrEmpty(ability.AbilityName))
-                            continue;
+                            if (ability is null || string.IsNullOrEmpty(ability.AbilityName))
+                                continue;
 
-                        ability.NameHash = AbilityResourceHash.Compute(ability.AbilityName);
-                        ability.Initialize();
-                        output.Abilities[ability.AbilityName] = ability;
+                            ability.NameHash = AbilityResourceHash.Compute(ability.AbilityName);
+                            ability.Initialize();
 
-                        if (!output.AbilitiesByHash.TryGetValue(ability.NameHash, out var collisions))
-                            output.AbilitiesByHash[ability.NameHash] = collisions = [];
-                        collisions.Add(ability);
-                    }
-                    catch (Exception exception)
-                    {
-                        Log.Debug(exception, "Failed to load an ability entry from {Path}", path);
+                            entryMerges.Add(() => {
+                                output.Abilities[ability.AbilityName] = ability;
+
+                                if (!output.AbilitiesByHash.TryGetValue(ability.NameHash, out var collisions))
+                                    output.AbilitiesByHash[ability.NameHash] = collisions = [];
+                                collisions.Add(ability);
+                            });
+                        }
+                        catch (Exception exception)
+                        {
+                            Log.Debug(exception, "Failed to load an ability entry from {Path}", path);
+                        }
                     }
                 }
             }
@@ -166,139 +207,178 @@ internal static partial class DataLoader
             {
                 Log.Debug(exception, "Failed to parse ability resource {Path}", path);
             }
-        }
+
+            return () => {
+                output.ServerGlobalValueHashes.UnionWith(hashes);
+
+                foreach (var merge in entryMerges)
+                {
+                    merge();
+                }
+            };
+        });
 
         Log.Information("Loaded {Count} abilities in {Elapsed}ms", output.Abilities.Count, stopwatch.ElapsedMilliseconds);
     }
 
     private static void LoadAbilityGroups(GameData output)
     {
-        foreach (var path in Resources.Loader.ListFiles("BinOutput/AbilityGroup", "*.json"))
-        {
+        var paths = Resources.Loader.ListFiles("BinOutput/AbilityGroup", "*.json").ToArray();
+
+        ParallelParseThenMerge(paths, path => {
             var groups = Resources.Loader.ReadJson<Dictionary<string, AbilityGroupConfig>>(path);
 
-            if (groups is null)
-                continue;
-
-            foreach (var (name, group) in groups)
-            {
-                output.AbilityGroups[name] = group;
-            }
-        }
+            return groups is null ?
+                static () => {} :
+                () => {
+                    foreach (var (name, group) in groups)
+                    {
+                        output.AbilityGroups[name] = group;
+                    }
+                };
+        });
     }
 
     private static void LoadAbilityPaths(GameData output)
     {
-        foreach (var path in Resources.Loader.ListFiles("BinOutput/AbilityPath", "*.json"))
-        {
-            var config = Resources.Loader.ReadJson<AbilityPathConfig>(path);
+        Task.WaitAll(
+            Task.Run(() => {
+                var paths = Resources.Loader.ListFiles("BinOutput/AbilityPath", "*.json").ToArray();
 
-            if (config is null)
-                continue;
+                ParallelParseThenMerge(paths, path => {
+                    var config = Resources.Loader.ReadJson<AbilityPathConfig>(path);
 
-            foreach (var (name, abilities) in config.AbilityPaths)
-            {
-                output.AbilityPaths[name] = abilities;
-            }
-        }
+                    return config is null ?
+                        static () => {} :
+                        () => {
+                            foreach (var (name, abilities) in config.AbilityPaths)
+                            {
+                                output.AbilityPaths[name] = abilities;
+                            }
+                        };
+                });
+            }),
+            Task.Run(() => {
+                var paths = Resources.Loader.ListFiles("BinOutput/GadgetPath", "*.json").ToArray();
 
-        foreach (var path in Resources.Loader.ListFiles("BinOutput/GadgetPath", "*.json"))
-        {
-            var config = Resources.Loader.ReadJson<AbilityPathConfig>(path);
+                ParallelParseThenMerge(paths, path => {
+                    var config = Resources.Loader.ReadJson<AbilityPathConfig>(path);
 
-            if (config is null)
-                continue;
-
-            foreach (var (name, abilities) in config.AbilityPaths)
-            {
-                output.GadgetAbilityPaths[name] = abilities;
-            }
-        }
+                    return config is null ?
+                        static () => {} :
+                        () => {
+                            foreach (var (name, abilities) in config.AbilityPaths)
+                            {
+                                output.GadgetAbilityPaths[name] = abilities;
+                            }
+                        };
+                });
+            })
+        );
     }
 
     private static void LoadEntityConfigs(GameData output)
     {
-        foreach (var path in Resources.Loader.ListFiles("BinOutput/Gadget", "*.json", recursive: true))
-        {
-            var configs = Resources.Loader.ReadJson<Dictionary<string, ConfigEntityGadget>>(path);
+        Task.WaitAll(
+            Task.Run(() => {
+                var paths = Resources.Loader.ListFiles("BinOutput/Gadget", "*.json", recursive: true).ToArray();
 
-            if (configs is null)
-                continue;
+                ParallelParseThenMerge(paths, path => {
+                    var configs = Resources.Loader.ReadJson<Dictionary<string, ConfigEntityGadget>>(path);
 
-            foreach (var (name, config) in configs)
-            {
-                output.GadgetConfigs[name] = config;
-            }
-        }
+                    return configs is null ?
+                        static () => {} :
+                        () => {
+                            foreach (var (name, config) in configs)
+                            {
+                                output.GadgetConfigs[name] = config;
+                            }
+                        };
+                });
+            }),
+            Task.Run(() => {
+                var paths = Resources.Loader.ListFiles("BinOutput/Monster", "*.json").ToArray();
 
-        foreach (var path in Resources.Loader.ListFiles("BinOutput/Monster", "*.json"))
-        {
-            var config = Resources.Loader.ReadJson<ConfigEntityMonster>(path);
+                ParallelParseThenMerge(paths, path => {
+                    var config = Resources.Loader.ReadJson<ConfigEntityMonster>(path);
 
-            if (config is null)
-                continue;
-
-            output.MonsterConfigs[Path.GetFileNameWithoutExtension(path).Replace("ConfigMonster_", string.Empty)] = config;
-        }
+                    return config is null ?
+                        static () => {} :
+                        () => output.MonsterConfigs[
+                            Path.GetFileNameWithoutExtension(path).Replace("ConfigMonster_", string.Empty)] = config;
+                });
+            })
+        );
     }
 
     private static void LoadLevelEntityConfigs(GameData output)
     {
-        foreach (var path in Resources.Loader.ListFiles("BinOutput/LevelEntity", "*.json"))
-        {
+        var paths = Resources.Loader.ListFiles("BinOutput/LevelEntity", "*.json").ToArray();
+
+        ParallelParseThenMerge(paths, path => {
             var configs = Resources.Loader.ReadJson<Dictionary<string, ConfigLevelEntity>>(path);
 
-            if (configs is null)
-                continue;
-
-            foreach (var (name, config) in configs)
-            {
-                output.LevelEntityConfigs[name] = config;
-            }
-        }
+            return configs is null ?
+                static () => {} :
+                () => {
+                    foreach (var (name, config) in configs)
+                    {
+                        output.LevelEntityConfigs[name] = config;
+                    }
+                };
+        });
     }
 
     private static void LoadTalentConfigs(GameData output)
     {
-        foreach (var path in Resources.Loader.ListFiles("BinOutput/Talent", "*.json", recursive: true)
-                     .OrderBy(path => path, StringComparer.Ordinal))
-        {
-            var talents = Resources.Loader.ReadJson<Dictionary<string, List<TalentConfigEntry>>>(path);
+        Task.WaitAll(
+            Task.Run(() => {
+                var paths = Resources.Loader.ListFiles("BinOutput/Talent", "*.json", recursive: true)
+                    .OrderBy(path => path, StringComparer.Ordinal)
+                    .ToArray();
 
-            if (talents is null)
-                continue;
+                ParallelParseThenMerge(paths, path => {
+                    var talents = Resources.Loader.ReadJson<Dictionary<string, List<TalentConfigEntry>>>(path);
 
-            foreach (var (name, entries) in talents)
-            {
-                output.Talents[name] = entries;
-            }
-        }
+                    return talents is null ?
+                        static () => {} :
+                        () => {
+                            foreach (var (name, entries) in talents)
+                            {
+                                output.Talents[name] = entries;
+                            }
+                        };
+                });
+            }),
+            Task.Run(() => {
+                var proudSkills = Resources.Loader.ReadJson<List<ProudSkillResourceData>>(
+                    "ExcelBinOutput/ProudSkillExcelConfigData.json") ?? [];
 
-        var proudSkills = Resources.Loader.ReadJson<List<ProudSkillResourceData>>(
-            "ExcelBinOutput/ProudSkillExcelConfigData.json") ?? [];
+                foreach (var proudSkill in proudSkills)
+                {
+                    if (proudSkill.ProudSkillId == 0)
+                        continue;
 
-        foreach (var proudSkill in proudSkills)
-        {
-            if (proudSkill.ProudSkillId == 0)
-                continue;
+                    output.ProudSkills[proudSkill.ProudSkillId] = proudSkill;
 
-            output.ProudSkills[proudSkill.ProudSkillId] = proudSkill;
+                    if (proudSkill.ProudSkillGroupId != 0 && proudSkill.Level != 0)
+                        output.ProudSkillsByGroupAndLevel[(proudSkill.ProudSkillGroupId, proudSkill.Level)] = proudSkill;
+                }
+            }),
+            Task.Run(() => {
+                var equipAffixes = Resources.Loader.ReadJson<List<EquipAffixResourceData>>(
+                    "ExcelBinOutput/EquipAffixExcelConfigData.json") ?? [];
 
-            if (proudSkill.ProudSkillGroupId != 0 && proudSkill.Level != 0)
-                output.ProudSkillsByGroupAndLevel[(proudSkill.ProudSkillGroupId, proudSkill.Level)] = proudSkill;
-        }
+                foreach (var affix in equipAffixes)
+                {
+                    if (affix.Id == 0)
+                        continue;
 
-        var equipAffixes = Resources.Loader.ReadJson<List<EquipAffixResourceData>>(
-            "ExcelBinOutput/EquipAffixExcelConfigData.json") ?? [];
-
-        foreach (var affix in equipAffixes)
-        {
-            if (affix.Id == 0)
-                continue;
-
-            var level = affix.AffixId >= affix.Id * 10 ? affix.AffixId - affix.Id * 10 + 1 : 1;
-            output.EquipAffixesByGroupAndLevel[(affix.Id, level)] = affix;
-        }
+                    var level = affix.AffixId >= affix.Id * 10 ? affix.AffixId - affix.Id * 10 + 1 : 1;
+                    output.EquipAffixesByGroupAndLevel[(affix.Id, level)] = affix;
+                }
+            })
+        );
     }
 
     private static void LoadGlobalCombat(GameData output)
@@ -307,8 +387,10 @@ internal static partial class DataLoader
                               new ConfigGlobalCombat();
     }
 
-    private static void ScanServerGlobalValues(byte[] raw, HashSet<uint> hashes)
+    private static HashSet<uint> ScanServerGlobalValues(byte[] raw)
     {
+        var hashes = new HashSet<uint>();
+
         try
         {
             using var document = JsonDocument.Parse(raw);
@@ -316,6 +398,8 @@ internal static partial class DataLoader
         }
         catch (JsonException)
         {}
+
+        return hashes;
     }
 
     private static void ScanServerGlobalValues(JsonElement element, HashSet<uint> hashes)
@@ -352,6 +436,7 @@ internal static partial class DataLoader
         var stopwatch = Stopwatch.StartNew();
 
         var configs = Resources.Loader.ListFiles("BinOutput/Avatar", "ConfigAvatar_*.json")
+            .AsParallel()
             .Select((string? name, AvatarConfig? config) (p) => {
                 var match = regex.Match(p);
 
@@ -383,6 +468,7 @@ internal static partial class DataLoader
         var stopwatch = Stopwatch.StartNew();
 
         Resources.Loader.ListFiles("BinOutput/Scene/Point", "scene*_point.json")
+            .AsParallel()
             .Select((uint sceneId, ScenePointConfig? data) (p) => {
                 var match = regex.Match(p);
 

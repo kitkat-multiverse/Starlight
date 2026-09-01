@@ -1,7 +1,6 @@
 using Serilog;
 using Starlight.Common;
 using System.IO.Compression;
-using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -38,8 +37,7 @@ internal static class ResourceLoaderExtensions
     {
         try
         {
-            var data = Encoding.UTF8.GetString(loader.ReadRaw(path));
-            return JsonSerializer.Deserialize<T>(data, Constants.JsonOptions);
+            return JsonSerializer.Deserialize<T>(loader.ReadRaw(path), Constants.JsonOptions);
         }
         catch (Exception ex)
         {
@@ -58,8 +56,7 @@ internal static class ResourceLoaderExtensions
     {
         try
         {
-            var data = Encoding.UTF8.GetString(loader.ReadRaw(path));
-            return JsonSerializer.Deserialize(data, type, Constants.JsonOptions);
+            return JsonSerializer.Deserialize(loader.ReadRaw(path), type, Constants.JsonOptions);
         }
         catch (Exception exception)
         {
@@ -80,6 +77,8 @@ public class FolderLoader(DirectoryInfo resources) : IResourceLoader
 
 public class ZipLoader(ZipArchive archive) : IResourceLoader
 {
+    // ZipLoader will still be bottlenecked for now since its a bigger changes tbh...
+
     public string[] ListFiles(string path, string searchPattern = "*", bool recursive = false)
     {
         var regexPattern = "^" + Regex.Escape(searchPattern)
@@ -115,9 +114,10 @@ public class ZipLoader(ZipArchive archive) : IResourceLoader
             var entry = archive.GetEntry(path);
             if (entry == null) throw new Exception("File does not exist.");
 
+            var buffer = new byte[entry.Length];
             using var stream = entry.Open();
-            using var reader = new BinaryReader(stream);
-            return reader.ReadBytes((int)entry.Length);
+            stream.ReadExactly(buffer);
+            return buffer;
         }
     }
 }
