@@ -1,10 +1,10 @@
-using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
 using Starlight.Common;
+using System.Text.Json;
 
 namespace Starlight.SDK.Http.Endpoints;
 

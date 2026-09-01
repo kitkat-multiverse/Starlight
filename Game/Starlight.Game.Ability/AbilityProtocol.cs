@@ -37,11 +37,9 @@ public static class AbilityProtocol
 
             var applied = new AbilityAppliedAbility {
                 InstancedAbilityId = ability.InstancedAbilityId,
-                AbilityName = ToAbilityString(ability.Name)
+                AbilityName = ToAbilityString(ability.Name),
+                AbilityOverride = ToAbilityString(ability.Override)
             };
-
-            if (ability.Override != AbilityKey.Default)
-                applied.AbilityOverride = ToAbilityString(ability.Override);
 
             foreach (var (key, value) in Order(ability.Overrides))
             {

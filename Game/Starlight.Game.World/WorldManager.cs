@@ -1,5 +1,5 @@
-using System.Diagnostics.CodeAnalysis;
 using Starlight.Game.Player;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Starlight.Game.World;
 

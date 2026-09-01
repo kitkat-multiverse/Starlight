@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -6,24 +5,26 @@ using Serilog;
 using Serilog.Core;
 using Serilog.Events;
 using Serilog.Sinks.SystemConsole.Themes;
-using Starlight.DbGate;
+using Starlight.Common;
 using Starlight.Console;
 using Starlight.Crypto.Client;
+using Starlight.DbGate;
 using Starlight.Game;
 using Starlight.Game.Ability;
+using Starlight.Game.Ability.Handlers;
 using Starlight.Game.Modules;
-using Starlight.Protocol.V70;
-using Starlight.Protobuf.Registry;
-using Starlight.Gate;
 using Starlight.Game.Player;
 using Starlight.Game.Resources;
 using Starlight.Game.World;
+using Starlight.Gate;
+using Starlight.Protobuf.Registry;
+using Starlight.Protocol.V70;
 using Starlight.Rpc;
 using Starlight.Rpc.Tunnel;
 using Starlight.Rpc.Tunnel.Connection;
 using Starlight.SDK;
 using Starlight.SDK.Http.Endpoints;
-using Starlight.Common;
+using System.Diagnostics;
 
 namespace Starlight;
 
@@ -125,6 +126,10 @@ internal static class Program
                 .AddSingleton<GameData>()
                 .AddSingleton<ProtocolRegistry>(protocol)
                 .AddSingleton<AbilityInitializer>()
+                .AddSingleton(static services => new AbilityRuntimeConfig(() =>
+                    // TODO: make this an entire separate section in the config file.
+                    services.GetRequiredService<IConfiguration>().GetValue<bool>("Gate:Connections:LogAbilities")))
+                .AddAbilityInvokeHandlers()
                 .AddSingleton<WorldAbilityRouter>()
                 .AddSingleton<IAbilityScopeResolver>(services => services.GetRequiredService<WorldAbilityRouter>())
                 .AddSingleton<IInvokeForwarder>(services => services.GetRequiredService<WorldAbilityRouter>())

@@ -1,6 +1,6 @@
 using Google.Protobuf;
-using GGoogle = Starlight.Protobuf.Benchmarks.Google;
 using Starlight.Protobuf.Fixtures;
+using GGoogle = Starlight.Protobuf.Benchmarks.Google;
 
 namespace Starlight.Protobuf.Benchmarks;
 

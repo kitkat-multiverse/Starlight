@@ -1,7 +1,7 @@
+using Google.Protobuf;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Google.Protobuf;
 using Starlight.Database;
 using Starlight.DbGate.Models;
 using Starlight.Rpc;

@@ -2,14 +2,15 @@ using Google.Protobuf;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Starlight.Common;
-using Starlight.DbGate.Models;
 using Starlight.Game.Ability;
+using Starlight.Game.Ability.Handlers;
 using Starlight.Game.Modules;
 using Starlight.Game.Player;
 using Starlight.Game.Resources;
 using Starlight.Game.Resources.Binary;
 using Starlight.Game.Resources.Excel;
 using Starlight.Game.World;
+using Starlight.Protobuf.Core;
 using Starlight.Protocol;
 using Starlight.Protocol.V70;
 using Starlight.Rpc;
@@ -392,6 +393,100 @@ public sealed class AvatarEquipTests
         Assert.Equal(second.Guid, reconnected.Module<TeamModule>().Current.CurrentAvatarGuid);
     }
 
+    [Fact]
+    public async Task ChangeAvatar_UsesMovePositionAndGrasscutterReplaceFlow()
+    {
+        var data = Data();
+        var (player, sent) = Player(uid: 1001, data, includeWorld: true);
+        var avatars = player.Module<AvatarModule>();
+        var teams = player.Module<TeamModule>();
+        var world = player.Module<WorldModule>();
+        var scene = player.Module<SceneModule>();
+
+        await avatars.OnLogin();
+        var first = avatars.Avatars[10000005];
+        var (second, added) = await avatars.AddAvatar(10000007);
+        Assert.True(added);
+        Assert.NotNull(second);
+
+        await teams.OnSetUpAvatarTeam(new SetUpAvatarTeamReq {
+            TeamId = 1,
+            CurAvatarGuid = first.Guid,
+            AvatarTeamGuidList = { first.Guid, second.Guid }
+        });
+
+        world.EnterOwnWorld();
+        _ = scene.OnEnterSceneReady(new EnterSceneReadyReq { EnterSceneToken = 1 }).ToArray();
+
+        var enter = Assert.Single(
+            scene.OnSceneInit(new SceneInitFinishReq { EnterSceneToken = 1 })
+                .OfType<PlayerEnterSceneInfoNotify>());
+
+        var beforeSwitchPos = new Vector { X = 2791.5f, Y = 203.25f, Z = -1698.5f };
+        var beforeSwitchRot = new Vector { X = 0.5f, Y = 137.25f, Z = 1.5f };
+
+        var move = new EntityMoveInfo {
+            EntityId = enter.CurAvatarEntityId,
+            SceneTime = 4242,
+            ReliableSeq = 17,
+            MotionInfo = new MotionInfo {
+                Pos = beforeSwitchPos,
+                Rot = beforeSwitchRot,
+                Speed = new Vector(),
+                RefPos = new Vector(),
+                State = MotionState.MOTION_STATE_STANDBY
+            }
+        };
+
+        await scene.OnCombatInvocations(new CombatInvocationsNotify {
+            InvokeList = {
+                new CombatInvokeEntry {
+                    ArgumentType = CombatTypeArgument.COMBAT_TYPE_ARGUMENT_ENTITY_MOVE,
+                    ForwardType = ForwardType.FORWARD_TYPE_ONLY_SERVER,
+                    CombatData = ByteString.CopyFrom(move.ToByteArray())
+                }
+            }
+        });
+
+        lock (sent)
+        {
+            sent.Clear();
+        }
+
+        var movePos = new Vector { X = 2800.25f, Y = 207.5f, Z = -1690.75f };
+
+        var response = await teams.OnChangeAvatar(new ChangeAvatarReq {
+            Guid = second.Guid,
+            SkillId = 123,
+            IsMove = true,
+            MovePos = movePos
+        });
+
+        Assert.Equal(expected: 0, response.Retcode);
+        Assert.Equal(second.Guid, response.CurGuid);
+        Assert.Equal(expected: 123u, response.SkillId);
+
+        var packets = scene.OnTeamChanged().ToArray();
+        Assert.DoesNotContain(packets, packet => packet is SceneTeamUpdateNotify);
+
+        var disappear = Assert.Single(packets.OfType<SceneEntityDisappearNotify>());
+        var appear = Assert.Single(packets.OfType<SceneEntityAppearNotify>());
+        var disappearedEntityId = Assert.Single(disappear.EntityList);
+        var appeared = Assert.Single(appear.EntityList);
+
+        Assert.Equal(VisionType.VISION_TYPE_REPLACE, disappear.DisappearType);
+        Assert.Equal(VisionType.VISION_TYPE_REPLACE, appear.AppearType);
+        Assert.Equal(enter.CurAvatarEntityId, disappearedEntityId);
+        Assert.Equal(disappearedEntityId, appear.Param);
+        Assert.Equal(movePos.X, appeared.MotionInfo!.Pos!.X);
+        Assert.Equal(movePos.Y, appeared.MotionInfo.Pos.Y);
+        Assert.Equal(movePos.Z, appeared.MotionInfo.Pos.Z);
+        Assert.Equal(beforeSwitchRot.X, appeared.MotionInfo.Rot!.X);
+        Assert.Equal(beforeSwitchRot.Y, appeared.MotionInfo.Rot.Y);
+        Assert.Equal(beforeSwitchRot.Z, appeared.MotionInfo.Rot.Z);
+        Assert.Equal(MotionState.MOTION_STATE_STANDBY, appeared.MotionInfo.State);
+    }
+
     [Theory]
     [InlineData("change")]
     [InlineData("setup")]
@@ -638,9 +733,11 @@ public sealed class AvatarEquipTests
                     player,
                     initializer,
                     data,
-                    protocol,
-                    router,
-                    router));
+                    config: new AbilityRuntimeConfig(() => false),
+                    protocol: protocol,
+                    handlers: new AbilityInvokeHandlerRegistry([]),
+                    scopes: router,
+                    forwarder: router));
 
             registry.AddModule<SceneModule>((_, player) =>
                 new SceneModule(player, router));

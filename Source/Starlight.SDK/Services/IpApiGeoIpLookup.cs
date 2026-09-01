@@ -1,10 +1,9 @@
+using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Http.Json;
 using System.Net.Sockets;
 using System.Text.Json.Serialization;
-using Microsoft.Extensions.Logging;
-using Starlight.Common;
 
 namespace Starlight.SDK.Services;
 

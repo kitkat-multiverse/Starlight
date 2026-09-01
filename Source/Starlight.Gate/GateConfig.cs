@@ -33,4 +33,10 @@ public sealed class ConnectionConfig
     ///     <li>the packet's size</li>
     /// </ul>
     public bool LogPackets { get; set; } = false;
+
+    /// <summary>
+    /// Adds a debug log which logs the abilities being invoked.
+    /// By default, it is not recommended to enable this option, as it will log a lot of data.
+    /// </summary>
+    public bool LogAbilities { get; set; } = false;
 }

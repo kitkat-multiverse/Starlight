@@ -1,7 +1,7 @@
-using System.Collections.Generic;
-using System.Linq;
 using Google.Protobuf.Reflection;
 using Microsoft.CodeAnalysis;
+using System.Collections.Generic;
+using System.Linq;
 using FType = Google.Protobuf.Reflection.FieldDescriptorProto.Type;
 using Label = Google.Protobuf.Reflection.FieldDescriptorProto.Label;
 

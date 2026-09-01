@@ -1,8 +1,8 @@
+using Google.Protobuf;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Google.Protobuf;
-using Starlight.Common;
 using Starlight.Commands;
+using Starlight.Common;
 using Starlight.Game.Modules;
 using Starlight.Game.Player;
 using Starlight.Game.Resources;
@@ -12,8 +12,8 @@ using Starlight.Protocol;
 using Starlight.Rpc;
 using Starlight.Rpc.Proto;
 using Starlight.Rpc.Tunnel;
-using IMessage = Starlight.Protobuf.Core.IMessage;
 using Xunit;
+using IMessage = Starlight.Protobuf.Core.IMessage;
 
 namespace Starlight.Tests;
 

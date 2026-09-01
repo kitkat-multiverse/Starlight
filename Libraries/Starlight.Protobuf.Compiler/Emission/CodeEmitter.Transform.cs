@@ -1,7 +1,7 @@
+using Google.Protobuf.Reflection;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
-using Google.Protobuf.Reflection;
 using FType = Google.Protobuf.Reflection.FieldDescriptorProto.Type;
 
 namespace Starlight.Protobuf.Compiler;

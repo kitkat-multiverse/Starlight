@@ -46,9 +46,22 @@ public sealed class SceneModule(IPlayer player, IInvokeForwarder forwarder) : IM
         if (scene is null)
             yield break;
 
+        var teams = player.Module<TeamModule>();
+        var team = teams.Current;
+        var avatarSwitch = teams.ConsumePendingAvatarSwitch();
+
+        if (avatarSwitch is not null)
+        {
+            foreach (var message in SwitchAvatar(team, avatarSwitch))
+            {
+                yield return message;
+            }
+
+            yield break;
+        }
+
         var abilities = player.Module<AbilityModule>();
         var inventory = player.Module<InventoryModule>();
-        var team = player.Module<TeamModule>().Current;
         var notification = new SceneTeamUpdateNotify();
         var nextEntities = new Dictionary<ulong, AvatarEntity>();
 
@@ -97,6 +110,8 @@ public sealed class SceneModule(IPlayer player, IInvokeForwarder forwarder) : IM
                     scene.Id,
                     AbilitySources(avatar, inventory));
             }
+
+            avatarAbilities.ReinitializeFightProperties(avatar.FightProps);
 
             if (!abilities.TryGetComponent(entity.WeaponEntityId, out var weaponAbilities))
             {
@@ -240,6 +255,7 @@ public sealed class SceneModule(IPlayer player, IInvokeForwarder forwarder) : IM
                 avatar.SkillDepotId,
                 scene.Id,
                 AbilitySources(avatar, inventory));
+            avatarAbilities.ReinitializeFightProperties(avatar.FightProps);
 
             var weaponAbilities = abilities.RegisterWeapon(
                 world.Abilities,
@@ -359,6 +375,48 @@ public sealed class SceneModule(IPlayer player, IInvokeForwarder forwarder) : IM
         motion.State = incoming.State;
         motion.SceneTime = incoming.SceneTime;
     }
+
+    private IEnumerable<IMessage> SwitchAvatar(PlayerTeam team, AvatarSwitchContext avatarSwitch)
+    {
+        if (avatarSwitch.Guid != team.CurrentAvatarGuid || _currentAvatarGuid == team.CurrentAvatarGuid)
+            yield break;
+
+        if (!_teamEntities.TryGetValue(_currentAvatarGuid, out var previous) ||
+            !_teamEntities.TryGetValue(team.CurrentAvatarGuid, out var current))
+        {
+            // The scene is not fully materialized yet
+            _currentAvatarGuid = team.CurrentAvatarGuid;
+            yield break;
+        }
+
+        if (previous.Info.MotionInfo is not {} previousMotion ||
+            current.Info.MotionInfo is not {} currentMotion)
+            yield break;
+
+        previousMotion.State = MotionState.MOTION_STATE_STANDBY;
+
+        currentMotion.Pos = avatarSwitch.IsMove && avatarSwitch.MovePos is {} movePos ? CopyVector(movePos) : CopyVector(previousMotion.Pos);
+        currentMotion.Rot = CopyVector(previousMotion.Rot);
+        currentMotion.Speed = new Vector();
+        currentMotion.RefPos = new Vector();
+
+        _lastCurrentMotion = currentMotion;
+        _currentAvatarGuid = team.CurrentAvatarGuid;
+
+        yield return new SceneEntityDisappearNotify {
+            DisappearType = VisionType.VISION_TYPE_REPLACE,
+            EntityList = { previous.EntityId }
+        };
+
+        yield return new SceneEntityAppearNotify {
+            AppearType = VisionType.VISION_TYPE_REPLACE,
+            Param = previous.EntityId,
+            EntityList = { current.Info }
+        };
+    }
+
+    private static Vector CopyVector(Vector? source) =>
+        source is null ? new Vector() : new Vector { X = source.X, Y = source.Y, Z = source.Z };
 
     private void HandleBeingHit(Google.Protobuf.ByteString data)
     {

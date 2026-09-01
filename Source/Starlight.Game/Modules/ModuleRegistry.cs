@@ -1,6 +1,6 @@
-using System.Collections.Frozen;
 using Starlight.Game.Player;
 using Starlight.Protocol;
+using System.Collections.Frozen;
 using IMessage = Starlight.Protobuf.Core.IMessage;
 
 namespace Starlight.Game.Modules;

@@ -1,9 +1,9 @@
+using Google.Protobuf.Reflection;
+using Microsoft.CodeAnalysis;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using Google.Protobuf.Reflection;
-using Microsoft.CodeAnalysis;
 
 namespace Starlight.Protobuf.Compiler;
 

@@ -1,6 +1,6 @@
-using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
 using Starlight.SDK.Common;
+using System.ComponentModel.DataAnnotations;
 
 namespace Starlight.SDK.Database.Models;
 

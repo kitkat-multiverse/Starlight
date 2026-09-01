@@ -1,5 +1,5 @@
-using System.Net;
 using Starlight.Kcp.Internals;
+using System.Net;
 
 namespace Starlight.Kcp;
 

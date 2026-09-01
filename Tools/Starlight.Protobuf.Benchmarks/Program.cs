@@ -1,7 +1,7 @@
 using BenchmarkDotNet.Running;
 using Google.Protobuf;
-using Starlight.Protobuf.Core;
 using Starlight.Protobuf.Benchmarks;
+using Starlight.Protobuf.Core;
 using Starlight.Protobuf.Fixtures.V99;
 
 // `--verify` compares the encoded output so the comparison can be confirmed fair

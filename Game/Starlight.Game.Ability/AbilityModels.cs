@@ -139,6 +139,9 @@ public sealed class AbilityInstance(
             _overrides[key] = value;
         }
     }
+
+    public override string ToString() =>
+        $"AbilityInstance {{ InstancedAbilityId = {InstancedAbilityId}, Hash = {Name.Hash}, Origin = {Origin}, Definition = {Definition?.AbilityName}, Overrides = {Overrides.Count} }}";
 }
 
 public sealed class AbilityModifierInstance(

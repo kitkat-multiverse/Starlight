@@ -1,11 +1,11 @@
-using System.Security.Cryptography;
-using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Starlight.Rpc;
 using Starlight.Rpc.Proto;
 using Starlight.SDK.Database;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Starlight.SDK;
 

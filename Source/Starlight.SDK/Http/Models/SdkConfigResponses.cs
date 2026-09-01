@@ -1,6 +1,5 @@
-using System.Text.Json.Serialization;
-using Starlight.Common;
 using Starlight.SDK.Common;
+using System.Text.Json.Serialization;
 
 namespace Starlight.SDK.Http.Models;
 

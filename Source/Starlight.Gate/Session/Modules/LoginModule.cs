@@ -1,5 +1,3 @@
-using System.Buffers.Binary;
-using System.Security.Cryptography;
 using Google.Protobuf;
 using Serilog;
 using Starlight.Crypto.Client;
@@ -8,6 +6,8 @@ using Starlight.Kcp;
 using Starlight.Protocol;
 using Starlight.Rpc;
 using Starlight.Rpc.Proto;
+using System.Buffers.Binary;
+using System.Security.Cryptography;
 
 namespace Starlight.Gate.Session.Modules;
 

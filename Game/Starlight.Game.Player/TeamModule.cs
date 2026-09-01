@@ -15,6 +15,18 @@ public sealed class TeamModule(IPlayer player) : IModule
     private uint _currentTeamId;
     private bool _loaded;
 
+    public AvatarSwitchContext? PendingAvatarSwitch { get; private set; }
+
+    public AvatarSwitchContext? ConsumePendingAvatarSwitch()
+    {
+        lock (player.StateLock)
+        {
+            var pending = PendingAvatarSwitch;
+            PendingAvatarSwitch = null;
+            return pending;
+        }
+    }
+
     public PlayerTeam Current
     {
         get
@@ -213,6 +225,11 @@ public sealed class TeamModule(IPlayer player) : IModule
 
             team.CurrentAvatarGuid = msg.Guid;
             _teamState[team.Id].CurrentAvatarGuid = msg.Guid;
+
+            PendingAvatarSwitch = new AvatarSwitchContext(
+                msg.Guid,
+                msg.IsMove,
+                msg.MovePos is {} movePos ? CopyVector(movePos) : null);
         }
 
         await player.Emit(LifecycleEvent.PlayerTeamChanged);
@@ -346,6 +363,12 @@ public sealed class TeamModule(IPlayer player) : IModule
             _teamState.OrderBy(pair => pair.Key).Select(pair => pair.Value));
     }
 
+    private static Vector CopyVector(Vector source) => new() {
+        X = source.X,
+        Y = source.Y,
+        Z = source.Z
+    };
+
     private static PlayerTeam Snapshot(PlayerTeam team) => new() {
         Id = team.Id,
         Name = team.Name,
@@ -353,3 +376,6 @@ public sealed class TeamModule(IPlayer player) : IModule
         CurrentAvatarGuid = team.CurrentAvatarGuid
     };
 }
+
+/// <summary>For replacing the active avatar entity.</summary>
+public sealed record AvatarSwitchContext(ulong Guid, bool IsMove, Vector? MovePos);

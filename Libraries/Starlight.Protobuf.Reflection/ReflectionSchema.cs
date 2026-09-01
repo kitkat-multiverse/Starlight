@@ -1,13 +1,13 @@
 extern alias protonet;
+using Starlight.Protobuf.Core;
 using System.Text;
 using System.Text.RegularExpressions;
-using Starlight.Protobuf.Core;
-using ProtoSet = protonet::Google.Protobuf.Reflection.FileDescriptorSet;
-using ProtoMsg = protonet::Google.Protobuf.Reflection.DescriptorProto;
-using ProtoField = protonet::Google.Protobuf.Reflection.FieldDescriptorProto;
 using FType = protonet::Google.Protobuf.Reflection.FieldDescriptorProto.Type;
-using Label = protonet::Google.Protobuf.Reflection.FieldDescriptorProto.Label;
 using IProtoFileSystem = protonet::Google.Protobuf.Reflection.IFileSystem;
+using Label = protonet::Google.Protobuf.Reflection.FieldDescriptorProto.Label;
+using ProtoField = protonet::Google.Protobuf.Reflection.FieldDescriptorProto;
+using ProtoMsg = protonet::Google.Protobuf.Reflection.DescriptorProto;
+using ProtoSet = protonet::Google.Protobuf.Reflection.FileDescriptorSet;
 
 namespace Starlight.Protobuf.Reflection;
 

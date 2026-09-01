@@ -1,5 +1,3 @@
-using Starlight.Common;
-
 namespace Starlight.SDK.Services;
 
 public sealed class DefaultGeoIpLookup(SdkConfig sdkConfig) : IGeoIpLookup

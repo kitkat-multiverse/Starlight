@@ -1,8 +1,8 @@
+using Starlight.Protobuf.Inspection;
+using Starlight.Protobuf.Serialization;
 using System.Collections;
 using System.Collections.Frozen;
 using System.Reflection;
-using Starlight.Protobuf.Inspection;
-using Starlight.Protobuf.Serialization;
 
 namespace Starlight.Protobuf.Core;
 

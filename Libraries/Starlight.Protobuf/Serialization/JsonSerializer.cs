@@ -1,11 +1,11 @@
+using Starlight.Protobuf.Core;
+using Starlight.Protobuf.Registry;
 using System.Collections;
 using System.Globalization;
 using System.Text;
 using System.Text.Json.Nodes;
-using Starlight.Protobuf.Core;
 using ByteString = Google.Protobuf.ByteString;
 using IMessage = Starlight.Protobuf.Core.IMessage;
-using Starlight.Protobuf.Registry;
 
 namespace Starlight.Protobuf.Serialization;
 

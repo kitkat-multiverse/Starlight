@@ -1,6 +1,6 @@
+using Starlight.SDK.Proto;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
-using Starlight.SDK.Proto;
 
 namespace Starlight.SDK;
 

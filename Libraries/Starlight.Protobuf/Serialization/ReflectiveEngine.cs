@@ -1,9 +1,9 @@
-using System.Collections;
 using Google.Protobuf;
 using Starlight.Protobuf.Core;
-using WireType = Google.Protobuf.WireFormat.WireType;
+using System.Collections;
 using IMessage = Starlight.Protobuf.Core.IMessage;
 using UnknownFieldSet = Starlight.Protobuf.Core.UnknownFieldSet;
+using WireType = Google.Protobuf.WireFormat.WireType;
 
 namespace Starlight.Protobuf.Serialization;
 

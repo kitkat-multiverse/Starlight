@@ -1,7 +1,3 @@
-using System.Collections.Concurrent;
-using System.Diagnostics.CodeAnalysis;
-using System.Security.Cryptography;
-using System.Text.Json;
 using Google.Protobuf;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -9,6 +5,10 @@ using Starlight.Common;
 using Starlight.Ec2b;
 using Starlight.Rpc.Proto;
 using Starlight.SDK.Proto;
+using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
+using System.Security.Cryptography;
+using System.Text.Json;
 
 namespace Starlight.SDK.Services;
 

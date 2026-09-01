@@ -1,11 +1,11 @@
+using Serilog;
+using Starlight.Common;
+using Starlight.Game.Resources.Binary;
 using System.Collections;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using Starlight.Common;
-using Serilog;
-using Starlight.Game.Resources.Binary;
 
 namespace Starlight.Game.Resources;
 

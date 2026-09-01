@@ -1,7 +1,7 @@
-using System.Globalization;
-using System.Text.Json;
 using Starlight.Game.Resources;
 using Starlight.Game.Resources.Binary;
+using System.Globalization;
+using System.Text.Json;
 
 namespace Starlight.Game.Ability;
 

@@ -1,10 +1,10 @@
+using Google.Protobuf.Reflection;
+using Microsoft.CodeAnalysis;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Google.Protobuf.Reflection;
-using Microsoft.CodeAnalysis;
 
 namespace Starlight.Protobuf.Compiler;
 

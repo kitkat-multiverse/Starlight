@@ -1,9 +1,9 @@
-using System.Collections.Immutable;
-using System.Diagnostics;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
 using Starlight.Protobuf.Compiler;
+using System.Collections.Immutable;
+using System.Diagnostics;
 
 var protoFiles = Directory.GetFiles(
     Environment.CurrentDirectory,

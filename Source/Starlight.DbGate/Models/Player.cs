@@ -1,8 +1,7 @@
-using System.ComponentModel.DataAnnotations;
-using Google.Protobuf;
 using Microsoft.EntityFrameworkCore;
 using Starlight.Rpc;
 using Starlight.Rpc.Proto;
+using System.ComponentModel.DataAnnotations;
 
 namespace Starlight.DbGate.Models;
 

@@ -2,9 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
-using Starlight.Common;
 using Starlight.SDK.Common;
-using Starlight.SDK.Http;
 using Starlight.SDK.Http.Models;
 
 namespace Starlight.SDK.Http.Endpoints;

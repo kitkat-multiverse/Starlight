@@ -1,5 +1,5 @@
 using Google.Protobuf;
-using Serilog;
+using Starlight.Game.Ability.Handlers;
 using Starlight.Game.Modules;
 using Starlight.Game.Player;
 using Starlight.Game.Resources;
@@ -13,6 +13,8 @@ public sealed class AbilityModule(
     AbilityInitializer initializer,
     GameData data,
     ProtocolRegistry protocol,
+    AbilityRuntimeConfig config,
+    AbilityInvokeHandlerRegistry handlers,
     IAbilityScopeResolver scopes,
     IInvokeForwarder forwarder
 ) : IModule
@@ -238,10 +240,13 @@ public sealed class AbilityModule(
         {
             source.TryGetAbility(head.InstancedAbilityId, out ability!);
 
-            if (ability is null && target != source)
+            if (target != source)
                 target.TryGetAbility(head.InstancedAbilityId, out ability!);
         }
 
+        // Moved to abstract handlers, kept as comment for the reference
+        // DO NOT DELETE
+        /*
         if (head.LocalId == 0)
         {
             switch (invoke.ArgumentType)
@@ -282,6 +287,7 @@ public sealed class AbilityModule(
                     break;
             }
         }
+        */
 
         ability ??= head.InstancedAbilityId != 0 && source.TryGetAbility(head.InstancedAbilityId, out var current) ? current : null;
 
@@ -296,26 +302,10 @@ public sealed class AbilityModule(
         var action = head.LocalId == 0 ? null : definition?.ResolveAction(head.LocalId);
         var mixin = head.LocalId == 0 || action is not null ? null : definition?.ResolveMixin(head.LocalId);
 
-        // TODO: put behind ability logs option in config
-        //Log.Warning(
-        //    "Ability invoke: Entity={EntityId}, Target={TargetId}, Arg={ArgumentType}, " +
-        //    "AbilityId={AbilityId}, ModifierId={ModifierId}, LocalId=0x{LocalId:X8}, " +
-        //    "Ability={Ability}, Definition={Definition}, Modifier={Modifier}, Action={Action}, Mixin={Mixin}",
-        //    entityId,
-        //    head.TargetId,
-        //    invoke.ArgumentType,
-        //    head.InstancedAbilityId,
-        //    head.InstancedModifierId,
-        //    head.LocalId,
-        //    ability?.Name.ToString() ?? "",
-        //    definition?.AbilityName ?? "",
-        //    modifier?.ModifierName ?? "",
-        //    action?.Type ?? "",
-        //    mixin?.Type ?? "");
-
-        await Publish(new AbilityContext(
+        var context = new AbilityContext(
             player,
             world,
+            config,
             invoke,
             source,
             target,
@@ -323,9 +313,24 @@ public sealed class AbilityModule(
             modifier,
             definition,
             action,
-            mixin));
+            mixin);
+
+        await handlers.DispatchAsync(context);
+
+        ability = head.InstancedAbilityId != 0 && source.TryGetAbility(head.InstancedAbilityId, out var dispatchedAbility) ?
+            dispatchedAbility :
+            ability;
+
+        modifier = head.InstancedModifierId != 0 && source.TryGetModifier(head.InstancedModifierId, out var dispatchedModifier) ?
+            dispatchedModifier :
+            modifier;
+
+        await Publish(context with { Ability = ability, Modifier = modifier });
     }
 
+    #region DO NOT DELETE, KEPT AS COMMENT FOR REFERENCE
+
+    /*
     private AbilityModifierInstance? HandleModifierChange(
         AbilityScopeContext world,
         AbilityComponent source,
@@ -521,6 +526,9 @@ public sealed class AbilityModule(
         modifier.RemainingDurability = change.RemainDurability;
         modifier.IsDurabilityZero = change.RemainDurability <= 0;
     }
+    */
+
+    #endregion
 
     private Resources.Binary.AbilityConfig? ResolveAbility(AbilityKey key) =>
         key.Name is not null ? data.ResolveAbility(key.Name) ?? data.ResolveAbility(key.Hash) : data.ResolveAbility(key.Hash);

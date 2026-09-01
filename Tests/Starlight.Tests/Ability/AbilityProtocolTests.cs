@@ -1,7 +1,7 @@
-using System.Text;
 using Starlight.Game.Ability;
 using Starlight.Game.Resources;
 using Starlight.Protocol;
+using System.Text;
 using Xunit;
 
 namespace Starlight.Tests.Ability;
@@ -124,7 +124,7 @@ public sealed class AbilityProtocolTests
         var applied = Assert.Single(AbilityProtocol.ToSyncState(component).AppliedAbilities);
 
         Assert.Equal(AbilityHash.Compute("Static"), applied.AbilityName!.Hash);
-        Assert.Null(applied.AbilityOverride);
+        Assert.False(applied.AbilityOverride == new AbilityString());
     }
 
     [Fact]

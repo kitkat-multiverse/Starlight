@@ -1,10 +1,10 @@
-using System.Diagnostics.CodeAnalysis;
 using Starlight.Common;
 using Starlight.Game.Modules;
 using Starlight.Game.Resources;
 using Starlight.Game.Resources.Excel;
 using Starlight.Protocol;
 using Starlight.Rpc.Proto;
+using System.Diagnostics.CodeAnalysis;
 using IMessage = Starlight.Protobuf.Core.IMessage;
 
 namespace Starlight.Game.Player;

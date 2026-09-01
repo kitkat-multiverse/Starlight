@@ -1,5 +1,5 @@
-using System.Reflection;
 using Starlight.Protobuf.Registry;
+using System.Reflection;
 
 namespace Starlight.Protobuf.DependencyInjection;
 

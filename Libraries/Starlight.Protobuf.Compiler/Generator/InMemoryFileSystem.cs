@@ -1,6 +1,6 @@
+using Google.Protobuf.Reflection;
 using System.Collections.Generic;
 using System.IO;
-using Google.Protobuf.Reflection;
 
 namespace Starlight.Protobuf.Compiler;
 

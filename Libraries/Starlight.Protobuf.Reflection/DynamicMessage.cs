@@ -1,7 +1,7 @@
-using System.Collections;
 using Google.Protobuf;
 using Starlight.Protobuf.Core;
 using Starlight.Protobuf.Serialization;
+using System.Collections;
 using UnknownFieldSet = Starlight.Protobuf.Core.UnknownFieldSet;
 
 namespace Starlight.Protobuf.Reflection;

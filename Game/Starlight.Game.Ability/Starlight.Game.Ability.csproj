@@ -5,15 +5,19 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <RootNamespace>Starlight.Game.Ability</RootNamespace>
+        <AppDesignerFolder>DynamicProps</AppDesignerFolder>
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\Source\Starlight.Game\Starlight.Game.csproj"/>
-        <ProjectReference Include="..\Starlight.Game.Resources\Starlight.Game.Resources.csproj"/>
-        <ProjectReference Include="..\..\Libraries\Starlight.Protocol\Starlight.Protocol.csproj"/>
-        <ProjectReference Include="..\..\Libraries\Starlight.Protobuf\Starlight.Protobuf.csproj"/>
-        <ProjectReference Include="..\..\Libraries\Starlight.CodeGen.Component\Starlight.CodeGen.Component.csproj"
-                          OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
+        <ProjectReference Include="..\..\Source\Starlight.Game\Starlight.Game.csproj" />
+        <ProjectReference Include="..\Starlight.Game.Resources\Starlight.Game.Resources.csproj" />
+        <ProjectReference Include="..\..\Libraries\Starlight.Protocol\Starlight.Protocol.csproj" />
+        <ProjectReference Include="..\..\Libraries\Starlight.Protobuf\Starlight.Protobuf.csproj" />
+        <ProjectReference Include="..\..\Libraries\Starlight.CodeGen.Component\Starlight.CodeGen.Component.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Handlers\Mixins\" />
     </ItemGroup>
 
 </Project>

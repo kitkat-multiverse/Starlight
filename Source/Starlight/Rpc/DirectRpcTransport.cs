@@ -1,5 +1,5 @@
-using System.Collections.Concurrent;
 using Google.Protobuf;
+using System.Collections.Concurrent;
 
 namespace Starlight.Rpc;
 

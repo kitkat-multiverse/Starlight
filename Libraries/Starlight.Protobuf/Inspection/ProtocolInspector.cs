@@ -1,10 +1,10 @@
+using Google.Protobuf;
+using Starlight.Protobuf.Core;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
-using Google.Protobuf;
-using Starlight.Protobuf.Core;
 using IMessage = Starlight.Protobuf.Core.IMessage;
 
 namespace Starlight.Protobuf.Inspection;

@@ -1,7 +1,7 @@
-using System.Collections.Concurrent;
 using Google.Protobuf;
 using Starlight.Rpc.Proto;
 using Starlight.Rpc.Tunnel.Connection;
+using System.Collections.Concurrent;
 
 namespace Starlight.Rpc.Tunnel;
 

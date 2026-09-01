@@ -1,5 +1,5 @@
-using System.Text;
 using Google.Protobuf.Reflection;
+using System.Text;
 
 namespace Starlight.Protobuf.Compiler;
 

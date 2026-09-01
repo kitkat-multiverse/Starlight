@@ -1,6 +1,6 @@
+using Starlight.Ec2b;
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
-using Starlight.Ec2b;
 
 namespace Starlight.Gate.Crypto;
 

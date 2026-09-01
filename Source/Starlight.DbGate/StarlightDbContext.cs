@@ -1,11 +1,10 @@
-using System.Reflection;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Serilog.Core;
 using Starlight.DbGate.Models;
+using System.Reflection;
 
 namespace Starlight.DbGate;
 
