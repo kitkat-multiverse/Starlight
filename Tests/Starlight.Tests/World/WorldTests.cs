@@ -6,7 +6,9 @@ using Starlight.Game.Modules;
 using Starlight.Game.Player;
 using Starlight.Game.Resources;
 using Starlight.Game.World;
+using Starlight.Protobuf.Registry;
 using Starlight.Protocol;
+using Starlight.Protocol.V70;
 using Starlight.Rpc;
 using Starlight.Rpc.Proto;
 using Starlight.Rpc.Tunnel;
@@ -22,10 +24,12 @@ file static class Session
     public static IServiceProvider Services()
     {
         var data = new GameData(new ConfigurationBuilder().Build());
+        var protocol = new V70ProtocolRegistry();
 
         return new ServiceCollection()
             .AddLogging()
             .AddSingleton(data)
+            .AddSingleton<ProtocolRegistry>(protocol)
             .AddSingleton<AbilityInitializer>()
             .AddSingleton<WorldAbilityRouter>()
             .AddSingleton<IAbilityScopeResolver>(services => services.GetRequiredService<WorldAbilityRouter>())
