@@ -338,7 +338,9 @@ public sealed class SceneModule(
         IEnumerable<SceneEntityInfo> entities = _spawned;
 
         if (scene is not null)
-            entities = entities.Concat(scene.Monsters.Values.Select(monster => monster.Info));
+            entities = entities.Concat(scene.Entities.Values
+                .Where(entity => entity is MonsterEntity or GadgetEntity)
+                .Select(entity => entity.Info));
 
         yield return new SceneEntityAppearNotify {
             AppearType = VisionType.VISION_TYPE_BORN,
@@ -376,6 +378,15 @@ public sealed class SceneModule(
                 case CombatTypeArgument.COMBAT_TYPE_ARGUMENT_SKILL_ANCHOR_POSITION_NTF:
                     HandleSkillAnchorPosition(invoke.CombatData);
                     break;
+
+                // For CO-OP only, used to sync directions of players
+                case CombatTypeArgument.COMBAT_TYPE_ARGUMENT_FACE_TO_DIR:
+                // Honestly no idea, but we shouldn't handle this as of now
+                case CombatTypeArgument.COMBAT_TYPE_ARGUMENT_MONSTER_DO_BLINK:
+                // Neither this
+                case CombatTypeArgument.COMBAT_TYPE_ARGUMENT_FIXED_RUSH_MOVE:
+                    break;
+
                 default:
                     Log.Debug("Unhandled combat invoke: ArgumentType={ArgumentType}", invoke.ArgumentType);
                     break;
@@ -645,6 +656,8 @@ public sealed class SceneModule(
 
         target.OnDeath(sourceEntityId);
 
+        await RemoveGadgetsOwnedBy(scene, target.EntityId);
+
         // Grasscutter keeps dead avatars registered and removes non-avatar entities.
         if (!target.RemoveFromSceneOnDeath)
             return;
@@ -659,6 +672,29 @@ public sealed class SceneModule(
 
         if (target is MonsterEntity { WeaponEntityId: not 0 } monster)
             scene.World.Abilities.Remove(monster.WeaponEntityId);
+    }
+
+    private async Task RemoveGadgetsOwnedBy(Scene scene, uint ownerEntityId)
+    {
+        var owned = scene.Gadgets.Values
+            .Where(gadget => gadget.OwnerEntityId == ownerEntityId &&
+                             (gadget.Kind == GadgetEntityKind.Server && gadget.AliveByOwner ||
+                              gadget.Kind == GadgetEntityKind.Client && gadget.TrueLifeTimeByOwner))
+            .ToArray();
+
+        if (owned.Length == 0)
+            return;
+
+        foreach (var gadget in owned)
+        {
+            scene.RemoveEntity(gadget.EntityId);
+            scene.World.Abilities.Remove(gadget.EntityId);
+        }
+
+        await BroadcastScene(new SceneEntityDisappearNotify {
+            DisappearType = VisionType.VISION_TYPE_MISS,
+            EntityList = [.. owned.Select(gadget => gadget.EntityId)]
+        });
     }
 
     private bool TryApplyEntityMove(EntityMoveInfo move, bool requireAuthority, out MotionInfo currentMotion)
@@ -797,6 +833,317 @@ public sealed class SceneModule(
             message = null!;
             return false;
         }
+    }
+
+    [Opcode]
+    public async Task OnEvtCreateGadget(EvtCreateGadgetNotify notify)
+    {
+        var module = player.Module<WorldModule>();
+        var scene = module.Scene;
+
+        if (scene is null || notify.EntityId == 0 || scene.TryGetEntity(notify.EntityId, out _))
+            return;
+
+        var entity = GadgetEntity.CreateClient(scene, module.PeerId, notify);
+
+        var abilities = player.Module<AbilityModule>().RegisterClientGadget(
+            module.World.Abilities,
+            new AbilityOwner(entity.EntityId, AbilityOwnerType.ClientGadget, module.PeerId, player.Uid),
+            entity.GadgetId);
+
+        entity.Info.EntityAuthorityInfo!.AbilityInfo = AbilityProtocol.ToSyncState(abilities);
+        scene.AddGadget(entity);
+
+        await BroadcastSceneExceptPlayer(new SceneEntityAppearNotify {
+            AppearType = VisionType.VISION_TYPE_BORN,
+            EntityList = { entity.Info }
+        });
+    }
+
+    [Opcode]
+    public async Task OnEvtDestroyGadget(EvtDestroyGadgetNotify notify)
+    {
+        var module = player.Module<WorldModule>();
+        var scene = module.Scene;
+
+        if (scene is null ||
+            !scene.TryGetEntity(notify.EntityId, out var found) ||
+            found is not GadgetEntity { Kind: GadgetEntityKind.Client } gadget)
+            return;
+
+        scene.RemoveEntity(gadget.EntityId);
+        module.World.Abilities.Remove(gadget.EntityId);
+
+        await BroadcastScene(new SceneEntityDisappearNotify {
+            DisappearType = VisionType.VISION_TYPE_MISS,
+            EntityList = { gadget.EntityId }
+        });
+    }
+
+    [Opcode]
+    public async Task OnGadgetInteract(GadgetInteractReq req)
+    {
+        var module = player.Module<WorldModule>();
+        var scene = module.Scene;
+        var gameData = data;
+
+        if (scene is null || gameData is null ||
+            !scene.TryGetEntity(req.GadgetEntityId, out var found) ||
+            found is not GadgetEntity { Kind: GadgetEntityKind.Trifle } gadget ||
+            !gameData.MaterialData.TryGetValue(gadget.ItemId, out var item))
+            return;
+
+        scene.RemoveEntity(gadget.EntityId);
+
+        await BroadcastScene(new SceneEntityDisappearNotify {
+            DisappearType = VisionType.VISION_TYPE_REMOVE,
+            EntityList = { gadget.EntityId }
+        });
+
+        await ApplyElemBallEnergy(item);
+
+        await BroadcastScene(new GadgetInteractRsp {
+            GadgetEntityId = gadget.EntityId,
+            GadgetId = gadget.GadgetId,
+            OpType = req.OpType,
+            InteractType = InteractType.INTERACT_TYPE_PICK_ITEM
+        });
+    }
+
+    public async Task CreateAbilityGadget(AbilityGadgetCreateRequest request)
+    {
+        if (request.GadgetId == 0)
+            return;
+
+        var module = player.Module<WorldModule>();
+        var scene = module.Scene;
+
+        if (scene is null)
+            return;
+
+        var entity = GadgetEntity.CreateServer(
+            scene,
+            request.GadgetId,
+            request.Position,
+            request.Rotation,
+            request.CampId,
+            request.CampType,
+            request.OwnerEntityId,
+            request.TargetEntityId,
+            request.SightGroupWithOwner,
+            request.AliveByOwner);
+
+        var playerUid = module.World.Abilities.TryGet(request.OwnerEntityId, out var owner) ? owner.Owner.PlayerUid : 0;
+
+        var abilities = player.Module<AbilityModule>().RegisterGadget(
+            module.World.Abilities,
+            new AbilityOwner(entity.EntityId, AbilityOwnerType.Gadget, module.World.HostPeerId, playerUid),
+            entity.GadgetId);
+
+        entity.Info.EntityAuthorityInfo!.AbilityInfo = AbilityProtocol.ToSyncState(abilities);
+        scene.AddGadget(entity);
+
+        await BroadcastScene(new SceneEntityAppearNotify {
+            AppearType = VisionType.VISION_TYPE_BORN,
+            EntityList = { entity.Info }
+        });
+    }
+
+    public async Task CreateElemBalls(
+        AbilityElemBallRequest request,
+        IReadOnlyList<ulong> guids
+    )
+    {
+        if (request.GadgetId == 0 ||
+            request.ItemId == 0 ||
+            guids.Count == 0)
+            return;
+
+        var scene = player.Module<WorldModule>().Scene;
+
+        if (scene is null)
+            return;
+
+        var notify = new SceneEntityAppearNotify {
+            AppearType = VisionType.VISION_TYPE_BORN
+        };
+
+        foreach (var guid in guids)
+        {
+            var entity = GadgetEntity.CreateTrifle(
+                scene,
+                request.ItemId,
+                request.GadgetId,
+                guid,
+                request.Position,
+                request.Rotation);
+
+            scene.AddGadget(entity);
+            notify.EntityList.Add(entity.Info);
+        }
+
+        await BroadcastScene(notify);
+    }
+
+    public async Task KillAbilityGadgets(uint gadgetId)
+    {
+        var scene = player.Module<WorldModule>().Scene;
+
+        if (scene is null || gadgetId == 0)
+            return;
+
+        var targets = scene.Gadgets.Values
+            .Where(gadget => gadget.Kind == GadgetEntityKind.Server && gadget.GadgetId == gadgetId)
+            .ToArray();
+
+        foreach (var target in targets)
+        {
+            await KillEntity(scene, target, sourceEntityId: 0);
+        }
+    }
+
+    private async Task ApplyElemBallEnergy(Resources.Excel.MaterialData item)
+    {
+        if (item.ItemUse.Count == 0)
+            return;
+
+        var use = item.ItemUse[0];
+
+        var targets = item.UseTarget switch {
+            "ITEM_USE_TARGET_CUR_AVATAR" => _teamEntities.TryGetValue(_currentAvatarGuid, out var current) ?
+                [(Entity: current, Ratio: 1f)] :
+                [],
+            "ITEM_USE_TARGET_CUR_TEAM" => ElemBallTeamTargets(),
+            _ => []
+        };
+
+        foreach (var target in targets)
+        {
+            var energy = ElemBallEnergyFor(use, target.Entity.Avatar);
+
+            if (energy <= 0f)
+                continue;
+
+            energy *= target.Ratio;
+            energy *= target.Entity.GetFightProperty(FightProperty.FIGHT_PROP_CHARGE_EFFICIENCY);
+
+            if (!TryGetEnergyProperties(target.Entity.Avatar, out var maxProp, out var curProp))
+                continue;
+
+            var maximum = target.Entity.GetFightProperty(maxProp);
+            var current = target.Entity.GetFightProperty(curProp);
+            var next = Math.Clamp(current + energy, min: 0f, maximum);
+
+            if (next == current)
+                continue;
+
+            target.Entity.SetFightProperty(curProp, next);
+
+            await BroadcastScene(new EntityFightPropUpdateNotify {
+                EntityId = target.Entity.EntityId,
+                FightPropMap = { [(uint)curProp] = next }
+            });
+
+            await BroadcastScene(new EntityFightPropChangeReasonNotify {
+                EntityId = target.Entity.EntityId,
+                PropType = (uint)curProp,
+                PropDelta = next,
+                Reason = PropChangeReason.PROP_CHANGE_REASON_ENERGY_BALL,
+                ChangeEnergyReason = ChangeEnergyReason.CHANGE_ENERGY_REASON_NONE
+            });
+        }
+    }
+
+    private (AvatarEntity Entity, float Ratio)[] ElemBallTeamTargets()
+    {
+        var team = player.Module<TeamModule>().Current;
+
+        var offFieldRatio = team.Avatars.Length switch {
+            2 => 0.8f,
+            3 => 0.7f,
+            _ => 0.6f
+        };
+
+        return team.Avatars
+            .Select(avatar => _teamEntities.GetValueOrDefault(avatar.Guid))
+            .Where(entity => entity is not null)
+            .Select(entity => (entity!, entity!.Avatar.Guid == _currentAvatarGuid ? 1f : offFieldRatio))
+            .ToArray();
+    }
+
+    private float ElemBallEnergyFor(Resources.Excel.ItemUseData use, Avatar avatar)
+    {
+        if (use.UseOp == "ITEM_USE_ADD_ALL_ENERGY")
+            return ParseUseParam(use, index: 0);
+
+        if (use.UseOp != "ITEM_USE_ADD_ELEM_ENERGY")
+            return 0f;
+
+        var particleElement = (int)ParseUseParam(use, index: 0);
+        var avatarElement = AvatarElement(avatar);
+        return ParseUseParam(use, particleElement == avatarElement ? 1 : 2);
+    }
+
+    private static float ParseUseParam(Resources.Excel.ItemUseData use, int index) =>
+        index >= 0 && index < use.UseParam.Count &&
+        float.TryParse(use.UseParam[index], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture,
+            out var value) ?
+            value :
+            0f;
+
+    private int AvatarElement(Avatar avatar)
+    {
+        var gameData = data;
+
+        if (gameData is null ||
+            !gameData.AvatarSkillDepotData.TryGetValue(avatar.SkillDepotId, out var depot) ||
+            !gameData.AvatarSkillData.TryGetValue(depot.EnergySkill, out var skill))
+            return 0;
+
+        return skill.CostElemType switch {
+            "Fire" => 1,
+            "Water" => 2,
+            "Grass" => 3,
+            "Electric" => 4,
+            "Ice" => 5,
+            "Wind" => 7,
+            "Rock" => 8,
+            _ => 0
+        };
+    }
+
+    private bool TryGetEnergyProperties(Avatar avatar, out FightProperty max, out FightProperty current)
+    {
+        var gameData = data;
+
+        if (gameData is not null &&
+            gameData.AvatarSkillDepotData.TryGetValue(avatar.SkillDepotId, out var depot) &&
+            gameData.AvatarSkillData.TryGetValue(depot.EnergySkill, out var skill))
+        {
+            if (skill.HasSpecialEnergyRequirement)
+            {
+                max = FightProperty.FIGHT_PROP_MAX_SPECIAL_ENERGY;
+                current = FightProperty.FIGHT_PROP_CUR_SPECIAL_ENERGY;
+                return true;
+            }
+
+            (max, current) = skill.CostElemType switch {
+                "Fire" => (FightProperty.FIGHT_PROP_MAX_FIRE_ENERGY, FightProperty.FIGHT_PROP_CUR_FIRE_ENERGY),
+                "Water" => (FightProperty.FIGHT_PROP_MAX_WATER_ENERGY, FightProperty.FIGHT_PROP_CUR_WATER_ENERGY),
+                "Grass" => (FightProperty.FIGHT_PROP_MAX_GRASS_ENERGY, FightProperty.FIGHT_PROP_CUR_GRASS_ENERGY),
+                "Electric" => (FightProperty.FIGHT_PROP_MAX_ELEC_ENERGY, FightProperty.FIGHT_PROP_CUR_ELEC_ENERGY),
+                "Ice" => (FightProperty.FIGHT_PROP_MAX_ICE_ENERGY, FightProperty.FIGHT_PROP_CUR_ICE_ENERGY),
+                "Wind" => (FightProperty.FIGHT_PROP_MAX_WIND_ENERGY, FightProperty.FIGHT_PROP_CUR_WIND_ENERGY),
+                "Rock" => (FightProperty.FIGHT_PROP_MAX_ROCK_ENERGY, FightProperty.FIGHT_PROP_CUR_ROCK_ENERGY),
+                _ => (FightProperty.FIGHT_PROP_NONE, FightProperty.FIGHT_PROP_NONE)
+            };
+
+            return max != FightProperty.FIGHT_PROP_NONE;
+        }
+
+        max = FightProperty.FIGHT_PROP_NONE;
+        current = FightProperty.FIGHT_PROP_NONE;
+        return false;
     }
 
     public async Task<MonsterEntity> SpawnMonster(uint monsterId, uint level)

@@ -196,6 +196,8 @@ public sealed class AbilityInvokeHandlerRegistry
                 if (context.LogAbilitiesEnabled)
                 {
                     Log.Error(ex, "An error occurred while executing ability invoke handler {HandlerType}.", handler.GetType().FullName);
+                    Log.Error(ex.Message ?? "No exception message available.");
+                    Log.Error(ex.StackTrace ?? "No stack trace available.");
                 }
             }
         }
