@@ -738,6 +738,11 @@ public sealed class AvatarEquipTests
                 Assert.Equal(expected: 0ul, unequip.EquipGuid);
             },
             message => {
+                var unequip = Assert.IsType<AvatarEquipChangeNotify>(message);
+                Assert.Equal(first.Guid, unequip.AvatarGuid);
+                Assert.Equal(expected: 0ul, unequip.EquipGuid);
+            },
+            message => {
                 var equip = Assert.IsType<AvatarEquipChangeNotify>(message);
                 Assert.Equal(second.Guid, equip.AvatarGuid);
                 Assert.Equal(firstWeapon, equip.EquipGuid);
@@ -753,6 +758,119 @@ public sealed class AvatarEquipTests
 
         Assert.Equal(firstWeapon,
             player.State.Avatars.Single(state => state.AvatarId == second.AvatarId).WeaponGuid);
+    }
+
+    [Fact]
+    public async Task WearEquip_SameWeapon_RecreatesSceneWeaponEntity()
+    {
+        var data = Data();
+        var (player, sent) = Player(uid: 1001, data, includeWorld: true);
+        var avatars = player.Module<AvatarModule>();
+        var world = player.Module<WorldModule>();
+        var scene = player.Module<SceneModule>();
+
+        await avatars.OnLogin();
+        var avatar = avatars.Avatars[10000005];
+
+        world.EnterOwnWorld();
+        _ = scene.OnEnterSceneReady(new EnterSceneReadyReq { EnterSceneToken = 1 }).ToArray();
+        _ = scene.OnSceneInit(new SceneInitFinishReq { EnterSceneToken = 1 }).ToArray();
+
+        var before = Assert.IsType<EntityWeapon>(avatar.Weapon!.WeaponEntity);
+        sent.Clear();
+
+        var response = await avatars.OnWearEquip(new WearEquipReq {
+            AvatarGuid = avatar.Guid,
+            EquipGuid = avatar.WeaponGuid
+        });
+
+        Assert.Equal(expected: 0, response.Retcode);
+        var after = Assert.IsType<EntityWeapon>(avatar.Weapon!.WeaponEntity);
+        Assert.NotEqual(before.EntityId, after.EntityId);
+        Assert.DoesNotContain(before.EntityId, after.Scene.WeaponEntities.Keys);
+        Assert.Contains(after.EntityId, after.Scene.WeaponEntities.Keys);
+
+        Assert.Collection(
+            sent,
+            message => {
+                var unequip = Assert.IsType<AvatarEquipChangeNotify>(message);
+                Assert.Equal(avatar.Guid, unequip.AvatarGuid);
+                Assert.Equal(expected: 0ul, unequip.EquipGuid);
+            },
+            message => {
+                var equip = Assert.IsType<AvatarEquipChangeNotify>(message);
+                Assert.Equal(avatar.Guid, equip.AvatarGuid);
+                Assert.Equal(avatar.WeaponGuid, equip.EquipGuid);
+                Assert.Equal(after.EntityId, equip.Weapon!.EntityId);
+            });
+    }
+
+    [Fact]
+    public async Task WearEquip_WeaponAffixChange_ReplacesAvatarAbilityState()
+    {
+        var data = Data();
+
+        data.EquipAffixesByGroupAndLevel[(111, 1)] = new EquipAffixResourceData {
+            AffixId = 111,
+            OpenConfig = "WeaponA_OpenConfig"
+        };
+
+        data.EquipAffixesByGroupAndLevel[(112, 1)] = new EquipAffixResourceData {
+            AffixId = 112,
+            OpenConfig = "WeaponB_OpenConfig"
+        };
+
+        data.Talents["WeaponA_OpenConfig"] = [
+            new TalentConfigEntry { Type = "AddAbility", AbilityName = "WeaponA_Ability" }
+        ];
+
+        data.Talents["WeaponB_OpenConfig"] = [
+            new TalentConfigEntry { Type = "AddAbility", AbilityName = "WeaponB_Ability" }
+        ];
+
+        var (player, sent) = Player(uid: 1001, data, includeWorld: true);
+        var avatars = player.Module<AvatarModule>();
+        var inventory = player.Module<InventoryModule>();
+        var world = player.Module<WorldModule>();
+        var scene = player.Module<SceneModule>();
+
+        await avatars.OnLogin();
+        await inventory.OnLogin();
+        var replacement = Assert.Single(await inventory.AddWeapons([data.WeaponData[11502]]));
+        var avatar = avatars.Avatars[10000005];
+
+        world.EnterOwnWorld();
+        _ = scene.OnEnterSceneReady(new EnterSceneReadyReq { EnterSceneToken = 1 }).ToArray();
+        _ = scene.OnSceneInit(new SceneInitFinishReq { EnterSceneToken = 1 }).ToArray();
+
+        var avatarEntity = Assert.Single(
+            world.Scene!.Entities.Values.OfType<AvatarEntity>(),
+            entity => entity.Avatar.Guid == avatar.Guid);
+        var abilities = player.Module<AbilityModule>();
+        var component = abilities.GetComponent(avatarEntity.EntityId);
+
+        Assert.Contains(component.Embryos, embryo => embryo.Name == AbilityKey.FromName("WeaponA_Ability"));
+        component.UpsertAbility(instancedAbilityId: 999, AbilityKey.FromName("WeaponA_Ability"));
+        sent.Clear();
+
+        var response = await avatars.OnWearEquip(new WearEquipReq {
+            AvatarGuid = avatar.Guid,
+            EquipGuid = replacement.Guid
+        });
+
+        Assert.Equal(expected: 0, response.Retcode);
+        var change = Assert.Single(sent.OfType<AbilityChangeNotify>());
+        Assert.Equal(avatarEntity.EntityId, change.EntityId);
+        Assert.NotNull(change.AbilityControlBlock);
+
+        var hashes = change.AbilityControlBlock.AbilityEmbryoList
+            .Select(embryo => embryo.AbilityNameHash)
+            .ToHashSet();
+
+        Assert.DoesNotContain(AbilityHash.Compute("WeaponA_Ability"), hashes);
+        Assert.Contains(AbilityHash.Compute("WeaponB_Ability"), hashes);
+        Assert.DoesNotContain(expected: 999u, component.AppliedAbilities.Keys);
+        Assert.False(component.IsClientInitialized);
     }
 
     [Fact]
@@ -780,8 +898,9 @@ public sealed class AvatarEquipTests
         var services = new ServiceCollection().AddLogging().BuildServiceProvider();
         var registry = new ModuleRegistry();
         var guidManager = new GuidManager(serverId: 1);
+        IWeaponEntityService? weaponEntities = includeWorld ? new WeaponEntityService() : null;
         registry.AddModule<InventoryModule>((_, player) => new InventoryModule(player, guidManager, data));
-        registry.AddModule<AvatarModule>((_, player) => new AvatarModule(player, data, guidManager));
+        registry.AddModule<AvatarModule>((_, player) => new AvatarModule(player, data, guidManager, weaponEntities));
         registry.AddModule<TeamModule>((_, player) => new TeamModule(player));
         registry.AddModule<BornModule>((_, player) => new BornModule(player));
 

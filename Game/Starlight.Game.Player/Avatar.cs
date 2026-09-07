@@ -49,6 +49,7 @@ public sealed class Avatar
     public uint WeaponItemId { get; private set; }
     public uint WeaponGadgetId { get; private set; }
     public ulong WeaponGuid { get; private set; }
+    public WeaponItem? Weapon => _equippedWeapon;
 
     public IReadOnlyDictionary<uint, float> FightProps => _fightProps;
     public FightPropertyStore FightPropertyStore => _fightProps;
@@ -101,14 +102,34 @@ public sealed class Avatar
         return avatar;
     }
 
-    internal void EquipWeapon(WeaponItem weapon)
+    internal void EquipWeapon(WeaponItem weapon, bool recalculate = true)
     {
         WeaponItemId = weapon.ItemId;
         WeaponGadgetId = weapon.GadgetId;
         WeaponGuid = weapon.Guid;
         _equippedWeapon = weapon;
-        RecalculateFightProperties();
+        weapon.EquipAvatarId = AvatarId;
+
+        if (recalculate)
+            RecalculateFightProperties();
     }
+
+    internal WeaponItem? UnequipWeapon()
+    {
+        var weapon = _equippedWeapon;
+
+        if (weapon is null)
+            return null;
+
+        weapon.EquipAvatarId = 0;
+        _equippedWeapon = null;
+        WeaponItemId = 0;
+        WeaponGadgetId = 0;
+        WeaponGuid = 0;
+        return weapon;
+    }
+
+    internal void Recalculate() => RecalculateFightProperties();
 
     internal bool SetSkillDepot(uint skillDepotId)
     {

@@ -134,6 +134,7 @@ internal static class Program
                     services.GetRequiredService<IConfiguration>().GetValue<bool>("Gate:Connections:LogAbilities")))
                 .AddAbilityInvokeHandlers()
                 .AddSingleton<WorldAbilityRouter>()
+                .AddSingleton<IWeaponEntityService, WeaponEntityService>()
                 .AddSingleton<IAbilityScopeResolver>(services => services.GetRequiredService<WorldAbilityRouter>())
                 .AddSingleton<IInvokeForwarder>(services => services.GetRequiredService<WorldAbilityRouter>())
                 .AddSingleton<WorldGadgetRuntime>()

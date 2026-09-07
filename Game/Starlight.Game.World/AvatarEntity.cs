@@ -11,16 +11,14 @@ public sealed class AvatarEntity : SceneEntity
         Scene scene,
         SceneEntityInfo info,
         FightPropertyStore fightProperties,
-        Avatar avatar,
-        uint weaponEntityId
+        Avatar avatar
     ) : base(scene, info, fightProperties)
     {
         Avatar = avatar;
-        WeaponEntityId = weaponEntityId;
     }
 
     public Avatar Avatar { get; }
-    public uint WeaponEntityId { get; }
+    public uint WeaponEntityId => Avatar.Weapon?.WeaponEntity?.EntityId ?? 0;
     public override uint AuthorityPeerId => Info.Avatar?.PeerId ?? 0;
     public override bool RemoveFromSceneOnDeath => false;
 
@@ -35,12 +33,18 @@ public sealed class AvatarEntity : SceneEntity
     )
     {
         var world = scene.World;
-        var weaponEntityId = world.NextEntityId(ProtEntityType.PROT_ENTITY_TYPE_WEAPON);
         var inventory = world.Owner.Module<InventoryModule>();
 
-        var weaponItem = inventory.Weapons.FirstOrDefault(w => w.Guid == avatar.WeaponGuid)
-                         ?? throw new InvalidOperationException(
-                             $"Weapon {avatar.WeaponItemId} with GUID {avatar.WeaponGuid} not found in inventory");
+        var weaponItem = avatar.Weapon ?? inventory.Weapons.FirstOrDefault(w => w.Guid == avatar.WeaponGuid)
+            ?? throw new InvalidOperationException(
+                $"Weapon {avatar.WeaponItemId} with GUID {avatar.WeaponGuid} not found in inventory");
+
+        if (weaponItem.WeaponEntity is not EntityWeapon weaponEntity || !ReferenceEquals(weaponEntity.Scene, scene))
+        {
+            weaponEntity = new EntityWeapon(scene, weaponItem);
+            weaponItem.WeaponEntity = weaponEntity;
+            scene.AddWeapon(weaponEntity);
+        }
 
         var sceneAvatar = new SceneAvatarInfo {
             Uid = uid,
@@ -50,15 +54,8 @@ public sealed class AvatarEntity : SceneEntity
             SkillDepotId = avatar.SkillDepotId,
             BornTime = avatar.BornTime,
             WearingFlycloakId = Avatar.DefaultFlycloak,
-            EquipIdList = [avatar.WeaponItemId],
-            Weapon = new SceneWeaponInfo {
-                EntityId = weaponEntityId,
-                GadgetId = weaponItem.GadgetId,
-                ItemId = weaponItem.ItemId,
-                Guid = avatar.WeaponGuid,
-                Level = weaponItem.Level,
-                PromoteLevel = weaponItem.PromoteLevel
-            }
+            EquipIdList = [weaponItem.ItemId],
+            Weapon = weaponItem.ToSceneProtocol()
         };
 
         avatar.PopulateSceneProgression(sceneAvatar);
@@ -86,7 +83,17 @@ public sealed class AvatarEntity : SceneEntity
             Avatar = sceneAvatar
         };
 
-        return new AvatarEntity(scene, info, avatar.FightPropertyStore, avatar, weaponEntityId);
+        return new AvatarEntity(scene, info, avatar.FightPropertyStore, avatar);
+    }
+
+    public void SyncWeapon()
+    {
+        if (Info.Avatar is not {} sceneAvatar || Avatar.Weapon is not {} weapon)
+            return;
+
+        sceneAvatar.EquipIdList.Clear();
+        sceneAvatar.EquipIdList.Add(weapon.ItemId);
+        sceneAvatar.Weapon = weapon.ToSceneProtocol();
     }
 
     private static Vector CopyVector(Vector? source) =>

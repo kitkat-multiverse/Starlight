@@ -7,6 +7,7 @@ public sealed class Scene(World world, uint sceneId)
 {
     private readonly Dictionary<uint, SceneEntity> _entities = [];
     private readonly Dictionary<uint, MonsterEntity> _monsters = [];
+    private readonly Dictionary<uint, EntityWeapon> _weaponEntities = [];
     private readonly Dictionary<uint, GadgetEntity> _gadgets = [];
 
     /// The world that loaded this scene and allocates its entity IDs.
@@ -15,6 +16,7 @@ public sealed class Scene(World world, uint sceneId)
     public uint Id => sceneId;
     public IReadOnlyDictionary<uint, SceneEntity> Entities => _entities;
     public IReadOnlyDictionary<uint, MonsterEntity> Monsters => _monsters;
+    public IReadOnlyDictionary<uint, EntityWeapon> WeaponEntities => _weaponEntities;
     public IReadOnlyDictionary<uint, GadgetEntity> Gadgets => _gadgets;
 
     public void AddEntity(SceneEntity entity)
@@ -44,6 +46,23 @@ public sealed class Scene(World world, uint sceneId)
 
     public void AddMonster(MonsterEntity monster) => AddEntity(monster);
     public void AddGadget(GadgetEntity gadget) => AddEntity(gadget);
+
+    public void AddWeapon(EntityWeapon weapon)
+    {
+        if (!ReferenceEquals(weapon.Scene, this))
+            throw new ArgumentException("Weapon belongs to a different scene.", nameof(weapon));
+
+        _weaponEntities[weapon.EntityId] = weapon;
+    }
+
+    public bool RemoveWeapon(uint entityId)
+    {
+        if (!_weaponEntities.Remove(entityId))
+            return false;
+
+        World.Abilities.Remove(entityId);
+        return true;
+    }
 
     public bool TryGetEntity(uint entityId, out SceneEntity entity) =>
         _entities.TryGetValue(entityId, out entity!);

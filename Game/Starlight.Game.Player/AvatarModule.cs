@@ -3,10 +3,11 @@ using Starlight.Game.Modules;
 using Starlight.Game.Resources;
 using Starlight.Protocol;
 using Starlight.Rpc.Proto;
+using IMessage = Starlight.Protobuf.Core.IMessage;
 
 namespace Starlight.Game.Player;
 
-public sealed class AvatarModule(IPlayer player, GameData data, GuidManager guidManager) : IModule
+public sealed class AvatarModule(IPlayer player, GameData data, GuidManager guidManager, IWeaponEntityService? weaponEntities = null) : IModule
 {
     private readonly Dictionary<uint, Avatar> _avatars = [];
     private readonly Dictionary<uint, NetAvatar> _avatarState = [];
@@ -91,7 +92,7 @@ public sealed class AvatarModule(IPlayer player, GameData data, GuidManager guid
             AvatarGuid = msg.AvatarGuid,
             EquipGuid = msg.EquipGuid
         };
-        var notifications = new List<AvatarEquipChangeNotify>();
+        var notifications = new List<IMessage>();
 
         lock (player.StateLock)
         {
@@ -114,33 +115,7 @@ public sealed class AvatarModule(IPlayer player, GameData data, GuidManager guid
                 return response;
             }
 
-            if (avatar.WeaponGuid == weapon.Guid)
-                return response;
-
-            if (!inventory.TryGetWeapon(avatar.WeaponGuid, out var previousWeapon))
-            {
-                response.Retcode = (int)Retcode.RETCODE_ITEM_NOT_EXIST;
-                return response;
-            }
-
-            var otherAvatar = _avatars.Values.FirstOrDefault(candidate =>
-                candidate.Guid != avatar.Guid && candidate.WeaponGuid == weapon.Guid);
-
-            if (otherAvatar is not null)
-            {
-                // Clear the old owner's slot before assigning the replacement so the client never
-                // sees one GUID equipped by two avatars at once.
-                notifications.Add(new AvatarEquipChangeNotify {
-                    AvatarGuid = otherAvatar.Guid,
-                    EquipType = 6 // EQUIP_WEAPON
-                });
-
-                SetWeapon(otherAvatar, previousWeapon);
-                notifications.Add(CreateWeaponChangeNotify(otherAvatar, previousWeapon));
-            }
-
-            SetWeapon(avatar, weapon);
-            notifications.Add(CreateWeaponChangeNotify(avatar, weapon));
+            EquipWeapon(avatar, weapon, shouldRecalculate: true, notifications);
         }
 
         foreach (var notification in notifications)
@@ -187,24 +162,19 @@ public sealed class AvatarModule(IPlayer player, GameData data, GuidManager guid
                 avatar.WeaponGuid,
                 showHint: false);
 
-        // Establish the starter-weapon equip before publishing the new avatar so both client
-        // stores receive the same weapon GUID.
-        await player.Send(new AvatarEquipChangeNotify {
-            AvatarGuid = avatar.Guid,
-            EquipGuid = weapon.Guid,
-            ItemId = weapon.ItemId,
-            EquipType = 6, // EQUIP_WEAPON
-            Weapon = weapon.ToSceneProtocol()
-        });
-
         AvatarInfo avatarInfo;
+        AvatarEquipChangeNotify equipNotify;
 
         lock (player.StateLock)
         {
             avatar.EquipWeapon(weapon);
+            weaponEntities?.Equip(player, avatar, weapon);
             SyncState(avatar, _avatarState[avatar.AvatarId]);
             avatarInfo = avatar.Info();
+            equipNotify = CreateWeaponChangeNotify(avatar, weapon);
         }
+
+        await player.Send(equipNotify);
 
         await player.Send(new AvatarAddNotify {
             Avatar = avatarInfo,
@@ -271,13 +241,48 @@ public sealed class AvatarModule(IPlayer player, GameData data, GuidManager guid
         }
     }
 
-    private void SetWeapon(Avatar avatar, WeaponItem weapon)
+    private void EquipWeapon(
+        Avatar avatar,
+        WeaponItem weapon,
+        bool shouldRecalculate,
+        List<IMessage> notifications,
+        bool refreshWeaponEntity = false
+    )
     {
-        lock (player.StateLock)
+        var otherAvatar = weapon.EquipAvatarId == 0 ? null : _avatars.GetValueOrDefault(weapon.EquipAvatarId);
+
+        if (otherAvatar is not null)
         {
-            avatar.EquipWeapon(weapon);
-            SyncState(avatar, _avatarState[avatar.AvatarId]);
+            if (otherAvatar.UnequipWeapon() is not null)
+                notifications.Add(CreateWeaponClearNotify(otherAvatar));
+
+            if (avatar.Weapon is {} toSwap)
+                EquipWeapon(otherAvatar, toSwap, shouldRecalculate: false, notifications);
+
+            otherAvatar.Recalculate();
+
+            if (weaponEntities?.RefreshAvatarAbilities(player, otherAvatar) is {} otherAbilityChange)
+                notifications.Add(otherAbilityChange);
+
+            SyncState(otherAvatar, _avatarState[otherAvatar.AvatarId]);
+        } else if (avatar.Weapon is not null)
+        {
+            avatar.UnequipWeapon();
         }
+
+        avatar.EquipWeapon(weapon, recalculate: false);
+        weaponEntities?.Equip(player, avatar, weapon, refreshWeaponEntity);
+        notifications.Add(CreateWeaponChangeNotify(avatar, weapon));
+
+        if (shouldRecalculate)
+        {
+            avatar.Recalculate();
+
+            if (weaponEntities?.RefreshAvatarAbilities(player, avatar) is {} abilityChange)
+                notifications.Add(abilityChange);
+        }
+
+        SyncState(avatar, _avatarState[avatar.AvatarId]);
     }
 
     private static NetAvatar CreateState(Avatar avatar)
@@ -357,6 +362,12 @@ public sealed class AvatarModule(IPlayer player, GameData data, GuidManager guid
         await player.Send(notify);
         return avatar;
     }
+
+    private static AvatarEquipChangeNotify CreateWeaponClearNotify(Avatar avatar)
+        => new() {
+            AvatarGuid = avatar.Guid,
+            EquipType = 6 // EQUIP_WEAPON
+        };
 
     private static AvatarEquipChangeNotify CreateWeaponChangeNotify(Avatar avatar, WeaponItem weapon)
         => new() {

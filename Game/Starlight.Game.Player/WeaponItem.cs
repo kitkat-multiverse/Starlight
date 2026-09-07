@@ -2,6 +2,18 @@ using Starlight.Protocol;
 
 namespace Starlight.Game.Player;
 
+public interface IWeaponEntity
+{
+    uint EntityId { get; }
+    AbilitySyncStateInfo AbilityInfo { get; }
+}
+
+public interface IWeaponEntityService
+{
+    void Equip(IPlayer player, Avatar avatar, WeaponItem weapon, bool refresh = false);
+    AbilityChangeNotify? RefreshAvatarAbilities(IPlayer player, Avatar avatar);
+}
+
 public sealed class WeaponItem : InventoryItem
 {
     public uint GadgetId { get; init; }
@@ -9,6 +21,8 @@ public sealed class WeaponItem : InventoryItem
     public uint Refinement { get; init; } = 1;
     public uint PromoteLevel { get; init; }
     public uint AffixId { get; init; }
+    public uint EquipAvatarId { get; internal set; }
+    public IWeaponEntity? WeaponEntity { get; set; }
 
     public override Item ToProtocol()
     {
@@ -30,12 +44,13 @@ public sealed class WeaponItem : InventoryItem
     public SceneWeaponInfo ToSceneProtocol()
     {
         var weapon = new SceneWeaponInfo {
+            EntityId = WeaponEntity?.EntityId ?? 0,
             ItemId = ItemId,
             Guid = Guid,
             GadgetId = GadgetId,
             Level = Level,
             PromoteLevel = PromoteLevel,
-            AbilityInfo = new AbilitySyncStateInfo { IsInited = AffixId != 0 }
+            AbilityInfo = WeaponEntity?.AbilityInfo ?? new AbilitySyncStateInfo { IsInited = AffixId != 0 }
         };
 
         if (AffixId != 0)
