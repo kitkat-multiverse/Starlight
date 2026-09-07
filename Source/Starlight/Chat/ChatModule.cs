@@ -41,17 +41,6 @@ public sealed class ChatModule(
         => new() { Retcode = (int)Retcode.RETCODE_SUCC };
 
     [Opcode]
-    public GetPlayerSocialDetailRsp OnGetPlayerSocialDetail(GetPlayerSocialDetailReq msg)
-        => msg.Uid == serverFriend.Uid ?
-            new GetPlayerSocialDetailRsp {
-                Retcode = (int)Retcode.RETCODE_SUCC,
-                DetailData = serverFriend.ToSocialDetail()
-            } :
-            new GetPlayerSocialDetailRsp {
-                Retcode = (int)Retcode.RETCODE_PLAYER_NOT_EXIST
-            };
-
-    [Opcode]
     public async Task<PrivateChatRsp> OnPrivateChat(PrivateChatReq msg)
     {
         var retcode = msg.ContentCase switch {

@@ -131,6 +131,7 @@ internal static class Program
                 .AddSingleton(config.Chat)
                 .AddSingleton<ServerFriendProfile>()
                 .AddSingleton<ChatService>()
+                .AddSingleton<ProfileCosmeticService>()
                 .AddSingleton<GameData>()
                 .AddSingleton<ProtocolRegistry>(protocol)
                 .AddSingleton<AbilityInitializer>()

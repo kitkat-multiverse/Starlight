@@ -38,6 +38,8 @@ message NetPlayerState {
   uint32 born_avatar_id = 5;
   repeated NetAvatarTeam avatar_teams = 6;
   uint32 current_avatar_team_id = 7;
+  repeated uint32 unlocked_name_card_ids = 8;
+  repeated uint32 unlocked_profile_picture_ids = 9;
 }
 
 message NetAvatarTeam {

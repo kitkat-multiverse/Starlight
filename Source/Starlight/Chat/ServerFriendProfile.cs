@@ -33,7 +33,6 @@ public sealed class ServerFriendProfile
             Uid = Uid,
             Nickname = Nickname,
             Level = AdventureRank,
-            AvatarId = AvatarId,
             WorldLevel = WorldLevel,
             Signature = Signature,
             OnlineState = FriendOnlineState.FRIEND_ONLINE_STATE_ONLINE,
@@ -54,6 +53,7 @@ public sealed class ServerFriendProfile
             Level = AdventureRank,
             AvatarId = AvatarId,
             Signature = Signature,
+            Birthday = new Birthday { Month = 12, Day = 31 },
             WorldLevel = WorldLevel,
             OnlineState = FriendOnlineState.FRIEND_ONLINE_STATE_ONLINE,
             Param = 1,
@@ -62,6 +62,7 @@ public sealed class ServerFriendProfile
             NameCardId = NameCardId,
             FriendEnterHomeOption = FriendEnterHomeOption.FRIEND_ENTER_HOME_OPTION_REFUSE,
             ProfilePicture = new ProfilePicture { AvatarId = AvatarId },
-            PlatformType = PlatformType.PLATFORM_TYPE_PC
+            PlatformType = PlatformType.PLATFORM_TYPE_PC,
+            DataVersion = SocialDetail.Types.Version.V57
         };
 }

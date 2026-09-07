@@ -26,6 +26,15 @@ public sealed class AvatarModule(IPlayer player, GameData data, GuidManager guid
         }
     }
 
+    public bool OwnsAvatar(uint avatarId)
+    {
+        lock (player.StateLock)
+        {
+            LoadState();
+            return _avatars.ContainsKey(avatarId);
+        }
+    }
+
     [Lifecycle(LifecycleEvent.PlayerLogin)]
     public async Task<AvatarDataNotify> OnLogin()
     {

@@ -15,7 +15,7 @@ public sealed class PlayerProfile : IRpcSerializable<NetPlayerProfile>
     [MaxLength(50)] public string Signature { get; set; } = string.Empty;
 
     public uint PictureId { get; set; }
-    public uint NameCardId { get; set; }
+    public uint NameCardId { get; set; } = 210001;
 
     #region Navigation Properties
 

@@ -28,6 +28,7 @@ public sealed class GameData(IConfiguration config) : IHostedService
     [UsedImplicitly] public readonly Dictionary<uint, MonsterSpecialNameData> MonsterSpecialNameData = new();
     [UsedImplicitly] public readonly Dictionary<uint, MonsterAffixData> MonsterAffixData = new();
     [UsedImplicitly] public readonly Dictionary<uint, SceneData> SceneData = new();
+    [UsedImplicitly] public readonly Dictionary<uint, ProfilePictureData> ProfilePictureData = new();
 
     #endregion
 
