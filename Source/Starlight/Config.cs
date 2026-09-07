@@ -1,4 +1,5 @@
 using Serilog.Events;
+using Starlight.Chat;
 using Starlight.Common;
 using Starlight.DbGate;
 using Starlight.Game;
@@ -19,6 +20,7 @@ namespace Starlight;
 public sealed class Config
 {
     public LogEventLevel LogLevel { get; set; } = LogEventLevel.Information;
+    public ChatConfig Chat { get; set; } = new();
     /// <summary>
     /// Generates missing configured RSA keys, or the default files under <c>keys/</c>
     /// when no paths are configured. When disabled, empty paths use embedded keys and

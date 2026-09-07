@@ -5,6 +5,7 @@ using Serilog;
 using Serilog.Core;
 using Serilog.Events;
 using Serilog.Sinks.SystemConsole.Themes;
+using Starlight.Chat;
 using Starlight.Common;
 using Starlight.Console;
 using Starlight.Crypto.Client;
@@ -108,6 +109,7 @@ internal static class Program
             var moduleRegistry = new ModuleRegistry()
                 .AddGameComponent()
                 .AddPlayerComponent()
+                .AddStarlightComponent()
                 .AddAbilityComponent()
                 .AddWorldComponent()
                 .Build();
@@ -126,6 +128,9 @@ internal static class Program
                 .AddSerilog()
                 .AddSingleton(interactiveConsole)
                 .AddCommands()
+                .AddSingleton(config.Chat)
+                .AddSingleton<ServerFriendProfile>()
+                .AddSingleton<ChatService>()
                 .AddSingleton<GameData>()
                 .AddSingleton<ProtocolRegistry>(protocol)
                 .AddSingleton<AbilityInitializer>()
@@ -139,6 +144,7 @@ internal static class Program
                 .AddSingleton<IInvokeForwarder>(services => services.GetRequiredService<WorldAbilityRouter>())
                 .AddSingleton<WorldGadgetRuntime>()
                 .AddSingleton<IAbilityGadgetRuntime>(services => services.GetRequiredService<WorldGadgetRuntime>())
+                .AddSingleton<IAbilityDamageRuntime>(services => services.GetRequiredService<WorldAbilityRouter>())
                 .AddSingleton<GuidManager>(_ => new GuidManager(serverId: 1))
                 .AddHostedService(s => s.GetRequiredService<GameData>())
                 .AddSingleton<WorldManager>()

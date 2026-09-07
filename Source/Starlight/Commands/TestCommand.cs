@@ -1,17 +1,12 @@
-using Serilog;
-
 namespace Starlight.Commands;
 
-public class TestCommand : ICommand
+public sealed class TestCommand : ICommand
 {
     public string Name => "test";
     public string Description => "Test command";
     public string[] Aliases => [];
     public string Usage => "test";
 
-    public Task ExecuteAsync(string[] args, CancellationToken cancellationToken)
-    {
-        Log.Information("Starlight is running! This is a test command.");
-        return Task.CompletedTask;
-    }
+    public async Task ExecuteAsync(CommandContext context, string[] args)
+        => await context.ReplyAsync("Starlight is running! This is a test command.");
 }

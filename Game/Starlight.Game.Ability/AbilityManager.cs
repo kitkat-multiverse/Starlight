@@ -234,10 +234,7 @@ public sealed class AbilityModule(
         AbilityModifierInstance? modifier = null;
 
         if (head.InstancedModifierId != 0 && source.TryGetModifier(head.InstancedModifierId, out modifier!))
-        {
-            if (modifier.InstancedAbilityId != 0)
-                source.TryGetAbility(modifier.InstancedAbilityId, out ability!);
-        }
+            ability = ResolveModifierAbility(world, source, modifier);
 
         if (ability is null && head.InstancedAbilityId != 0)
         {
@@ -320,13 +317,15 @@ public sealed class AbilityModule(
 
         await handlers.DispatchAsync(context);
 
-        ability = head.InstancedAbilityId != 0 && source.TryGetAbility(head.InstancedAbilityId, out var dispatchedAbility) ?
-            dispatchedAbility :
-            ability;
-
         modifier = head.InstancedModifierId != 0 && source.TryGetModifier(head.InstancedModifierId, out var dispatchedModifier) ?
             dispatchedModifier :
             modifier;
+
+        ability = modifier is not null ?
+            ResolveModifierAbility(world, source, modifier) ?? ability :
+            head.InstancedAbilityId != 0 && source.TryGetAbility(head.InstancedAbilityId, out var dispatchedAbility) ?
+                dispatchedAbility :
+                ability;
 
         await Publish(context with { Ability = ability, Modifier = modifier });
     }
@@ -532,6 +531,23 @@ public sealed class AbilityModule(
     */
 
     #endregion
+
+    private static AbilityInstance? ResolveModifierAbility(
+        AbilityScopeContext world,
+        AbilityComponent source,
+        AbilityModifierInstance modifier
+    )
+    {
+        if (modifier.InstancedAbilityId == 0)
+            return null;
+
+        if (modifier.ParentAbilityEntityId != 0 &&
+            world.TryGet(modifier.ParentAbilityEntityId, out var parent) &&
+            parent.TryGetAbility(modifier.InstancedAbilityId, out var parentAbility))
+            return parentAbility;
+
+        return source.TryGetAbility(modifier.InstancedAbilityId, out var sourceAbility) ? sourceAbility : null;
+    }
 
     private Resources.Binary.AbilityConfig? ResolveAbility(AbilityKey key) =>
         key.Name is not null ? data.ResolveAbility(key.Name) ?? data.ResolveAbility(key.Hash) : data.ResolveAbility(key.Hash);

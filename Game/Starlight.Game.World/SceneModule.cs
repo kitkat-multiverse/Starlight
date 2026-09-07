@@ -603,6 +603,47 @@ public sealed class SceneModule(
         }
     }
 
+    internal async ValueTask ApplyAbilityHpLoss(AbilityDamageRequest request)
+    {
+        var scene = player.Module<WorldModule>().Scene;
+
+        if (scene is null || !scene.TryGetEntity(request.TargetEntityId, out var target))
+            return;
+
+        var damage = target.Damage(request.Amount);
+
+        if (!damage.Applied)
+            return;
+
+        await BroadcastScene(new EntityFightPropUpdateNotify {
+            EntityId = target.EntityId,
+            FightPropMap = {
+                [(uint)FightProperty.FIGHT_PROP_CUR_HP] = damage.CurrentHp
+            }
+        });
+
+        await BroadcastScene(new EntityFightPropChangeReasonNotify {
+            EntityId = target.EntityId,
+            PropType = (uint)FightProperty.FIGHT_PROP_CUR_HP,
+            PropDelta = -damage.EffectiveDamage,
+            Reason = PropChangeReason.PROP_CHANGE_REASON_ABILITY,
+            ChangeHpReason = ChangeHpReason.CHANGE_HP_REASON_SUB_ABILITY
+        });
+
+        if (damage.ClearedHpDebt != 0f)
+        {
+            await BroadcastScene(new EntityFightPropUpdateNotify {
+                EntityId = target.EntityId,
+                FightPropMap = {
+                    [(uint)FightProperty.FIGHT_PROP_CUR_HP_DEBTS] = 0f
+                }
+            });
+        }
+
+        if (damage.Died)
+            await KillEntity(scene, target, request.SourceEntityId);
+    }
+
     private async Task HandleAttack(AttackResult attack)
     {
         var scene = player.Module<WorldModule>().Scene;

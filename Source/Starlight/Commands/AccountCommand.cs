@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Serilog;
 using Starlight.Crypto;
 using Starlight.Database;
 using Starlight.SDK;
@@ -18,27 +17,38 @@ public sealed class AccountCommand(
     public string Description => "Creates or deletes an SDK account.";
     public string Usage => "account <create|delete> <args>";
     public string[] Aliases => [];
+    public CommandSource Sources => CommandSource.Console;
 
-    public Task ExecuteAsync(string[] args, CancellationToken cancellationToken)
+    public async Task ExecuteAsync(CommandContext context, string[] args)
     {
         if (args.Length == 0)
         {
-            LogUsage();
-            return Task.CompletedTask;
+            await PrintUsage(context);
+            return;
         }
 
-        return args[0].ToLowerInvariant() switch {
-            "create" => CreateAsync(args[1..], cancellationToken),
-            "delete" => DeleteAsync(args[1..], cancellationToken),
-            _ => UnknownMode(args[0])
-        };
+        switch (args[0].ToLowerInvariant())
+        {
+            case "create":
+                await CreateAsync(context, args[1..]);
+                break;
+            case "delete":
+                await DeleteAsync(context, args[1..]);
+                break;
+            default:
+                await context.ReplyAsync(
+                    $"Unknown account mode '{args[0]}'. Expected 'create' or 'delete'.",
+                    CommandOutputLevel.Warning);
+                await PrintUsage(context);
+                break;
+        }
     }
 
-    private async Task CreateAsync(string[] args, CancellationToken cancellationToken)
+    private async Task CreateAsync(CommandContext context, string[] args)
     {
         if (args.Length != 2)
         {
-            Log.Warning("Usage: account create <username> <password>");
+            await context.ReplyAsync("Usage: account create <username> <password>", CommandOutputLevel.Warning);
             return;
         }
 
@@ -47,24 +57,27 @@ public sealed class AccountCommand(
 
         if (string.IsNullOrWhiteSpace(username) || username.Length > Account.MaxUsernameLength)
         {
-            Log.Warning("Username must contain 1-{MaxLength} characters.", Account.MaxUsernameLength);
+            await context.ReplyAsync(
+                $"Username must contain 1-{Account.MaxUsernameLength} characters.",
+                CommandOutputLevel.Warning);
             return;
         }
 
         if (string.IsNullOrWhiteSpace(password) || password.Length < sdkConfig.MinPasswordLength ||
             password.Length > sdkConfig.MaPassport.Login.MaxPasswordLength)
         {
-            Log.Warning("Password must contain at least {MinLength} and at most {MaxLength} characters.", sdkConfig.MinPasswordLength,
-                sdkConfig.MaPassport.Login.MaxPasswordLength);
+            await context.ReplyAsync(
+                $"Password must contain at least {sdkConfig.MinPasswordLength} and at most {sdkConfig.MaPassport.Login.MaxPasswordLength} characters.",
+                CommandOutputLevel.Warning);
             return;
         }
 
         await using var scope = scopeFactory.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<SdkDbContext>();
 
-        if (await db.Accounts.AnyAsync(a => a.Username == username, cancellationToken))
+        if (await db.Accounts.AnyAsync(a => a.Username == username, context.CancellationToken))
         {
-            Log.Warning("An account named '{Username}' already exists.", username);
+            await context.ReplyAsync($"An account named '{username}' already exists.", CommandOutputLevel.Warning);
             return;
         }
 
@@ -78,58 +91,51 @@ public sealed class AccountCommand(
 
         try
         {
-            await db.SaveChangesAsync(cancellationToken);
+            await db.SaveChangesAsync(context.CancellationToken);
         }
-        catch (DbUpdateException ex) when (!cancellationToken.IsCancellationRequested &&
+        catch (DbUpdateException ex) when (!context.CancellationToken.IsCancellationRequested &&
                                            DatabaseErrors.IsUniqueViolation(ex))
         {
-            Log.Warning("An account named '{Username}' already exists.", username);
+            await context.ReplyAsync($"An account named '{username}' already exists.", CommandOutputLevel.Warning);
             return;
         }
 
-        Log.Information("Created account '{Username}' with id {AccountId}.", account.Username, account.Id);
+        await context.ReplyAsync($"Created account '{account.Username}' with id {account.Id}.");
     }
 
-    private async Task DeleteAsync(string[] args, CancellationToken cancellationToken)
+    private async Task DeleteAsync(CommandContext context, string[] args)
     {
         if (args.Length != 1)
         {
-            Log.Warning("Usage: account delete <id>");
+            await context.ReplyAsync("Usage: account delete <id>", CommandOutputLevel.Warning);
             return;
         }
 
         if (!uint.TryParse(args[0], out var accountId))
         {
-            Log.Warning("Account id must be an unsigned integer.");
+            await context.ReplyAsync("Account id must be an unsigned integer.", CommandOutputLevel.Warning);
             return;
         }
 
         await using var scope = scopeFactory.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<SdkDbContext>();
-        var account = await db.Accounts.FindAsync([accountId], cancellationToken);
+        var account = await db.Accounts.FindAsync([accountId], context.CancellationToken);
 
         if (account is null)
         {
-            Log.Warning("Account id {AccountId} does not exist.", accountId);
+            await context.ReplyAsync($"Account id {accountId} does not exist.", CommandOutputLevel.Warning);
             return;
         }
 
         db.Accounts.Remove(account);
-        await db.SaveChangesAsync(cancellationToken);
+        await db.SaveChangesAsync(context.CancellationToken);
 
-        Log.Information("Deleted account '{Username}' with id {AccountId}.", account.Username, account.Id);
+        await context.ReplyAsync($"Deleted account '{account.Username}' with id {account.Id}.");
     }
 
-    private static Task UnknownMode(string mode)
+    private static async ValueTask PrintUsage(CommandContext context)
     {
-        Log.Warning("Unknown account mode '{Mode}'. Expected 'create' or 'delete'.", mode);
-        LogUsage();
-        return Task.CompletedTask;
-    }
-
-    private static void LogUsage()
-    {
-        Log.Information("Usage: account create <username> <password>");
-        Log.Information("       account delete <id>");
+        await context.ReplyAsync("Usage: account create <username> <password>");
+        await context.ReplyAsync("       account delete <id>");
     }
 }

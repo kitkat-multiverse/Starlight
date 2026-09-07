@@ -20,6 +20,31 @@ namespace Starlight.Tests;
 public sealed class GiveCommandTests
 {
     [Fact]
+    public async Task Execute_PlayerContext_TargetsInvokerWithoutUidArgument()
+    {
+        var players = new PlayerManager();
+        var data = Data();
+        data.MaterialData[100015] = new MaterialData { Id = 100015, StackLimit = 9999 };
+        var (player, _) = Player(uid: 1001, data);
+        Assert.True(players.Add(player));
+
+        var command = new GiveCommand(players, data);
+
+        var context = new CommandContext(
+            CommandSource.Player,
+            NullCommandOutput.Instance,
+            CancellationToken.None,
+            player,
+            player);
+
+        await command.ExecuteAsync(context, ["100015", "3"]);
+
+        var inventory = player.Module<InventoryModule>();
+        Assert.True(inventory.TryGetMaterial(itemId: 100015, out var material));
+        Assert.Equal(expected: 3u, material.Count);
+    }
+
+    [Fact]
     public async Task Execute_OnlinePlayer_AddsMaterialAndSendsChange()
     {
         var players = new PlayerManager();

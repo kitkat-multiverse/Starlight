@@ -10,7 +10,7 @@ public sealed class CommandRegistry(IEnumerable<ICommand> commands)
                 new[] { command.Name }
                     .Concat(command.Aliases)
                     .Select(name => new { name, command }))
-            .ToDictionary(x => x.name.ToLowerInvariant(), x => x.command);
+            .ToDictionary(x => x.name, x => x.command, StringComparer.OrdinalIgnoreCase);
 
     public IReadOnlyCollection<ICommand> Commands => _commands.Values.Distinct().ToArray();
 

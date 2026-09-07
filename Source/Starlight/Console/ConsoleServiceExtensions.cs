@@ -20,8 +20,11 @@ public static class ConsoleServiceExtensions
             services.AddSingleton(commandType, command);
         }
 
-        services.AddSingleton<CommandRegistry>();
-        services.AddHostedService<ConsoleService>();
+        services
+            .AddSingleton<CommandRegistry>()
+            .AddSingleton<CommandDispatcher>()
+            .AddSingleton<ConsoleCommandOutput>()
+            .AddHostedService<ConsoleService>();
 
         return services;
     }

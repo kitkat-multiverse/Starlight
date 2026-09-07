@@ -5,7 +5,7 @@ using Starlight.Protocol;
 
 namespace Starlight.Game.World;
 
-public sealed class WorldAbilityRouter : IAbilityScopeResolver, IInvokeForwarder
+public sealed class WorldAbilityRouter : IAbilityScopeResolver, IInvokeForwarder, IAbilityDamageRuntime
 {
     public bool TryResolve(IPlayer player, out AbilityScopeContext context)
     {
@@ -19,6 +19,9 @@ public sealed class WorldAbilityRouter : IAbilityScopeResolver, IInvokeForwarder
             module.Scene?.Id ?? 0);
         return true;
     }
+
+    public ValueTask ApplyLoseHpAsync(IPlayer player, AbilityDamageRequest request) =>
+        player.Module<SceneModule>().ApplyAbilityHpLoss(request);
 
     public async Task Forward(IPlayer sender, ForwardType type, IMessage message, uint forwardPeer)
     {

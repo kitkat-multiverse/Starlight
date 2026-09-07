@@ -1,4 +1,3 @@
-using Serilog;
 using Starlight.Game.Player;
 using Starlight.Game.Resources;
 using Starlight.Rpc.Tunnel;
@@ -14,84 +13,110 @@ public sealed class GiveCommand(PlayerManager players, GameData data) : ICommand
 
     public string[] Aliases => ["g", "item", "giveitem"];
 
-    public async Task ExecuteAsync(string[] args, CancellationToken cancellationToken)
+    public async Task ExecuteAsync(CommandContext context, string[] args)
     {
         try
         {
-            await ExecuteCoreAsync(args, cancellationToken);
+            await ExecuteCoreAsync(context, args);
         }
         catch (TunnelClosedException)
         {
-            Log.Warning("Give stopped because the target player disconnected.");
+            if (context.Source == CommandSource.Console)
+                await context.ReplyAsync("Give stopped because the target player disconnected.", CommandOutputLevel.Warning);
         }
     }
 
-    private async Task ExecuteCoreAsync(string[] args, CancellationToken cancellationToken)
+    private async Task ExecuteCoreAsync(CommandContext context, string[] args)
     {
-        if (args.Length < 2 || !uint.TryParse(args[0], out var uid) || uid == 0)
+        var player = context.Target ?? context.Invoker;
+        var selectorIndex = 0;
+
+        if (player is null)
         {
-            Log.Warning("Usage: {Usage}", Usage);
+            if (args.Length < 2 || !uint.TryParse(args[0], out var uid) || uid == 0)
+            {
+                await UsageError(context);
+                return;
+            }
+
+            if (!players.TryGet(uid, out player))
+            {
+                await context.ReplyAsync($"Player '{uid}' is not online.", CommandOutputLevel.Warning);
+                return;
+            }
+
+            selectorIndex = 1;
+        } else if (args.Length < 1)
+        {
+            await UsageError(context);
             return;
         }
 
-        if (!players.TryGet(uid, out var player))
+        if (!TryParseOptions(args[(selectorIndex + 1)..], out var options, out var error))
         {
-            Log.Warning("Player '{PlayerId}' is not online.", uid);
+            await context.ReplyAsync($"{error} Usage: {UsageFor(context)}", CommandOutputLevel.Warning);
             return;
         }
 
-        if (!TryParseOptions(args[2..], out var options, out var error))
-        {
-            Log.Warning("{Error} Usage: {Usage}", error, Usage);
-            return;
-        }
+        context.CancellationToken.ThrowIfCancellationRequested();
 
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var selector = args[1].ToLowerInvariant();
+        var selector = args[selectorIndex].ToLowerInvariant();
         var inventory = player.Module<InventoryModule>();
 
         switch (selector)
         {
-            case "all":
-                await GiveMaterials(inventory, options);
-                cancellationToken.ThrowIfCancellationRequested();
-                await GiveWeapons(inventory, options);
-                cancellationToken.ThrowIfCancellationRequested();
+            case "all": {
+                var materialCount = await GiveMaterials(inventory, options);
+                context.CancellationToken.ThrowIfCancellationRequested();
+                var weaponCount = await GiveWeapons(inventory, options);
+                context.CancellationToken.ThrowIfCancellationRequested();
 
-                await GiveAvatars(
+                var avatarCount = await GiveAvatars(
                     player.Module<AvatarModule>(), options, defaultConstellation: 6);
+
+                await context.ReplyAsync(
+                    $"Granted {materialCount} materials, {weaponCount} weapons, and {avatarCount} avatars to {player.Uid}.");
                 return;
+            }
 
             case "weapons":
             case "weapon":
-            case "wp":
-                await GiveWeapons(inventory, options);
+            case "wp": {
+                var count = await GiveWeapons(inventory, options);
+                await context.ReplyAsync($"Granted {count} weapons to {player.Uid}.");
                 return;
+            }
 
             case "materials":
             case "material":
             case "mats":
-            case "mat":
-                await GiveMaterials(inventory, options);
+            case "mat": {
+                var count = await GiveMaterials(inventory, options);
+                await context.ReplyAsync($"Granted {count} materials to {player.Uid}.");
                 return;
+            }
 
             case "avatars":
-            case "avatar":
-                await GiveAvatars(
+            case "avatar": {
+                var count = await GiveAvatars(
                     player.Module<AvatarModule>(), options, defaultConstellation: 6);
+                await context.ReplyAsync($"Granted {count} avatars to {player.Uid}.");
                 return;
+            }
         }
 
         if (!uint.TryParse(selector, out var id) || id == 0)
         {
-            Log.Warning("'{Selector}' is not an item ID, avatar ID, or supported selector.", selector);
+            await context.ReplyAsync(
+                $"'{selector}' is not an item ID, avatar ID, or supported selector.",
+                CommandOutputLevel.Warning);
             return;
         }
 
         if (data.MaterialData.TryGetValue(id, out var material) && material.IsInventoryMaterial)
         {
             await inventory.AddMaterial(id, options.Amount);
+            await context.ReplyAsync($"Granted {options.Amount}x material {id} to {player.Uid}.");
             return;
         }
 
@@ -102,17 +127,34 @@ public sealed class GiveCommand(PlayerManager players, GameData data) : ICommand
                 options.Amount,
                 options.Level,
                 options.Refinement);
+            await context.ReplyAsync($"Granted {options.Amount}x weapon {id} to {player.Uid}.");
             return;
         }
 
         if (CanCreateAvatar(id))
         {
-            await player.Module<AvatarModule>().AddAvatar(id, options.Level, options.Constellation);
+            var (_, added) = await player.Module<AvatarModule>()
+                .AddAvatar(id, options.Level, options.Constellation);
+
+            await context.ReplyAsync(added ?
+                    $"Added avatar {id} to {player.Uid}." :
+                    $"Player {player.Uid} already owns avatar {id}.",
+                added ? CommandOutputLevel.Information : CommandOutputLevel.Warning);
             return;
         }
 
-        Log.Warning("No supported material, weapon, or avatar has ID {Id}.", id);
+        await context.ReplyAsync(
+            $"No supported material, weapon, or avatar has ID {id}.",
+            CommandOutputLevel.Warning);
     }
+
+    private async ValueTask UsageError(CommandContext context)
+        => await context.ReplyAsync($"Usage: {UsageFor(context)}", CommandOutputLevel.Warning);
+
+    private string UsageFor(CommandContext context)
+        => context.Target is not null || context.Invoker is not null ?
+            "give <item-id|avatar-id|all|weapons|materials|avatars> [x<count>] [lvl<level>] [r<1-5>] [c<0-6>]" :
+            Usage;
 
     private async Task<int> GiveMaterials(InventoryModule inventory, GiveOptions options)
     {
@@ -127,9 +169,6 @@ public sealed class GiveCommand(PlayerManager players, GameData data) : ICommand
         return items.Count;
     }
 
-    // TODO: Remove these hardcoded illegal material IDs once the game data is cleaned up.
-    // These resource rows are placeholders, internal-use items, or known to produce invalid
-    // inventory entries.
     private static bool IsIllegalMaterial(uint id)
         => id is 100086 or 100087 or 105001 or 105004 or 107011 or 108000
                or 220050 or 220054
@@ -223,7 +262,6 @@ public sealed class GiveCommand(PlayerManager players, GameData data) : ICommand
         return error.Length == 0;
     }
 
-    /// <summary>Parses standalone or chained modifiers such as <c>lvl90r5x2</c>.</summary>
     private static bool TryParseModifierChain(ReadOnlySpan<char> input, GiveOptions options)
     {
         var offset = 0;
