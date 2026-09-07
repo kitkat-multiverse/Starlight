@@ -326,6 +326,12 @@ public sealed class SceneModule(
 
         yield return enterInfo;
         yield return teamUpdate;
+
+        yield return new SceneTimeNotify {
+            SceneId = scene.Id,
+            SceneTime = 69420, // TODO: actually handle scene time cycle
+            IsPaused = false
+        };
         yield return new SceneInitFinishRsp { EnterSceneToken = msg.EnterSceneToken };
     }
 
