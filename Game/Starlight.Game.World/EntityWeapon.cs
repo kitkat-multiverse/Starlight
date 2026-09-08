@@ -57,7 +57,20 @@ public sealed class WeaponEntityService : IWeaponEntityService
             .OfType<AvatarEntity>()
             .FirstOrDefault(candidate => candidate.Avatar.Guid == avatar.Guid);
 
-        avatarEntity?.SyncWeapon();
+        if (avatarEntity is null)
+            return;
+
+        avatarEntity.SyncWeapon();
+
+        if (player.Module<AbilityModule>().TryGetComponent(entity.EntityId, out var weaponAbilities))
+        {
+            weaponAbilities.UpdateOwner(new AbilityOwner(
+                entity.EntityId,
+                AbilityOwnerType.Weapon,
+                scene.World.PeerIdOf(player),
+                player.Uid,
+                OwnerEntityId: avatarEntity.EntityId));
+        }
     }
 
     public AbilityChangeNotify? RefreshAvatarAbilities(IPlayer player, Avatar avatar)

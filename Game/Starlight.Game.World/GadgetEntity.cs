@@ -42,6 +42,7 @@ public sealed class GadgetEntity : SceneEntity
     public bool TrueLifeTimeByOwner { get; }
     public LifeByOwner LifeByOwnerType { get; }
     public uint OwnerEntityId => Info.Gadget?.OwnerEntityId ?? 0;
+    public uint PropOwnerEntityId => Info.Gadget?.PropOwnerEntityId ?? 0;
     public override uint AuthorityPeerId => Info.Gadget?.AuthorityPeerId ?? 0;
 
     public static GadgetEntity CreateServer(

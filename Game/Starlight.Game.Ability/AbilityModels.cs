@@ -88,7 +88,9 @@ public readonly record struct AbilityOwner(
     AbilityOwnerType Type,
     uint AuthorityPeerId = 0,
     uint PlayerUid = 0,
-    int ClientInitInvokeLimit = 0
+    int ClientInitInvokeLimit = 0,
+    uint OwnerEntityId = 0,
+    uint PropOwnerEntityId = 0
 )
 {
     public int EffectiveClientInitInvokeLimit => ClientInitInvokeLimit > 0 ? ClientInitInvokeLimit

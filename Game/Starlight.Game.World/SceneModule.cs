@@ -31,6 +31,9 @@ public sealed class SceneModule(
 
     private MotionInfo? _lastCurrentMotion;
 
+    public uint CurrentAvatarEntityId =>
+        _teamEntities.GetValueOrDefault(_currentAvatarGuid)?.EntityId ?? 0;
+
     #endregion
 
     [Lifecycle(LifecycleEvent.PlayerLogin)]
@@ -127,8 +130,21 @@ public sealed class SceneModule(
             {
                 weaponAbilities = abilities.RegisterWeapon(
                     module.World.Abilities,
-                    new AbilityOwner(entity.WeaponEntityId, AbilityOwnerType.Weapon, module.PeerId, player.Uid),
+                    new AbilityOwner(
+                        entity.WeaponEntityId,
+                        AbilityOwnerType.Weapon,
+                        module.PeerId,
+                        player.Uid,
+                        OwnerEntityId: entity.EntityId),
                     avatar.WeaponGadgetId);
+            } else
+            {
+                weaponAbilities.UpdateOwner(new AbilityOwner(
+                    entity.WeaponEntityId,
+                    AbilityOwnerType.Weapon,
+                    module.PeerId,
+                    player.Uid,
+                    OwnerEntityId: entity.EntityId));
             }
             entity.Info.EntityAuthorityInfo!.AbilityInfo = AbilityProtocol.ToSyncState(avatarAbilities);
 
@@ -286,7 +302,12 @@ public sealed class SceneModule(
 
             var weaponAbilities = abilities.RegisterWeapon(
                 world.Abilities,
-                new AbilityOwner(entity.WeaponEntityId, AbilityOwnerType.Weapon, module.PeerId, player.Uid),
+                new AbilityOwner(
+                    entity.WeaponEntityId,
+                    AbilityOwnerType.Weapon,
+                    module.PeerId,
+                    player.Uid,
+                    OwnerEntityId: entity.EntityId),
                 avatar.WeaponGadgetId);
             entity.Info.EntityAuthorityInfo!.AbilityInfo = AbilityProtocol.ToSyncState(avatarAbilities);
 
@@ -895,7 +916,13 @@ public sealed class SceneModule(
 
         var abilities = player.Module<AbilityModule>().RegisterClientGadget(
             module.World.Abilities,
-            new AbilityOwner(entity.EntityId, AbilityOwnerType.ClientGadget, module.PeerId, player.Uid),
+            new AbilityOwner(
+                entity.EntityId,
+                AbilityOwnerType.ClientGadget,
+                module.PeerId,
+                player.Uid,
+                OwnerEntityId: entity.OwnerEntityId,
+                PropOwnerEntityId: entity.PropOwnerEntityId),
             entity.GadgetId);
 
         entity.Info.EntityAuthorityInfo!.AbilityInfo = AbilityProtocol.ToSyncState(abilities);
@@ -984,7 +1011,13 @@ public sealed class SceneModule(
 
         var abilities = player.Module<AbilityModule>().RegisterGadget(
             module.World.Abilities,
-            new AbilityOwner(entity.EntityId, AbilityOwnerType.Gadget, module.World.HostPeerId, playerUid),
+            new AbilityOwner(
+                entity.EntityId,
+                AbilityOwnerType.Gadget,
+                module.World.HostPeerId,
+                playerUid,
+                OwnerEntityId: entity.OwnerEntityId,
+                PropOwnerEntityId: entity.PropOwnerEntityId),
             entity.GadgetId);
 
         entity.Info.EntityAuthorityInfo!.AbilityInfo = AbilityProtocol.ToSyncState(abilities);
@@ -1229,7 +1262,11 @@ public sealed class SceneModule(
         {
             var weaponAbilities = abilities.RegisterWeapon(
                 module.World.Abilities,
-                new AbilityOwner(entity.WeaponEntityId, AbilityOwnerType.Weapon, module.World.HostPeerId),
+                new AbilityOwner(
+                    entity.WeaponEntityId,
+                    AbilityOwnerType.Weapon,
+                    module.World.HostPeerId,
+                    OwnerEntityId: entity.EntityId),
                 entity.WeaponGadgetId);
 
             if (entity.Info.Monster?.WeaponList.Count > 0)

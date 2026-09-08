@@ -78,41 +78,32 @@ internal static class GlobalValueActionHelpers
         if (string.IsNullOrEmpty(targetType))
             return DefaultTarget(context);
 
+        var abilityOwner = EvaluationOwner(context);
+
         return targetType switch {
             "Self" or "Applier" => context.Source,
             "Target" or "TempTarget" => DefaultTarget(context),
-            "Owner" or "Caster" => EvaluationOwner(context),
+            "Owner" or "Caster" => abilityOwner,
             "Team" => ResolveTeam(context),
-            "OriginOwner" or "CurLocalAvatar" or "CasterOriginOwner" => ResolveLocalAvatar(context),
+            "CurLocalAvatar" => ResolveLocalAvatar(context),
+            "OriginOwner" or "CasterOriginOwner" => ResolveOriginOwner(context, abilityOwner),
             _ => null
         };
     }
 
     public static AbilityComponent? ResolveTargetOwner(AbilityContext context, AbilityComponent target)
     {
-        if (target.Owner.Type is not (AbilityOwnerType.Gadget or AbilityOwnerType.ClientGadget))
+        if (target.Owner.Type is not (AbilityOwnerType.Gadget or AbilityOwnerType.ClientGadget or AbilityOwnerType.Weapon))
             return target;
 
-        var playerUid = target.Owner.PlayerUid != 0 ? target.Owner.PlayerUid : context.Player.Uid;
+        if (context.World.TryGetPropOwner(target, out var propOwner))
+            return propOwner;
 
-        if (context.Source.Owner.Type == AbilityOwnerType.Avatar &&
-            (playerUid == 0 || context.Source.Owner.PlayerUid == playerUid))
-            return context.Source;
-
-        var abilityOwner = EvaluationOwner(context);
-
-        if (abilityOwner.Owner.Type == AbilityOwnerType.Avatar &&
-            (playerUid == 0 || abilityOwner.Owner.PlayerUid == playerUid))
-            return abilityOwner;
-
-        var candidates = context.World.Scope.Components.Values
-            .Where(component => component.Owner.Type == AbilityOwnerType.Avatar &&
-                                (playerUid == 0 || component.Owner.PlayerUid == playerUid))
-            .Take(2)
-            .ToArray();
-
-        return candidates.Length == 1 ? candidates[0] : null;
+        return context.World.TryGetOwner(target, out var owner) ? owner : null;
     }
+
+    private static AbilityComponent? ResolveOriginOwner(AbilityContext context, AbilityComponent component) =>
+        context.World.TryGetOriginOwner(component, out var owner) ? owner : null;
 
     public static bool TryGetFightProperty(AbilityConfigNode action, out uint property)
     {
@@ -143,6 +134,9 @@ internal static class GlobalValueActionHelpers
 
     private static AbilityComponent? ResolveLocalAvatar(AbilityContext context)
     {
+        if (context.World.TryGetCurrentAvatar(out var current))
+            return current;
+
         if (context.Source.Owner.Type == AbilityOwnerType.Avatar)
             return context.Source;
 
@@ -150,19 +144,7 @@ internal static class GlobalValueActionHelpers
             return context.Target;
 
         var abilityOwner = EvaluationOwner(context);
-
-        if (abilityOwner.Owner.Type == AbilityOwnerType.Avatar)
-            return abilityOwner;
-
-        var playerUid = context.Player.Uid;
-
-        var candidates = context.World.Scope.Components.Values
-            .Where(component => component.Owner.Type == AbilityOwnerType.Avatar &&
-                                (playerUid == 0 || component.Owner.PlayerUid == playerUid))
-            .Take(2)
-            .ToArray();
-
-        return candidates.Length == 1 ? candidates[0] : null;
+        return abilityOwner.Owner.Type == AbilityOwnerType.Avatar ? abilityOwner : null;
     }
 
     private static bool TryGetString(AbilityConfigNode node, string field, out string value)

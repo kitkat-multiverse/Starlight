@@ -11,12 +11,15 @@ public sealed class WorldAbilityRouter : IAbilityScopeResolver, IInvokeForwarder
     {
         var module = player.Module<WorldModule>();
         var world = module.World;
+        var scene = module.Scene;
+        var currentAvatarEntityId = scene is null ? 0 : player.Module<SceneModule>().CurrentAvatarEntityId;
 
         context = new AbilityScopeContext(
             world.Abilities,
             module.PeerId,
             world.HostPeerId,
-            module.Scene?.Id ?? 0);
+            scene?.Id ?? 0,
+            currentAvatarEntityId);
         return true;
     }
 

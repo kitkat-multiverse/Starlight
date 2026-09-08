@@ -237,12 +237,7 @@ public sealed class AbilityModule(
             ability = ResolveModifierAbility(world, source, modifier);
 
         if (ability is null && head.InstancedAbilityId != 0)
-        {
             source.TryGetAbility(head.InstancedAbilityId, out ability!);
-
-            if (target != source)
-                target.TryGetAbility(head.InstancedAbilityId, out ability!);
-        }
 
         // Moved to abstract handlers, kept as comment for the reference
         // DO NOT DELETE
