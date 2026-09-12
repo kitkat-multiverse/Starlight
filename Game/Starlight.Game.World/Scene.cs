@@ -2,13 +2,13 @@ using Starlight.Protocol;
 
 namespace Starlight.Game.World;
 
-/// <summary>One loaded scene inside a <see cref="World"/>.</summary>
+/// <summary>One loaded scene inside a <see cref="World" />.</summary>
 public sealed class Scene(World world, uint sceneId)
 {
     private readonly Dictionary<uint, SceneEntity> _entities = [];
+    private readonly Dictionary<uint, GadgetEntity> _gadgets = [];
     private readonly Dictionary<uint, MonsterEntity> _monsters = [];
     private readonly Dictionary<uint, EntityWeapon> _weaponEntities = [];
-    private readonly Dictionary<uint, GadgetEntity> _gadgets = [];
 
     /// The world that loaded this scene and allocates its entity IDs.
     public World World => world;

@@ -1,7 +1,7 @@
-using Google.Protobuf.Reflection;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Google.Protobuf.Reflection;
 using FType = Google.Protobuf.Reflection.FieldDescriptorProto.Type;
 using Label = Google.Protobuf.Reflection.FieldDescriptorProto.Label;
 
@@ -116,9 +116,9 @@ internal static partial class CodeEmitter
     }
 
     /// <summary>
-    /// Emits a oneof as a discriminated union: a <c>{Name}OneofCase</c> enum, shared
-    /// <c>object?</c> + case backing fields, a case accessor, a <c>Clear{Name}()</c>, and
-    /// per-field properties that read/write the shared slot. Matches protoc's C# shape.
+    ///     Emits a oneof as a discriminated union: a <c>{Name}OneofCase</c> enum, shared
+    ///     <c>object?</c> + case backing fields, a case accessor, a <c>Clear{Name}()</c>, and
+    ///     per-field properties that read/write the shared slot. Matches protoc's C# shape.
     /// </summary>
     private static void EmitOneofMembers(
         StringBuilder sb,

@@ -1,15 +1,15 @@
+using System.Reflection;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Starlight.DbGate.Models;
-using System.Reflection;
 
 namespace Starlight.DbGate;
 
 /// <summary>
-/// When marked on a property, it is serialized as JSON as applicable.
+///     When marked on a property, it is serialized as JSON as applicable.
 /// </summary>
 [AttributeUsage(AttributeTargets.Property)]
 public sealed class JsonColumnAttribute : Attribute;
@@ -45,8 +45,8 @@ public sealed class StarlightDbContext(DbContextOptions options) : DbContext(opt
 }
 
 /// <summary>
-/// Preserves early-development databases when player state is introduced. The generic schema
-/// checker intentionally archives drifted files, but this change is safely additive.
+///     Preserves early-development databases when player state is introduced. The generic schema
+///     checker intentionally archives drifted files, but this change is safely additive.
 /// </summary>
 internal sealed class PlayerStateSchemaUpgradeService(
     IServiceScopeFactory scopes,

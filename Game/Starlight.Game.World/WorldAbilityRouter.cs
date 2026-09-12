@@ -7,6 +7,9 @@ namespace Starlight.Game.World;
 
 public sealed class WorldAbilityRouter : IAbilityScopeResolver, IInvokeForwarder, IAbilityDamageRuntime
 {
+    public ValueTask ApplyLoseHpAsync(IPlayer player, AbilityDamageRequest request) =>
+        player.Module<SceneModule>().ApplyAbilityHpLoss(request);
+
     public bool TryResolve(IPlayer player, out AbilityScopeContext context)
     {
         var module = player.Module<WorldModule>();
@@ -22,9 +25,6 @@ public sealed class WorldAbilityRouter : IAbilityScopeResolver, IInvokeForwarder
             currentAvatarEntityId);
         return true;
     }
-
-    public ValueTask ApplyLoseHpAsync(IPlayer player, AbilityDamageRequest request) =>
-        player.Module<SceneModule>().ApplyAbilityHpLoss(request);
 
     public async Task Forward(IPlayer sender, ForwardType type, IMessage message, uint forwardPeer)
     {

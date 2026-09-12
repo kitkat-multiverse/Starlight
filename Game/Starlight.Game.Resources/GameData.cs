@@ -8,51 +8,6 @@ namespace Starlight.Game.Resources;
 
 public sealed class GameData(IConfiguration config) : IHostedService
 {
-    #region Excel
-
-    [UsedImplicitly] public readonly Dictionary<uint, AvatarData> AvatarData = new();
-    [UsedImplicitly] public readonly Dictionary<uint, AvatarSkillDepotData> AvatarSkillDepotData = new();
-    [UsedImplicitly] public readonly Dictionary<uint, AvatarTalentData> AvatarTalentData = new();
-    [UsedImplicitly] public readonly Dictionary<uint, AvatarSkillData> AvatarSkillData = new();
-    [UsedImplicitly] public readonly Dictionary<uint, AvatarCurveData> AvatarCurveData = new();
-    [UsedImplicitly] public readonly Dictionary<uint, AvatarPromoteData> AvatarPromoteData = new();
-    [UsedImplicitly] public readonly Dictionary<uint, WeaponData> WeaponData = new();
-    [UsedImplicitly] public readonly Dictionary<uint, WeaponCurveData> WeaponCurveData = new();
-    [UsedImplicitly] public readonly Dictionary<uint, WeaponPromoteData> WeaponPromoteData = new();
-    [UsedImplicitly] public readonly Dictionary<uint, MaterialData> MaterialData = new();
-    [UsedImplicitly] public readonly Dictionary<uint, CoopPointData> CoopPointData = new();
-    [UsedImplicitly] public readonly Dictionary<uint, GadgetData> GadgetData = new();
-    [UsedImplicitly] public readonly Dictionary<uint, MonsterData> MonsterData = new();
-    [UsedImplicitly] public readonly Dictionary<uint, MonsterCurveData> MonsterCurveData = new();
-    [UsedImplicitly] public readonly Dictionary<uint, MonsterDescribeData> MonsterDescribeData = new();
-    [UsedImplicitly] public readonly Dictionary<uint, MonsterSpecialNameData> MonsterSpecialNameData = new();
-    [UsedImplicitly] public readonly Dictionary<uint, MonsterAffixData> MonsterAffixData = new();
-    [UsedImplicitly] public readonly Dictionary<uint, SceneData> SceneData = new();
-    [UsedImplicitly] public readonly Dictionary<uint, ProfilePictureData> ProfilePictureData = new();
-
-    #endregion
-
-    #region Binary
-
-    public readonly Dictionary<uint, AvatarConfig> Avatars = new();
-    public readonly Dictionary<uint, Dictionary<uint, PointData>> ScenePoints = new();
-    public readonly Dictionary<string, AbilityConfig> Abilities = new(StringComparer.Ordinal);
-    public readonly Dictionary<uint, List<AbilityConfig>> AbilitiesByHash = new();
-    public readonly Dictionary<string, AbilityGroupConfig> AbilityGroups = new(StringComparer.Ordinal);
-    public readonly Dictionary<string, IReadOnlyList<string>> AbilityPaths = new(StringComparer.Ordinal);
-    public readonly Dictionary<string, IReadOnlyList<string>> GadgetAbilityPaths = new(StringComparer.Ordinal);
-    public readonly Dictionary<string, ConfigEntityGadget> GadgetConfigs = new(StringComparer.Ordinal);
-    public readonly Dictionary<string, ConfigEntityMonster> MonsterConfigs = new(StringComparer.Ordinal);
-    public readonly Dictionary<string, ConfigLevelEntity> LevelEntityConfigs = new(StringComparer.Ordinal);
-    public readonly Dictionary<string, IReadOnlyList<TalentConfigEntry>> Talents = new(StringComparer.Ordinal);
-    public readonly Dictionary<uint, ProudSkillResourceData> ProudSkills = new();
-    public readonly Dictionary<(uint GroupId, uint Level), ProudSkillResourceData> ProudSkillsByGroupAndLevel = new();
-    public readonly Dictionary<(uint GroupId, uint Level), EquipAffixResourceData> EquipAffixesByGroupAndLevel = new();
-    public readonly HashSet<uint> ServerGlobalValueHashes = [];
-    public ConfigGlobalCombat GlobalCombat { get; internal set; } = new();
-
-    #endregion
-
     public Task StartAsync(CancellationToken cancellationToken)
     {
         var path = config.GetValue<string>("Game:ResourcesPath") ?? "./resources.zip";
@@ -62,6 +17,8 @@ public sealed class GameData(IConfiguration config) : IHostedService
 
         return Task.CompletedTask;
     }
+
+    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
     public AbilityConfig? ResolveAbility(string name) =>
         Abilities.GetValueOrDefault(name);
@@ -171,5 +128,48 @@ public sealed class GameData(IConfiguration config) : IHostedService
     public EquipAffixResourceData? ResolveEquipAffix(uint groupId, uint refinement) =>
         EquipAffixesByGroupAndLevel.GetValueOrDefault((groupId, refinement));
 
-    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    #region Excel
+
+    [UsedImplicitly] public readonly Dictionary<uint, AvatarData> AvatarData = new();
+    [UsedImplicitly] public readonly Dictionary<uint, AvatarSkillDepotData> AvatarSkillDepotData = new();
+    [UsedImplicitly] public readonly Dictionary<uint, AvatarTalentData> AvatarTalentData = new();
+    [UsedImplicitly] public readonly Dictionary<uint, AvatarSkillData> AvatarSkillData = new();
+    [UsedImplicitly] public readonly Dictionary<uint, AvatarCurveData> AvatarCurveData = new();
+    [UsedImplicitly] public readonly Dictionary<uint, AvatarPromoteData> AvatarPromoteData = new();
+    [UsedImplicitly] public readonly Dictionary<uint, WeaponData> WeaponData = new();
+    [UsedImplicitly] public readonly Dictionary<uint, WeaponCurveData> WeaponCurveData = new();
+    [UsedImplicitly] public readonly Dictionary<uint, WeaponPromoteData> WeaponPromoteData = new();
+    [UsedImplicitly] public readonly Dictionary<uint, MaterialData> MaterialData = new();
+    [UsedImplicitly] public readonly Dictionary<uint, CoopPointData> CoopPointData = new();
+    [UsedImplicitly] public readonly Dictionary<uint, GadgetData> GadgetData = new();
+    [UsedImplicitly] public readonly Dictionary<uint, MonsterData> MonsterData = new();
+    [UsedImplicitly] public readonly Dictionary<uint, MonsterCurveData> MonsterCurveData = new();
+    [UsedImplicitly] public readonly Dictionary<uint, MonsterDescribeData> MonsterDescribeData = new();
+    [UsedImplicitly] public readonly Dictionary<uint, MonsterSpecialNameData> MonsterSpecialNameData = new();
+    [UsedImplicitly] public readonly Dictionary<uint, MonsterAffixData> MonsterAffixData = new();
+    [UsedImplicitly] public readonly Dictionary<uint, SceneData> SceneData = new();
+    [UsedImplicitly] public readonly Dictionary<uint, ProfilePictureData> ProfilePictureData = new();
+
+    #endregion
+
+    #region Binary
+
+    public readonly Dictionary<uint, AvatarConfig> Avatars = new();
+    public readonly Dictionary<uint, Dictionary<uint, PointData>> ScenePoints = new();
+    public readonly Dictionary<string, AbilityConfig> Abilities = new(StringComparer.Ordinal);
+    public readonly Dictionary<uint, List<AbilityConfig>> AbilitiesByHash = new();
+    public readonly Dictionary<string, AbilityGroupConfig> AbilityGroups = new(StringComparer.Ordinal);
+    public readonly Dictionary<string, IReadOnlyList<string>> AbilityPaths = new(StringComparer.Ordinal);
+    public readonly Dictionary<string, IReadOnlyList<string>> GadgetAbilityPaths = new(StringComparer.Ordinal);
+    public readonly Dictionary<string, ConfigEntityGadget> GadgetConfigs = new(StringComparer.Ordinal);
+    public readonly Dictionary<string, ConfigEntityMonster> MonsterConfigs = new(StringComparer.Ordinal);
+    public readonly Dictionary<string, ConfigLevelEntity> LevelEntityConfigs = new(StringComparer.Ordinal);
+    public readonly Dictionary<string, IReadOnlyList<TalentConfigEntry>> Talents = new(StringComparer.Ordinal);
+    public readonly Dictionary<uint, ProudSkillResourceData> ProudSkills = new();
+    public readonly Dictionary<(uint GroupId, uint Level), ProudSkillResourceData> ProudSkillsByGroupAndLevel = new();
+    public readonly Dictionary<(uint GroupId, uint Level), EquipAffixResourceData> EquipAffixesByGroupAndLevel = new();
+    public readonly HashSet<uint> ServerGlobalValueHashes = [];
+    public ConfigGlobalCombat GlobalCombat { get; internal set; } = new();
+
+    #endregion
 }

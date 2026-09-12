@@ -3,10 +3,10 @@ using System.Collections.Generic;
 namespace Starlight.Protobuf.Compiler;
 
 /// <summary>
-/// A base field's type diverging from the same-named version field. The emitted
-/// serializer derives its wire codec from the base type while taking the wire
-/// number from the version, so a divergence silently (de)serializes with the
-/// wrong wire format -- the SLPB004 diagnostic.
+///     A base field's type diverging from the same-named version field. The emitted
+///     serializer derives its wire codec from the base type while taking the wire
+///     number from the version, so a divergence silently (de)serializes with the
+///     wrong wire format -- the SLPB004 diagnostic.
 /// </summary>
 public readonly struct FieldTypeMismatch
 {
@@ -28,14 +28,17 @@ public readonly struct FieldTypeMismatch
 }
 
 /// <summary>
-/// The comparable shape of a proto field, decoupled from the descriptor library so
-/// the correlation rule stays unit-testable (the generator's protobuf dependency is
-/// private and does not flow to the test project -- see <see cref="ReservedNames"/>).
+///     The comparable shape of a proto field, decoupled from the descriptor library so
+///     the correlation rule stays unit-testable (the generator's protobuf dependency is
+///     private and does not flow to the test project -- see <see cref="ReservedNames" />).
 /// </summary>
 public readonly struct FieldShape
 {
     /// <param name="name">proto field name</param>
-    /// <param name="protoType">proto type keyword for scalars (<c>int32</c>, <c>string</c>, ...) or the category (<c>message</c>, <c>enum</c>, <c>group</c>) for named types</param>
+    /// <param name="protoType">
+    ///     proto type keyword for scalars (<c>int32</c>, <c>string</c>, ...) or the category (
+    ///     <c>message</c>, <c>enum</c>, <c>group</c>) for named types
+    /// </param>
     /// <param name="repeated">true when the field carries the <c>repeated</c> label</param>
     /// <param name="typeName">simple (unqualified) referent name for named types; empty for scalars</param>
     public FieldShape(string name, string protoType, bool repeated, string typeName = "")
@@ -53,11 +56,11 @@ public readonly struct FieldShape
 }
 
 /// <summary>
-/// Pure base-vs-version field correlation rule shared by the generator's validation
-/// pass and its tests. Fields are matched by name; a match requires identical proto
-/// type, identical label, and -- for named types -- identical simple referent name.
-/// Referents are compared by simple name because base and version live in different
-/// packages (the emitter likewise keys on the simple name).
+///     Pure base-vs-version field correlation rule shared by the generator's validation
+///     pass and its tests. Fields are matched by name; a match requires identical proto
+///     type, identical label, and -- for named types -- identical simple referent name.
+///     Referents are compared by simple name because base and version live in different
+///     packages (the emitter likewise keys on the simple name).
 /// </summary>
 public static class FieldCorrelation
 {
@@ -89,9 +92,9 @@ public static class FieldCorrelation
     }
 
     /// <summary>
-    /// Compares an already-paired base and version field (the pairing may be by name or by
-    /// an <c>alts</c> alternate), returning the mismatch or null when their wire shapes agree.
-    /// The reported field name is the base field's.
+    ///     Compares an already-paired base and version field (the pairing may be by name or by
+    ///     an <c>alts</c> alternate), returning the mismatch or null when their wire shapes agree.
+    ///     The reported field name is the base field's.
     /// </summary>
     public static FieldTypeMismatch? Compare(FieldShape baseField, FieldShape versionField) =>
         Matches(baseField, versionField) ? null : new FieldTypeMismatch(baseField.Name, Describe(baseField), Describe(versionField));

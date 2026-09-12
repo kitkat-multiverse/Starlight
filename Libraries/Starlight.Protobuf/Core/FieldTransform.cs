@@ -1,19 +1,19 @@
 namespace Starlight.Protobuf.Core;
 
 /// <summary>
-/// An invertible integer transform applied to a single scalar field's value on the
-/// wire (the obfuscation expressed by proto <c>add</c>/<c>xor</c>/<c>fop</c>/<c>mask</c>
-/// options). <see cref="Encode"/> maps the real value to the wire value; <see cref="Decode"/>
-/// inverts it. Used only by the reflective slow path -- the generated fast path inlines
-/// the same arithmetic. All math is modular (<c>unchecked</c> over <see cref="long"/>).
+///     An invertible integer transform applied to a single scalar field's value on the
+///     wire (the obfuscation expressed by proto <c>add</c>/<c>xor</c>/<c>fop</c>/<c>mask</c>
+///     options). <see cref="Encode" /> maps the real value to the wire value; <see cref="Decode" />
+///     inverts it. Used only by the reflective slow path -- the generated fast path inlines
+///     the same arithmetic. All math is modular (<c>unchecked</c> over <see cref="long" />).
 /// </summary>
 public sealed class FieldTransform
 {
-    private readonly string _ops;
     private readonly long[] _operands;
+    private readonly string _ops;
 
     /// <param name="ops">Encode op chain; one char per step in <c>{ '+', '-', '^' }</c>.</param>
-    /// <param name="operands">Operand for each op, positionally paired with <paramref name="ops"/>.</param>
+    /// <param name="operands">Operand for each op, positionally paired with <paramref name="ops" />.</param>
     public FieldTransform(string ops, long[] operands)
     {
         _ops = ops;

@@ -1,9 +1,9 @@
 namespace Starlight.Common;
 
 /// <summary>
-/// Reimplementation of hk4e GuidMgr (gameserver/src/misc/guid_mgr.cpp).
-/// CB1 layout: [unix time:32][sequence low 12 bits:12][server id:8][0x1:type].
-/// Original code from KazusaGI CB1
+///     Reimplementation of hk4e GuidMgr (gameserver/src/misc/guid_mgr.cpp).
+///     CB1 layout: [unix time:32][sequence low 12 bits:12][server id:8][0x1:type].
+///     Original code from KazusaGI CB1
 /// </summary>
 public sealed class GuidManager
 {

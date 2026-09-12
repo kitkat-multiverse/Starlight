@@ -3,37 +3,25 @@ using System.Security.Cryptography;
 namespace Starlight.Crypto;
 
 /// <summary>
-/// RSA helper for the dispatch region payload. Encrypts the region content with
-/// the client's content public key (selected by the request's <c>key_id</c>) and
-/// signs the plaintext with the dispatch signing private key. The content keys
-/// and the signing key are different keypairs, mirroring the official
-/// query_cur_region response.
+///     RSA helper for the dispatch region payload. Encrypts the region content with
+///     the client's content public key (selected by the request's <c>key_id</c>) and
+///     signs the plaintext with the dispatch signing private key. The content keys
+///     and the signing key are different keypairs, mirroring the official
+///     query_cur_region response.
 /// </summary>
 public sealed class DispatchRsaCrypto : IDisposable
 {
-    private readonly RSA? _signingKey;
-    private readonly IReadOnlyDictionary<int, RSA> _encryptKeys;
-
-    /// <summary>Whether a signing key was loaded and <see cref="GenerateSignature"/> can be used.</summary>
-    public bool CanSign => _signingKey is not null;
-
-    /// <summary>The signing ('cur') private key, or <c>null</c> if none was loaded.</summary>
-    public RSA? SigningKey => _signingKey;
-
-    /// <summary>The content encryption keys indexed by <c>key_id</c>.</summary>
-    public IReadOnlyDictionary<int, RSA> ContentKeys => _encryptKeys;
-
     /// <summary>
     /// </summary>
     /// <param name="signingKey">Signing private key; pass <c>null</c> to disable signing.</param>
     /// <param name="encryptKeyPems">
-    /// Map of <c>key_id</c> to PEM-encoded content key. PKCS#1/PKCS#8 private keys
-    /// and SPKI public keys are all accepted; only the public component is used
-    /// for encryption.
+    ///     Map of <c>key_id</c> to PEM-encoded content key. PKCS#1/PKCS#8 private keys
+    ///     and SPKI public keys are all accepted; only the public component is used
+    ///     for encryption.
     /// </param>
     public DispatchRsaCrypto(RSA? signingKey, IReadOnlyDictionary<int, string>? encryptKeyPems = null)
     {
-        _signingKey = signingKey;
+        SigningKey = signingKey;
 
         if (encryptKeyPems is { Count: > 0 })
         {
@@ -63,20 +51,39 @@ public sealed class DispatchRsaCrypto : IDisposable
                 {
                     key.Dispose();
                 }
-                _signingKey?.Dispose();
+                SigningKey?.Dispose();
                 throw;
             }
-            _encryptKeys = map;
+            ContentKeys = map;
         } else
         {
-            _encryptKeys = new Dictionary<int, RSA>();
+            ContentKeys = new Dictionary<int, RSA>();
+        }
+    }
+
+    /// <summary>Whether a signing key was loaded and <see cref="GenerateSignature" /> can be used.</summary>
+    public bool CanSign => SigningKey is not null;
+
+    /// <summary>The signing ('cur') private key, or <c>null</c> if none was loaded.</summary>
+    public RSA? SigningKey { get; }
+
+    /// <summary>The content encryption keys indexed by <c>key_id</c>.</summary>
+    public IReadOnlyDictionary<int, RSA> ContentKeys { get; }
+
+    public void Dispose()
+    {
+        SigningKey?.Dispose();
+
+        foreach (var key in ContentKeys.Values)
+        {
+            key.Dispose();
         }
     }
 
     /// <summary>
-    /// Build a <see cref="DispatchRsaCrypto"/> from an optional signing key file
-    /// (PKCS#1/PKCS#8 PEM or PKCS#8 DER) and an optional map of content keys
-    /// indexed by <c>key_id</c>.
+    ///     Build a <see cref="DispatchRsaCrypto" /> from an optional signing key file
+    ///     (PKCS#1/PKCS#8 PEM or PKCS#8 DER) and an optional map of content keys
+    ///     indexed by <c>key_id</c>.
     /// </summary>
     public static DispatchRsaCrypto Create(string? signingKeyPath, IReadOnlyDictionary<int, string>? encryptKeyPems = null)
     {
@@ -85,12 +92,12 @@ public sealed class DispatchRsaCrypto : IDisposable
     }
 
     /// <summary>
-    /// Encrypts the region payload with the content key matching <paramref name="keyId"/>.
-    /// Returns <c>false</c> if no key is registered for that id.
+    ///     Encrypts the region payload with the content key matching <paramref name="keyId" />.
+    ///     Returns <c>false</c> if no key is registered for that id.
     /// </summary>
     public bool TryEncryptPayload(byte[] data, int keyId, out string payload)
     {
-        if (!_encryptKeys.TryGetValue(keyId, out var key))
+        if (!ContentKeys.TryGetValue(keyId, out var key))
         {
             payload = string.Empty;
             return false;
@@ -119,32 +126,32 @@ public sealed class DispatchRsaCrypto : IDisposable
     }
 
     /// <summary>
-    /// Decrypts a single RSA block with the signing ('cur') private key
-    /// (PKCS#1 v1.5). Used to recover the client's random seed from
-    /// <c>client_rand_key</c>.
+    ///     Decrypts a single RSA block with the signing ('cur') private key
+    ///     (PKCS#1 v1.5). Used to recover the client's random seed from
+    ///     <c>client_rand_key</c>.
     /// </summary>
     public byte[] DecryptWithSigningKey(byte[] cipher)
     {
-        if (_signingKey is null)
+        if (SigningKey is null)
         {
             throw new InvalidOperationException("No signing key was loaded; DecryptWithSigningKey is unavailable.");
         }
 
-        return _signingKey.Decrypt(cipher, RSAEncryptionPadding.Pkcs1);
+        return SigningKey.Decrypt(cipher, RSAEncryptionPadding.Pkcs1);
     }
 
     /// <summary>
-    /// Tries to decrypt a single RSA block with the signing ('cur') private key.
-    /// Returns <c>false</c> if no signing key is loaded or the padding/input is
-    /// invalid.
+    ///     Tries to decrypt a single RSA block with the signing ('cur') private key.
+    ///     Returns <c>false</c> if no signing key is loaded or the padding/input is
+    ///     invalid.
     /// </summary>
     public bool TryDecryptWithSigningKey(byte[] cipher, out byte[] plain)
     {
-        if (_signingKey is not null)
+        if (SigningKey is not null)
         {
             try
             {
-                plain = _signingKey.Decrypt(cipher, RSAEncryptionPadding.Pkcs1);
+                plain = SigningKey.Decrypt(cipher, RSAEncryptionPadding.Pkcs1);
                 return true;
             }
             catch (CryptographicException)
@@ -156,13 +163,13 @@ public sealed class DispatchRsaCrypto : IDisposable
     }
 
     /// <summary>
-    /// Tries to decrypt a single RSA block with the content key matching
-    /// <paramref name="keyId"/> (PKCS#1 v1.5). Returns <c>false</c> if no key is
-    /// registered for that id or the padding/input is invalid.
+    ///     Tries to decrypt a single RSA block with the content key matching
+    ///     <paramref name="keyId" /> (PKCS#1 v1.5). Returns <c>false</c> if no key is
+    ///     registered for that id or the padding/input is invalid.
     /// </summary>
     public bool TryDecryptContent(int keyId, byte[] cipher, out byte[] plain)
     {
-        if (_encryptKeys.TryGetValue(keyId, out var key))
+        if (ContentKeys.TryGetValue(keyId, out var key))
         {
             try
             {
@@ -178,27 +185,17 @@ public sealed class DispatchRsaCrypto : IDisposable
     }
 
     /// <summary>
-    /// Signs the given data with the signing private key (SHA-256 / PKCS#1 v1.5).
+    ///     Signs the given data with the signing private key (SHA-256 / PKCS#1 v1.5).
     /// </summary>
     /// <returns>A base64-encoded signature for the given data.</returns>
     public string GenerateSignature(byte[] data)
     {
-        if (_signingKey is null)
+        if (SigningKey is null)
         {
             throw new InvalidOperationException("No signing key was loaded; GenerateSignature is unavailable.");
         }
 
-        var signature = _signingKey.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        var signature = SigningKey.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
         return Convert.ToBase64String(signature);
-    }
-
-    public void Dispose()
-    {
-        _signingKey?.Dispose();
-
-        foreach (var key in _encryptKeys.Values)
-        {
-            key.Dispose();
-        }
     }
 }

@@ -1,10 +1,10 @@
+using System.Diagnostics.CodeAnalysis;
 using Starlight.Common;
 using Starlight.Game.Modules;
 using Starlight.Game.Resources;
 using Starlight.Game.Resources.Excel;
 using Starlight.Protocol;
 using Starlight.Rpc.Proto;
-using System.Diagnostics.CodeAnalysis;
 using IMessage = Starlight.Protobuf.Core.IMessage;
 
 namespace Starlight.Game.Player;
@@ -17,11 +17,11 @@ public sealed class InventoryModule(IPlayer player, GuidManager guidManager, Gam
     private const int WeaponCountLimit = 2000;
     private const int NotifyChunkSize = 100;
     private static readonly TimeSpan BulkNotifyInterval = TimeSpan.FromMilliseconds(25);
+    private readonly Dictionary<uint, NetMaterial> _materialState = [];
 
     private readonly Dictionary<uint, MaterialItem> _materials = [];
-    private readonly Dictionary<ulong, WeaponItem> _weapons = [];
-    private readonly Dictionary<uint, NetMaterial> _materialState = [];
     private readonly Dictionary<ulong, NetWeapon> _weaponState = [];
+    private readonly Dictionary<ulong, WeaponItem> _weapons = [];
     private bool _loaded;
     private bool _loggedIn;
 

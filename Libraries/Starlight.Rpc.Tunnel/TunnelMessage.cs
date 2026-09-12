@@ -5,23 +5,23 @@ namespace Starlight.Rpc.Tunnel;
 public abstract class TunnelMessage
 {
     /// <summary>
-    /// Ephemeral string frequency the requester listens on for the reply.
-    /// Null for non-request publishes.
+    ///     Ephemeral string frequency the requester listens on for the reply.
+    ///     Null for non-request publishes.
     /// </summary>
     public string? ReplyId { get; internal set; }
 
     /// <summary>
-    /// The receiving end of the tunnel that delivered this message.
-    /// Set by the transport's Deliver path; used by <see cref="Reply"/>.
+    ///     The receiving end of the tunnel that delivered this message.
+    ///     Set by the transport's Deliver path; used by <see cref="Reply" />.
     /// </summary>
     internal RpcTunnel? Tunnel { get; set; }
 
     public object? Metadata { get; protected set; }
 
     /// <summary>
-    /// Optional publisher-supplied header bytes carried alongside the payload, opaque to the
-    /// tunnel. The gate uses this to forward a packet's <c>PacketHead</c> metadata to the game
-    /// server, which reconstructs the header lazily only when a handler actually needs it.
+    ///     Optional publisher-supplied header bytes carried alongside the payload, opaque to the
+    ///     tunnel. The gate uses this to forward a packet's <c>PacketHead</c> metadata to the game
+    ///     server, which reconstructs the header lazily only when a handler actually needs it.
     /// </summary>
     public byte[]? Header { get; internal set; }
 

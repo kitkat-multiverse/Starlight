@@ -1,17 +1,17 @@
-using Serilog;
 using System.IO.Compression;
+using Serilog;
 
 namespace Starlight.Game.Resources;
 
 /// <summary>
-/// A helper for reading resources.
+///     A helper for reading resources.
 /// </summary>
 public static class Resources
 {
     public static IResourceLoader Loader { get; private set; } = null!;
 
     /// <summary>
-    /// Sets the resource base path.
+    ///     Sets the resource base path.
     /// </summary>
     public static void Initialize(string path)
     {
@@ -37,8 +37,8 @@ public static class Resources
 internal static class DataExtensions
 {
     /// <summary>
-    /// Parses the `uint` ID of a resource.
-    /// This allows for overriding the serialized name of the ID property.
+    ///     Parses the `uint` ID of a resource.
+    ///     This allows for overriding the serialized name of the ID property.
     /// </summary>
     public static uint GetId<T>(this T resource) where T : Data
     {

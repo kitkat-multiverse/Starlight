@@ -1,31 +1,40 @@
+using System.Collections.Concurrent;
 using Google.Protobuf;
 using Starlight.Rpc.Proto;
 using Starlight.Rpc.Tunnel.Connection;
-using System.Collections.Concurrent;
 
 namespace Starlight.Rpc.Tunnel;
 
 /// <summary>
-/// Game-side helper that accepts incoming tunnel requests from the RPC broadcast layer.
+///     Game-side helper that accepts incoming tunnel requests from the RPC broadcast layer.
 /// </summary>
 public sealed class TunnelHost(RpcTransport rpc, ITunnelAcceptor acceptor) : IDisposable
 {
     private readonly ConcurrentDictionary<IDisposable, byte> _subs = new();
 
+    public void Dispose()
+    {
+        foreach (var sub in _subs.Keys)
+        {
+            sub.Dispose();
+        }
+        _subs.Clear();
+    }
+
     /// <summary>
-    /// Raised when an incoming tunnel request for a listened subject is accepted.
-    /// The local end is ready; attach handlers before the event returns so the peer's
-    /// first messages are not dropped.
+    ///     Raised when an incoming tunnel request for a listened subject is accepted.
+    ///     The local end is ready; attach handlers before the event returns so the peer's
+    ///     first messages are not dropped.
     /// </summary>
     public event Func<RpcTunnel, NewTunnelReq, Task>? TunnelOpened;
 
     /// <summary>
-    /// Starts listening for tunnel requests targeting <paramref name="subject"/>.
-    /// One <see cref="TunnelHost"/> can listen on multiple subjects.
+    ///     Starts listening for tunnel requests targeting <paramref name="subject" />.
+    ///     One <see cref="TunnelHost" /> can listen on multiple subjects.
     /// </summary>
     /// <returns>
-    /// A handle that stops listening on <paramref name="subject"/> when disposed.
-    /// Disposing the <see cref="TunnelHost"/> stops all subjects.
+    ///     A handle that stops listening on <paramref name="subject" /> when disposed.
+    ///     Disposing the <see cref="TunnelHost" /> stops all subjects.
     /// </returns>
     public async Task<IDisposable> Listen(string subject)
     {
@@ -56,16 +65,7 @@ public sealed class TunnelHost(RpcTransport rpc, ITunnelAcceptor acceptor) : IDi
         return new Subscription(this, sub);
     }
 
-    public void Dispose()
-    {
-        foreach (var sub in _subs.Keys)
-        {
-            sub.Dispose();
-        }
-        _subs.Clear();
-    }
-
-    /// <summary>Idempotent handle returned by <see cref="Listen"/>.</summary>
+    /// <summary>Idempotent handle returned by <see cref="Listen" />.</summary>
     private sealed class Subscription(TunnelHost host, IDisposable sub) : IDisposable
     {
         private int _disposed;

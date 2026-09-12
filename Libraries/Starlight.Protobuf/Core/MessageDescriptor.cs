@@ -1,8 +1,8 @@
-using Starlight.Protobuf.Inspection;
-using Starlight.Protobuf.Serialization;
 using System.Collections;
 using System.Collections.Frozen;
 using System.Reflection;
+using Starlight.Protobuf.Inspection;
+using Starlight.Protobuf.Serialization;
 
 namespace Starlight.Protobuf.Core;
 
@@ -38,9 +38,9 @@ public enum FieldRule
 }
 
 /// <summary>
-/// Descriptor-driven access to a message's fields. Implemented by
-/// <c>DynamicMessage</c> (reflection registry) so the shared
-/// <see cref="ReflectiveEngine"/> can (de)serialize a property bag with no CLR type.
+///     Descriptor-driven access to a message's fields. Implemented by
+///     <c>DynamicMessage</c> (reflection registry) so the shared
+///     <see cref="ReflectiveEngine" /> can (de)serialize a property bag with no CLR type.
 /// </summary>
 public interface IDynamicAccessor
 {
@@ -54,9 +54,9 @@ public interface IDynamicAccessor
 }
 
 /// <summary>
-/// A message with no CLR type, carrying its own <see cref="MessageDescriptor"/>
-/// (the reflection registry's <c>DynamicMessage</c>). Lets descriptor-driven tools
-/// (e.g. <see cref="ProtocolInspector"/>) render dynamic messages without a POCO.
+///     A message with no CLR type, carrying its own <see cref="MessageDescriptor" />
+///     (the reflection registry's <c>DynamicMessage</c>). Lets descriptor-driven tools
+///     (e.g. <see cref="ProtocolInspector" />) render dynamic messages without a POCO.
 /// </summary>
 public interface IDynamicMessage : IMessage, IDynamicAccessor
 {
@@ -64,11 +64,16 @@ public interface IDynamicMessage : IMessage, IDynamicAccessor
 }
 
 /// <summary>
-/// Field table entry powering the reflective / remap / reflection-registry paths
-/// only. The hardcoded fast path never touches this.
+///     Field table entry powering the reflective / remap / reflection-registry paths
+///     only. The hardcoded fast path never touches this.
 /// </summary>
 public sealed class FieldDescriptor
 {
+    internal PropertyInfo? CaseProperty;
+
+    // -- resolved reflection accessors (compiled POCOs only) ------------------
+    internal PropertyInfo? Property;
+
     public FieldDescriptor(
         string name,
         string propertyName,
@@ -107,7 +112,7 @@ public sealed class FieldDescriptor
     /// <summary>Version wire field number before any remap.</summary>
     public int DefaultNumber { get; }
 
-    /// <summary>Effective wire field number (== <see cref="DefaultNumber"/> unless remapped).</summary>
+    /// <summary>Effective wire field number (== <see cref="DefaultNumber" /> unless remapped).</summary>
     public int Number { get; internal set; }
 
     public ProtoKind Kind { get; }
@@ -123,45 +128,23 @@ public sealed class FieldDescriptor
 
     /// <summary>Wire-value obfuscation for a single scalar integer field, or <c>null</c> if none.</summary>
     public FieldTransform? Transform { get; }
-
-    // -- resolved reflection accessors (compiled POCOs only) ------------------
-    internal PropertyInfo? Property;
-    internal PropertyInfo? CaseProperty;
 }
 
 /// <summary>
-/// Field table for one message in one version. Built by generated code (compiled
-/// POCOs) or by the reflection registry (dynamic messages). Drives the shared
-/// <see cref="ReflectiveEngine"/> and the opt-in field-ID remap.
+///     Field table for one message in one version. Built by generated code (compiled
+///     POCOs) or by the reflection registry (dynamic messages). Drives the shared
+///     <see cref="ReflectiveEngine" /> and the opt-in field-ID remap.
 /// </summary>
 public sealed class MessageDescriptor
 {
-    /// <summary>
-    /// Immutable snapshot of the remap state: the branch-once gate plus the
-    /// number→field index that matches it. Published as a unit through
-    /// <see cref="_index"/> so readers never observe a half-built index or a
-    /// gate that disagrees with the table it guards (copy-on-write).
-    /// </summary>
-    private sealed class Index
-    {
-        public Index(bool hasRemaps, FrozenDictionary<int, FieldDescriptor> byNumber)
-        {
-            HasRemaps = hasRemaps;
-            ByNumber = byNumber;
-        }
-
-        public bool HasRemaps { get; }
-        public FrozenDictionary<int, FieldDescriptor> ByNumber { get; }
-    }
+    /// <summary>Serializes the rare write events (<see cref="Remap" /> / <see cref="ClearRemaps" />) against each other.</summary>
+    private readonly object _remapLock = new();
 
     /// <summary>
-    /// Current remap snapshot. <c>volatile</c> makes every publish visible to
-    /// hot-path readers with no lock; writers swap a fully-built replacement.
+    ///     Current remap snapshot. <c>volatile</c> makes every publish visible to
+    ///     hot-path readers with no lock; writers swap a fully-built replacement.
     /// </summary>
     private volatile Index _index;
-
-    /// <summary>Serializes the rare write events (<see cref="Remap"/> / <see cref="ClearRemaps"/>) against each other.</summary>
-    private readonly object _remapLock = new();
 
     public MessageDescriptor(string name, Type? clrType, IReadOnlyList<FieldDescriptor> fields, Func<object>? factory = null)
     {
@@ -205,15 +188,14 @@ public sealed class MessageDescriptor
         Fields.FirstOrDefault(f => f.Name == nameOrProperty || f.PropertyName == nameOrProperty);
 
     /// <summary>
-    /// Overrides the effective wire number of a field (live deobfuscation). Flips the
-    /// message onto the reflective slow path; the fast path resumes after
-    /// <see cref="ClearRemaps"/>. Returns false if no such field exists.
-    ///
-    /// Thread-safe against concurrent (de)serialization and other writers: the new
-    /// number and matching index are published atomically as one immutable snapshot.
-    /// A single <c>Remap</c> is fully consistent for in-flight readers; if you remap
-    /// several fields that must take effect together, quiesce serialization first,
-    /// since each call publishes independently.
+    ///     Overrides the effective wire number of a field (live deobfuscation). Flips the
+    ///     message onto the reflective slow path; the fast path resumes after
+    ///     <see cref="ClearRemaps" />. Returns false if no such field exists.
+    ///     Thread-safe against concurrent (de)serialization and other writers: the new
+    ///     number and matching index are published atomically as one immutable snapshot.
+    ///     A single <c>Remap</c> is fully consistent for in-flight readers; if you remap
+    ///     several fields that must take effect together, quiesce serialization first,
+    ///     since each call publishes independently.
     /// </summary>
     public bool Remap(string fieldOrProperty, int wireNumber)
     {
@@ -347,5 +329,23 @@ public sealed class MessageDescriptor
 
         var underlying = Nullable.GetUnderlyingType(target) ?? target;
         return underlying.IsEnum ? Enum.ToObject(underlying, Convert.ToInt64(value)) : value;
+    }
+
+    /// <summary>
+    ///     Immutable snapshot of the remap state: the branch-once gate plus the
+    ///     number→field index that matches it. Published as a unit through
+    ///     <see cref="_index" /> so readers never observe a half-built index or a
+    ///     gate that disagrees with the table it guards (copy-on-write).
+    /// </summary>
+    private sealed class Index
+    {
+        public Index(bool hasRemaps, FrozenDictionary<int, FieldDescriptor> byNumber)
+        {
+            HasRemaps = hasRemaps;
+            ByNumber = byNumber;
+        }
+
+        public bool HasRemaps { get; }
+        public FrozenDictionary<int, FieldDescriptor> ByNumber { get; }
     }
 }

@@ -1,3 +1,5 @@
+using System.Buffers.Binary;
+using System.Security.Cryptography;
 using Google.Protobuf;
 using Serilog;
 using Starlight.Crypto.Client;
@@ -6,18 +8,18 @@ using Starlight.Kcp;
 using Starlight.Protocol;
 using Starlight.Rpc;
 using Starlight.Rpc.Proto;
-using System.Buffers.Binary;
-using System.Security.Cryptography;
+using IMessage = Starlight.Protobuf.Core.IMessage;
 
 namespace Starlight.Gate.Session.Modules;
 
 public sealed class LoginModule(INetworkSession session)
 {
-    private static readonly ILogger Logger = Log.ForContext<LoginModule>();
-
-    /// Used when computing the <c>client_version_hash</c>.
+    /// Used when computing the
+    /// <c>client_version_hash</c>
+    /// .
     /// We use a hardcoded value existing since the Grasscutter days.
     private const string VersionKey = "c25-314dd05b0b5f";
+    private static readonly ILogger Logger = Log.ForContext<LoginModule>();
     private static readonly TimeSpan ReplyTimeout = TimeSpan.FromSeconds(5);
 
     [Opcode]
@@ -87,7 +89,7 @@ public sealed class LoginModule(INetworkSession session)
         _ = gameTunnel.Subscribe(GameSubjects.OutboundPacket, async raw => {
             try
             {
-                await session.SendAsync(raw.Decode<Starlight.Protobuf.Core.IMessage>());
+                await session.SendAsync(raw.Decode<IMessage>());
             }
             catch (OperationCanceledException) when (session.Closing.IsCancellationRequested)
             {
@@ -145,7 +147,7 @@ public sealed class LoginModule(INetworkSession session)
         }
     }
 
-    /// <summary>Looks up the uid backing <paramref name="accountUid"/>, or null if it can't be had.</summary>
+    /// <summary>Looks up the uid backing <paramref name="accountUid" />, or null if it can't be had.</summary>
     private async Task<uint?> ResolveUid(string accountUid)
     {
         try
@@ -175,7 +177,9 @@ public sealed class LoginModule(INetworkSession session)
     }
 
     /// Mixes the client's seed with a fresh server one, then encrypts and signs the result.
-    /// Returns <c>false</c> for any unusable key material.
+    /// Returns
+    /// <c>false</c>
+    /// for any unusable key material.
     private static bool TrySignSeed(ClientCrypto crypto, GetPlayerTokenReq msg, out SeedExchange seed)
     {
         seed = default;

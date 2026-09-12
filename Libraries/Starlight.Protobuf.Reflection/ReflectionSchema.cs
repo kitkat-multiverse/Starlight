@@ -1,7 +1,7 @@
 extern alias protonet;
-using Starlight.Protobuf.Core;
 using System.Text;
 using System.Text.RegularExpressions;
+using Starlight.Protobuf.Core;
 using FType = protonet::Google.Protobuf.Reflection.FieldDescriptorProto.Type;
 using IProtoFileSystem = protonet::Google.Protobuf.Reflection.IFileSystem;
 using Label = protonet::Google.Protobuf.Reflection.FieldDescriptorProto.Label;
@@ -12,11 +12,11 @@ using ProtoSet = protonet::Google.Protobuf.Reflection.FileDescriptorSet;
 namespace Starlight.Protobuf.Reflection;
 
 /// <summary>
-/// The result of loading one or more <c>.proto</c> files at runtime: the field
-/// tables (<see cref="MessageDescriptor"/>) for every message, plus the
-/// <c>// CmdId:</c> map and known-first set used for version detection. Built by
-/// <see cref="ReflectionSchema.Load(System.Collections.Generic.IReadOnlyDictionary{string,string},string?)"/>
-/// and consumed by <see cref="ReflectionRegistry"/>.
+///     The result of loading one or more <c>.proto</c> files at runtime: the field
+///     tables (<see cref="MessageDescriptor" />) for every message, plus the
+///     <c>// CmdId:</c> map and known-first set used for version detection. Built by
+///     <see cref="ReflectionSchema.Load(System.Collections.Generic.IReadOnlyDictionary{string,string},string?)" />
+///     and consumed by <see cref="ReflectionRegistry" />.
 /// </summary>
 public sealed class ReflectionSchema
 {

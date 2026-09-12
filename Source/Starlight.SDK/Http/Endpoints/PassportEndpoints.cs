@@ -17,15 +17,25 @@ using Starlight.SDK.Services;
 namespace Starlight.SDK.Http.Endpoints;
 
 /// <summary>
-/// Implements the <c>/hk4e_global/account/ma-passport/api/**</c> endpoints.
-/// Currently covers:
-/// <list type="bullet">
-///   <item><c>POST getConfig</c></item>
-///   <item><c>POST appLoginByPassword</c></item>
-///   <item><c>POST appLoginByAuthTicket</c></item>
-///   <item><c>POST reactivateAccount</c></item>
-///   <item><c>GET  getSwitchStatus</c></item>
-/// </list>
+///     Implements the <c>/hk4e_global/account/ma-passport/api/**</c> endpoints.
+///     Currently covers:
+///     <list type="bullet">
+///         <item>
+///             <c>POST getConfig</c>
+///         </item>
+///         <item>
+///             <c>POST appLoginByPassword</c>
+///         </item>
+///         <item>
+///             <c>POST appLoginByAuthTicket</c>
+///         </item>
+///         <item>
+///             <c>POST reactivateAccount</c>
+///         </item>
+///         <item>
+///             <c>GET  getSwitchStatus</c>
+///         </item>
+///     </list>
 /// </summary>
 public static class PassportEndpoints
 {
@@ -87,9 +97,9 @@ public static class PassportEndpoints
     }
 
     /// <summary>
-    /// Handles <c>POST /hk4e_global/account/ma-passport/token/verifySToken</c>.
-    /// Validates a previously-issued token and returns it with the masked
-    /// user-info block.
+    ///     Handles <c>POST /hk4e_global/account/ma-passport/token/verifySToken</c>.
+    ///     Validates a previously-issued token and returns it with the masked
+    ///     user-info block.
     /// </summary>
     private static async Task<IResult> HandleVerifySToken(
         HttpContext httpContext,
@@ -156,9 +166,9 @@ public static class PassportEndpoints
     }
 
     /// <summary>
-    /// Handles <c>POST /hk4e_global/account/ma-passport/api/appLoginByPassword</c>.
-    /// Authenticates an account using email + RSA-encrypted password and
-    /// returns a fresh game token plus the masked user-info block.
+    ///     Handles <c>POST /hk4e_global/account/ma-passport/api/appLoginByPassword</c>.
+    ///     Authenticates an account using email + RSA-encrypted password and
+    ///     returns a fresh game token plus the masked user-info block.
     /// </summary>
     private static async Task<IResult> HandleAppLoginByPasswordAsync(
         HttpContext httpContext,
@@ -294,17 +304,17 @@ public static class PassportEndpoints
     }
 
     /// <summary>
-    /// Handles <c>POST /hk4e_global/account/ma-passport/api/appLoginByAuthTicket</c>.
-    /// Exchanges a one-time <c>AuthLoginTicket</c> for an stoken. The
-    /// ticket is consumed (single-use).
+    ///     Handles <c>POST /hk4e_global/account/ma-passport/api/appLoginByAuthTicket</c>.
+    ///     Exchanges a one-time <c>AuthLoginTicket</c> for an stoken. The
+    ///     ticket is consumed (single-use).
     /// </summary>
     /// <remarks>
-    /// Starlight does not yet persist tickets in its database, so this
-    /// endpoint returns <see cref="Retcode.MaPassportIllegalParameter"/>
-    /// for any non-empty ticket. The plumbing is in place; the only thing
-    /// missing is a ticket store wired through
-    /// <see cref="SdkDbContext"/>. TODO: implement once ticket
-    /// storage is added.
+    ///     Starlight does not yet persist tickets in its database, so this
+    ///     endpoint returns <see cref="Retcode.MaPassportIllegalParameter" />
+    ///     for any non-empty ticket. The plumbing is in place; the only thing
+    ///     missing is a ticket store wired through
+    ///     <see cref="SdkDbContext" />. TODO: implement once ticket
+    ///     storage is added.
     /// </remarks>
     private static Task<IResult> HandleAppLoginByAuthTicketAsync(
         [FromBody] MaPassportAppLoginByAuthTicketRequest? body
@@ -327,14 +337,14 @@ public static class PassportEndpoints
     }
 
     /// <summary>
-    /// Handles <c>POST /hk4e_global/account/ma-passport/api/reactivateAccount</c>.
-    /// Consumes a one-time <c>reactivation</c> action ticket and clears
-    /// <see cref="Account.RequireActivation"/> on the associated account.
+    ///     Handles <c>POST /hk4e_global/account/ma-passport/api/reactivateAccount</c>.
+    ///     Consumes a one-time <c>reactivation</c> action ticket and clears
+    ///     <see cref="Account.RequireActivation" /> on the associated account.
     /// </summary>
     /// <remarks>
-    /// Same caveat as <see cref="HandleAppLoginByAuthTicketAsync"/>:
-    /// ticket persistence isn't wired up yet. The plumbing is in place
-    /// so this can be flipped on once a ticket repository exists.
+    ///     Same caveat as <see cref="HandleAppLoginByAuthTicketAsync" />:
+    ///     ticket persistence isn't wired up yet. The plumbing is in place
+    ///     so this can be flipped on once a ticket repository exists.
     /// </remarks>
     private static Task<IResult> HandleReactivateAccountAsync(
         [FromBody] MaPassportReactivateAccountRequest? body
@@ -356,8 +366,8 @@ public static class PassportEndpoints
     }
 
     /// <summary>
-    /// Handles <c>GET /hk4e_global/account/ma-passport/api/getSwitchStatus</c>.
-    /// Returns the per-platform UI feature flags for the SDK login screen.
+    ///     Handles <c>GET /hk4e_global/account/ma-passport/api/getSwitchStatus</c>.
+    ///     Returns the per-platform UI feature flags for the SDK login screen.
     /// </summary>
     private static IResult HandleGetSwitchStatus(
         [FromQuery] string? app_id,
@@ -418,9 +428,9 @@ public static class PassportEndpoints
     }
 
     /// <summary>
-    /// Builds the common login response payload shared by
-    /// <c>appLoginByPassword</c>, <c>appLoginByAuthTicket</c>,
-    /// <c>reactivateAccount</c> and <c>verifySToken</c>.
+    ///     Builds the common login response payload shared by
+    ///     <c>appLoginByPassword</c>, <c>appLoginByAuthTicket</c>,
+    ///     <c>reactivateAccount</c> and <c>verifySToken</c>.
     /// </summary>
     private static MaPassportLoginData BuildLoginData(
         Account acc,

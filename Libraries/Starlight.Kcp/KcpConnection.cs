@@ -1,5 +1,5 @@
-using Starlight.Kcp.Internals;
 using System.Net;
+using Starlight.Kcp.Internals;
 
 namespace Starlight.Kcp;
 
@@ -8,30 +8,50 @@ public sealed class KcpConnection
     private const long DeadLinkGraceMilliseconds = 1000;
     private const long IdleTimeoutMilliseconds = 30000;
 
-    private readonly Internals.Kcp _kcp;
-
     /// The KCP state is reached from three threads -- the socket receive loop, the 10ms update
     /// loop, and whichever thread happens to be sending -- and none of its queues are safe to
     /// touch concurrently. Handler callbacks stay outside it: they reach back into the session,
-    /// which takes a lock of its own before calling <see cref="Send"/>.
+    /// which takes a lock of its own before calling
+    /// <see cref="Send" />
+    /// .
     private readonly Lock _gate = new();
 
     private readonly IKcpServerHandler _handler;
-    private readonly Action<byte[], EndPoint> _send;
+
+    private readonly Internals.Kcp _kcp;
     private readonly Action<KcpConnection, uint> _onDisconnect;
+    private readonly Action<byte[], EndPoint> _send;
+    private long? _deadLinkSince;
+    private bool _isDead;
+    private long _lastReceiveAt;
 
     private uint? _lingerReason;
-    private long? _deadLinkSince;
-    private long _lastReceiveAt;
-    private bool _isDead;
+
+    internal KcpConnection(
+        uint conv,
+        uint token,
+        IPEndPoint remote,
+        IKcpServerHandler handler,
+        Action<byte[], EndPoint> send,
+        Action<KcpConnection, uint> onDisconnect
+    )
+    {
+        Remote = remote;
+        _handler = handler;
+        _send = send;
+        _onDisconnect = onDisconnect;
+        _kcp = new Internals.Kcp(conv, token, stream: false, new WriterAdapter(this));
+        _kcp.SetNodelay(nodelay: true, interval: 10, resend: 2, nc: true);
+        _lastReceiveAt = Environment.TickCount64;
+    }
 
     public IPEndPoint Remote { get; }
     public uint Conv => _kcp.Conv;
     public uint Token => _kcp.Token;
 
     /// <summary>
-    /// True once an unacknowledged dead-link condition has survived the recovery grace period.
-    /// KCP can hit its retransmit threshold during a burst just before the delayed ACK arrives.
+    ///     True once an unacknowledged dead-link condition has survived the recovery grace period.
+    ///     KCP can hit its retransmit threshold during a burst just before the delayed ACK arrives.
     /// </summary>
     public bool IsDead
     {
@@ -56,24 +76,6 @@ public sealed class KcpConnection
         }
     }
 
-    internal KcpConnection(
-        uint conv,
-        uint token,
-        IPEndPoint remote,
-        IKcpServerHandler handler,
-        Action<byte[], EndPoint> send,
-        Action<KcpConnection, uint> onDisconnect
-    )
-    {
-        Remote = remote;
-        _handler = handler;
-        _send = send;
-        _onDisconnect = onDisconnect;
-        _kcp = new Internals.Kcp(conv, token, stream: false, new WriterAdapter(this));
-        _kcp.SetNodelay(nodelay: true, interval: 10, resend: 2, nc: true);
-        _lastReceiveAt = Environment.TickCount64;
-    }
-
     public void Send(byte[] data)
     {
         lock (_gate)
@@ -84,8 +86,8 @@ public sealed class KcpConnection
     }
 
     /// <summary>
-    /// Waits until KCP has room for another application packet. This keeps bulk producers from
-    /// building an unbounded send queue while the peer is still acknowledging an earlier window.
+    ///     Waits until KCP has room for another application packet. This keeps bulk producers from
+    ///     building an unbounded send queue while the peer is still acknowledging an earlier window.
     /// </summary>
     public async Task WaitForSendCapacityAsync(int maxPendingSegments, CancellationToken ct = default)
     {
@@ -121,9 +123,9 @@ public sealed class KcpConnection
     }
 
     /// <summary>
-    /// Disconnects only once every queued segment has been acknowledged by the client.
-    /// Use when a packet sent just before teardown must be guaranteed to arrive, since
-    /// <see cref="Disconnect(uint)"/> drops anything still in flight.
+    ///     Disconnects only once every queued segment has been acknowledged by the client.
+    ///     Use when a packet sent just before teardown must be guaranteed to arrive, since
+    ///     <see cref="Disconnect(uint)" /> drops anything still in flight.
     /// </summary>
     public void DisconnectAfterFlush(uint reason = (uint)DisconnectReason.ServerKick)
     {

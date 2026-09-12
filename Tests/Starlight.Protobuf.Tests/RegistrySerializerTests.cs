@@ -1,3 +1,4 @@
+using System.Text;
 using Google.Protobuf;
 using Starlight.Protobuf.Fixtures;
 using Starlight.Protobuf.Fixtures.V99;
@@ -7,11 +8,11 @@ using Xunit;
 namespace Starlight.Protobuf.Tests;
 
 /// <summary>
-/// Validates the generated fast path against synthetic fixtures (no live
-/// protocol): per-version serializers and the <see cref="V99ProtocolRegistry"/>
-/// dispatcher. Confirms emitted bytes use the version dump's field numbers (not
-/// the canonical base structural ones), round-trip cleanly, capture unknown
-/// version fields, and that the registry metadata is correct.
+///     Validates the generated fast path against synthetic fixtures (no live
+///     protocol): per-version serializers and the <see cref="V99ProtocolRegistry" />
+///     dispatcher. Confirms emitted bytes use the version dump's field numbers (not
+///     the canonical base structural ones), round-trip cleanly, capture unknown
+///     version fields, and that the registry metadata is correct.
 /// </summary>
 public sealed class RegistrySerializerTests
 {
@@ -101,7 +102,7 @@ public sealed class RegistrySerializerTests
         var unknown = Assert.Single(restored.UnknownFields!.Fields);
         Assert.Equal(expected: 1824, unknown.FieldNumber);
         Assert.Equal(WireFormat.WireType.LengthDelimited, unknown.WireType);
-        Assert.Equal("obfuscated", System.Text.Encoding.UTF8.GetString(unknown.Data));
+        Assert.Equal("obfuscated", Encoding.UTF8.GetString(unknown.Data));
     }
 
     [Fact]
@@ -123,7 +124,7 @@ public sealed class RegistrySerializerTests
         Assert.Contains("\"clientId\":\"client\"", json);
         Assert.Contains("\"_unknown\":[", json);
         Assert.Contains("\"field\":1824", json);
-        Assert.Contains($"\"data\":\"{Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("obfuscated"))}\"", json);
+        Assert.Contains($"\"data\":\"{Convert.ToBase64String(Encoding.UTF8.GetBytes("obfuscated"))}\"", json);
     }
 
     [Fact]

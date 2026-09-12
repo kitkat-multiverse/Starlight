@@ -1,7 +1,7 @@
-using Google.Protobuf.Reflection;
-using Microsoft.CodeAnalysis;
 using System.Collections.Generic;
 using System.Linq;
+using Google.Protobuf.Reflection;
+using Microsoft.CodeAnalysis;
 using FType = Google.Protobuf.Reflection.FieldDescriptorProto.Type;
 using Label = Google.Protobuf.Reflection.FieldDescriptorProto.Label;
 
@@ -10,11 +10,11 @@ namespace Starlight.Protobuf.Compiler;
 public sealed partial class ProtobufCompiler
 {
     /// <summary>
-    /// Rejects proto names that would generate uncompilable C#: verbatim-emitted type
-    /// and enum-value names that collide with a reserved keyword, and field names whose
-    /// property form collides with an emitter-synthesized member. The collision rules
-    /// live in <see cref="ReservedNames"/>; this walks the descriptors and reports.
-    /// We still emit (the bad C# fails to compile anyway) but SLPB003 names the cause.
+    ///     Rejects proto names that would generate uncompilable C#: verbatim-emitted type
+    ///     and enum-value names that collide with a reserved keyword, and field names whose
+    ///     property form collides with an emitter-synthesized member. The collision rules
+    ///     live in <see cref="ReservedNames" />; this walks the descriptors and reports.
+    ///     We still emit (the bad C# fails to compile anyway) but SLPB003 names the cause.
     /// </summary>
     private static void ValidateNames(
         SourceProductionContext ctx,
@@ -74,10 +74,10 @@ public sealed partial class ProtobufCompiler
     }
 
     /// <summary>
-    /// Flags base fields whose type diverges from the same-named version field. The
-    /// emitter correlates fields by name and derives the wire codec from the base
-    /// type, so a type divergence yields a serializer that reads/writes the wrong
-    /// wire format with no compile error. The rule lives in <see cref="FieldCorrelation"/>.
+    ///     Flags base fields whose type diverges from the same-named version field. The
+    ///     emitter correlates fields by name and derives the wire codec from the base
+    ///     type, so a type divergence yields a serializer that reads/writes the wrong
+    ///     wire format with no compile error. The rule lives in <see cref="FieldCorrelation" />.
     /// </summary>
     private static void ValidateFieldTypes(
         SourceProductionContext ctx,
@@ -103,12 +103,12 @@ public sealed partial class ProtobufCompiler
     }
 
     /// <summary>
-    /// Rejects value transforms on fields they cannot legally apply to. The serializer
-    /// only encodes/decodes transforms on the singular-scalar path, so a transform on a
-    /// repeated, map, or non-integer field is silently dropped at runtime -- the wire
-    /// bytes would be the untransformed value. We fail the build (SLPB007) instead.
-    /// Mirrors the consumption sites: keyed by <paramref name="versionMsg"/> name over
-    /// the <paramref name="baseMsg"/> fields the serializer actually emits.
+    ///     Rejects value transforms on fields they cannot legally apply to. The serializer
+    ///     only encodes/decodes transforms on the singular-scalar path, so a transform on a
+    ///     repeated, map, or non-integer field is silently dropped at runtime -- the wire
+    ///     bytes would be the untransformed value. We fail the build (SLPB007) instead.
+    ///     Mirrors the consumption sites: keyed by <paramref name="versionMsg" /> name over
+    ///     the <paramref name="baseMsg" /> fields the serializer actually emits.
     /// </summary>
     private static void ValidateTransforms(
         SourceProductionContext ctx,

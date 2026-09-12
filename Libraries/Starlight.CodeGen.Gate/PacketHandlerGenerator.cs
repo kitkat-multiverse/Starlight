@@ -1,19 +1,19 @@
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Starlight.CodeGen.Gate;
 
 /// <summary>
-/// Generates a static <c>PacketDispatcher.Dispatch</c> method that routes a deserialized
-/// protocol message to the matching <c>[Opcode]</c>-annotated handler. The dispatch key is
-/// the message's runtime type (a single <c>switch</c>); handler signatures are analyzed so
-/// parameters (session / <c>GamePacket</c> / <c>PacketHead</c> / the message) and return
-/// types (sync, <c>Task</c>/<c>ValueTask</c>, single/enumerable <c>IMessage</c>) are bound
-/// automatically. A non-null returned message is sent back through <c>session.Send</c>.
+///     Generates a static <c>PacketDispatcher.Dispatch</c> method that routes a deserialized
+///     protocol message to the matching <c>[Opcode]</c>-annotated handler. The dispatch key is
+///     the message's runtime type (a single <c>switch</c>); handler signatures are analyzed so
+///     parameters (session / <c>GamePacket</c> / <c>PacketHead</c> / the message) and return
+///     types (sync, <c>Task</c>/<c>ValueTask</c>, single/enumerable <c>IMessage</c>) are bound
+///     automatically. A non-null returned message is sent back through <c>session.Send</c>.
 /// </summary>
 [Generator]
 public sealed class PacketHandlerGenerator : IIncrementalGenerator
@@ -218,10 +218,10 @@ public sealed class PacketHandlerGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// Determines the message type a handler is keyed on: the explicit <c>[Opcode(typeof(T))]</c>
-    /// argument when present, otherwise the handler's single message-typed parameter. Returns
-    /// <c>null</c> when neither yields an unambiguous message type. <c>PacketHead</c> is itself a
-    /// protocol message but binds to the packet metadata, so it is excluded from inference.
+    ///     Determines the message type a handler is keyed on: the explicit <c>[Opcode(typeof(T))]</c>
+    ///     argument when present, otherwise the handler's single message-typed parameter. Returns
+    ///     <c>null</c> when neither yields an unambiguous message type. <c>PacketHead</c> is itself a
+    ///     protocol message but binds to the packet metadata, so it is excluded from inference.
     /// </summary>
     private static INamedTypeSymbol? ResolveMessageType(
         AttributeData attribute,
@@ -281,7 +281,7 @@ public sealed class PacketHandlerGenerator : IIncrementalGenerator
         }
     }
 
-    /// <summary>Finds how to reach an instance of <paramref name="module"/> from <c>session</c>.</summary>
+    /// <summary>Finds how to reach an instance of <paramref name="module" /> from <c>session</c>.</summary>
     private static string? FindAccessPath(INamedTypeSymbol session, INamedTypeSymbol module)
     {
         if (IsAssignable(session, module))
@@ -410,7 +410,7 @@ public sealed class PacketHandlerGenerator : IIncrementalGenerator
         return null;
     }
 
-    /// <summary>True if a <paramref name="source"/> value can be used where <paramref name="destination"/> is expected.</summary>
+    /// <summary>True if a <paramref name="source" /> value can be used where <paramref name="destination" /> is expected.</summary>
     private static bool IsAssignable(ITypeSymbol source, ITypeSymbol destination)
     {
         if (SymbolEqualityComparer.Default.Equals(source, destination))

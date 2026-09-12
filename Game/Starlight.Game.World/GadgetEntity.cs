@@ -1,5 +1,3 @@
-using Starlight;
-using Starlight.Game.Resources;
 using Starlight.Protocol;
 
 namespace Starlight.Game.World;

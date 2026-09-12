@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Serilog;
 using Starlight.Protobuf.Registry;
 using Starlight.Protocol;
@@ -16,7 +17,7 @@ public sealed class OverrideParamArgumentHandler(ProtocolRegistry protocol)
             value.Key is not null)
         {
             if (context.LogAbilitiesEnabled)
-                Log.Information($"Overriding ability param {value.Key} with value {System.Text.Json.JsonSerializer.Serialize(value)}");
+                Log.Information($"Overriding ability param {value.Key} with value {JsonSerializer.Serialize(value)}");
             ability.SetOverride(AbilityProtocol.FromAbilityString(value.Key), AbilityProtocol.FromScalarEntry(value));
         }
 

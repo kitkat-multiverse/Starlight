@@ -38,13 +38,12 @@ public sealed class CurveInfoData
 [GameResource("AvatarCurveExcelConfigData.json")]
 public sealed class AvatarCurveData : Data
 {
+    private Dictionary<string, float> _curveInfoMap = new(StringComparer.Ordinal);
     [JsonPropertyName("level")]
     public uint Level { get; set; }
 
     [JsonPropertyName("curveInfos")]
     public List<CurveInfoData> CurveInfos { get; set; } = [];
-
-    private Dictionary<string, float> _curveInfoMap = new(StringComparer.Ordinal);
 
     public override void OnLoad()
     {
@@ -63,13 +62,12 @@ public sealed class AvatarCurveData : Data
 [GameResource("MonsterCurveExcelConfigData.json")]
 public sealed class MonsterCurveData : Data
 {
+    private Dictionary<string, float> _curveInfoMap = new(StringComparer.Ordinal);
     [JsonPropertyName("level")]
     public uint Level { get; set; }
 
     [JsonPropertyName("curveInfos")]
     public List<CurveInfoData> CurveInfos { get; set; } = [];
-
-    private Dictionary<string, float> _curveInfoMap = new(StringComparer.Ordinal);
 
     public override void OnLoad()
     {
@@ -106,13 +104,12 @@ public sealed class AvatarPromoteData : Data
 [GameResource("WeaponCurveExcelConfigData.json")]
 public sealed class WeaponCurveData : Data
 {
+    private Dictionary<string, float> _curveInfoMap = new(StringComparer.Ordinal);
     [JsonPropertyName("level")]
     public uint Level { get; set; }
 
     [JsonPropertyName("curveInfos")]
     public List<CurveInfoData> CurveInfos { get; set; } = [];
-
-    private Dictionary<string, float> _curveInfoMap = new(StringComparer.Ordinal);
 
     public override void OnLoad()
     {

@@ -11,7 +11,11 @@ namespace Starlight.DbGate.Services;
 
 public sealed class PlayerService(IServiceScopeFactory scopes, ILogger<PlayerService> logger)
 {
-    /// The <c>minus one</c> is so we can <c>add one</c> in the next code.
+    /// The
+    /// <c>minus one</c>
+    /// is so we can
+    /// <c>add one</c>
+    /// in the next code.
     private const uint StartingId = 100_000_000 - 1;
 
     /// Collisions resolve in a round or two; past that, fail rather than spin.

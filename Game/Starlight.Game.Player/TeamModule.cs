@@ -9,23 +9,13 @@ public sealed class TeamModule(IPlayer player) : IModule
     private const uint DefaultTeamId = 1;
     private const uint MaxTeamCount = 4;
     private const int MaxTeamSize = 4;
+    private readonly Dictionary<uint, NetAvatarTeam> _teamState = [];
 
     private readonly Dictionary<uint, PlayerTeam> _teams = [];
-    private readonly Dictionary<uint, NetAvatarTeam> _teamState = [];
     private uint _currentTeamId;
     private bool _loaded;
 
     public AvatarSwitchContext? PendingAvatarSwitch { get; private set; }
-
-    public AvatarSwitchContext? ConsumePendingAvatarSwitch()
-    {
-        lock (player.StateLock)
-        {
-            var pending = PendingAvatarSwitch;
-            PendingAvatarSwitch = null;
-            return pending;
-        }
-    }
 
     public PlayerTeam Current
     {
@@ -52,6 +42,16 @@ public sealed class TeamModule(IPlayer player) : IModule
                 LoadState();
                 return _teams.ToDictionary(pair => pair.Key, pair => Snapshot(pair.Value));
             }
+        }
+    }
+
+    public AvatarSwitchContext? ConsumePendingAvatarSwitch()
+    {
+        lock (player.StateLock)
+        {
+            var pending = PendingAvatarSwitch;
+            PendingAvatarSwitch = null;
+            return pending;
         }
     }
 

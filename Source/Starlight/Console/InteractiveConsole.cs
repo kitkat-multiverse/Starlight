@@ -3,25 +3,25 @@ using System.Text;
 namespace Starlight.Console;
 
 /// <summary>
-/// Keeps command input on the bottom console row while allowing logs to scroll
-/// above it without corrupting the text currently being edited.
+///     Keeps command input on the bottom console row while allowing logs to scroll
+///     above it without corrupting the text currently being edited.
 /// </summary>
 public sealed class InteractiveConsole : IDisposable
 {
-    private readonly object _syncRoot = new();
-    private readonly TextWriter _output;
-    private readonly TextWriter? _interactiveWriter;
     private readonly ConsoleLineBuffer _buffer = new();
     private readonly bool _interactive;
-
-    private bool _reading;
+    private readonly TextWriter? _interactiveWriter;
+    private readonly TextWriter _output;
+    private readonly object _syncRoot = new();
     private bool _disposed;
-    private int _outputLeft;
-    private int _outputRow;
     private bool _hasOutputPosition;
     private int _lastInputLeft = -1;
     private int _lastInputRow = -1;
     private int _lastInputWidth;
+    private int _outputLeft;
+    private int _outputRow;
+
+    private bool _reading;
 
     public InteractiveConsole()
     {
@@ -33,6 +33,27 @@ public sealed class InteractiveConsole : IDisposable
 
         _interactiveWriter = new InteractiveConsoleWriter(this, _output);
         System.Console.SetOut(_interactiveWriter);
+    }
+
+    public void Dispose()
+    {
+        lock (_syncRoot)
+        {
+            if (_disposed)
+                return;
+
+            if (_reading)
+            {
+                ClearLastInput();
+                RestoreOutputPosition();
+                _reading = false;
+            }
+
+            if (_interactiveWriter is not null)
+                System.Console.SetOut(_output);
+
+            _disposed = true;
+        }
     }
 
     public async Task<string?> ReadLineAsync(CancellationToken cancellationToken)
@@ -108,27 +129,6 @@ public sealed class InteractiveConsole : IDisposable
         finally
         {
             EndInput();
-        }
-    }
-
-    public void Dispose()
-    {
-        lock (_syncRoot)
-        {
-            if (_disposed)
-                return;
-
-            if (_reading)
-            {
-                ClearLastInput();
-                RestoreOutputPosition();
-                _reading = false;
-            }
-
-            if (_interactiveWriter is not null)
-                System.Console.SetOut(_output);
-
-            _disposed = true;
         }
     }
 

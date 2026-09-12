@@ -2,6 +2,7 @@ using Serilog;
 using Starlight.Game.Ability.DynamicProps;
 using Starlight.Game.Ability.HpDebts;
 using Starlight.Game.Resources;
+using Starlight.Protobuf.Core;
 using Starlight.Protocol;
 
 namespace Starlight.Game.Ability.Handlers.Actions;
@@ -92,7 +93,7 @@ public sealed class ReviveElemEnergyHandler(IInvokeForwarder forwarder) : Abilit
             });
     }
 
-    private Task Broadcast(AbilityContext context, Protobuf.Core.IMessage message) =>
+    private Task Broadcast(AbilityContext context, IMessage message) =>
         forwarder.Forward(context.Player, ForwardType.FORWARD_TYPE_TO_ALL, message, forwardPeer: 0);
 
     private static bool TryGetEnergyProperties(

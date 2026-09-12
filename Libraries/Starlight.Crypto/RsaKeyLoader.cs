@@ -3,8 +3,8 @@ using System.Security.Cryptography;
 namespace Starlight.Crypto;
 
 /// <summary>
-/// Shared helpers for reading RSA key material from disk or base64 strings,
-/// transparently accepting both DER bytes and PEM text.
+///     Shared helpers for reading RSA key material from disk or base64 strings,
+///     transparently accepting both DER bytes and PEM text.
 /// </summary>
 public static class RsaKeyLoader
 {
@@ -25,8 +25,8 @@ public static class RsaKeyLoader
     }
 
     /// <summary>
-    /// Loads an RSA private key from a file, accepting any PEM-encoded key
-    /// (PKCS#1 "RSA PRIVATE KEY", PKCS#8 "PRIVATE KEY") as well as raw PKCS#8 DER.
+    ///     Loads an RSA private key from a file, accepting any PEM-encoded key
+    ///     (PKCS#1 "RSA PRIVATE KEY", PKCS#8 "PRIVATE KEY") as well as raw PKCS#8 DER.
     /// </summary>
     public static RSA LoadPrivateKeyFile(string path)
     {

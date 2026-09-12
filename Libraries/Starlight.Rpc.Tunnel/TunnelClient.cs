@@ -7,22 +7,22 @@ using Starlight.Rpc.Tunnel.Connection;
 namespace Starlight.Rpc.Tunnel;
 
 /// <summary>
-/// Gate-side helper that opens a tunnel to a game server via the existing RPC broadcast layer.
+///     Gate-side helper that opens a tunnel to a game server via the existing RPC broadcast layer.
 /// </summary>
 public sealed class TunnelClient(RpcTransport rpc, ITunnelConnector connector)
 {
     /// <summary>
-    /// Announces a new tunnel request on <c>rpc.tunnel</c> and connects to the first (or best) responder.
+    ///     Announces a new tunnel request on <c>rpc.tunnel</c> and connects to the first (or best) responder.
     /// </summary>
     /// <param name="subject">The tunnel subject the requester wants (matched by the acceptor).</param>
     /// <param name="metadata">Optional opaque bytes sent to the acceptor.</param>
     /// <param name="reqTimeout">For the first-reply path: how long to wait before giving up.</param>
     /// <param name="collectWindow">For the sorted path: how long to collect replies before picking the winner.</param>
     /// <param name="sorter">
-    ///   Optional. When provided, all replies received within <paramref name="collectWindow"/> are
-    ///   collected, then <paramref name="sorter"/> selects the winner. The list is never empty
-    ///   when <paramref name="sorter"/> is called.<br/>
-    ///   When null, first-reply-wins semantics apply (faster; stops waiting immediately).
+    ///     Optional. When provided, all replies received within <paramref name="collectWindow" /> are
+    ///     collected, then <paramref name="sorter" /> selects the winner. The list is never empty
+    ///     when <paramref name="sorter" /> is called.<br />
+    ///     When null, first-reply-wins semantics apply (faster; stops waiting immediately).
     /// </param>
     /// <param name="ct">Cancellation token when using the sorted path.</param>
     public async Task<RpcTunnel> Open(

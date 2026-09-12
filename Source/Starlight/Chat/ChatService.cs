@@ -1,9 +1,9 @@
+using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 using Starlight.Commands;
 using Starlight.Game.Player;
 using Starlight.Protocol;
 using Starlight.Rpc.Tunnel;
-using System.Collections.Concurrent;
 
 namespace Starlight.Chat;
 
@@ -200,8 +200,8 @@ public sealed class ChatService(
 
     private sealed class ConversationHistory
     {
-        private readonly object _sync = new();
         private readonly List<ChatInfo> _messages = [];
+        private readonly object _sync = new();
         private uint _nextSequence = 1;
 
         public ChatInfo Append(ChatInfo info, int historyLimit)

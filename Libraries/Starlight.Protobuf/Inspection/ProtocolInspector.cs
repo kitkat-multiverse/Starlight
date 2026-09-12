@@ -1,23 +1,25 @@
-using Google.Protobuf;
-using Starlight.Protobuf.Core;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
+using Google.Protobuf;
+using Starlight.Protobuf.Core;
 using IMessage = Starlight.Protobuf.Core.IMessage;
 
 namespace Starlight.Protobuf.Inspection;
 
 /// <summary>
-/// Renders a message as JSON for traffic inspection: known properties plus any
-/// unmatched/obfuscated wire fields captured during deserialization. Used by the
-/// traffic visualizer, which can run per-packet on a live server, so the
-/// reflection cost of property discovery is cached per type. This is separate
-/// from the serialization fast path.
+///     Renders a message as JSON for traffic inspection: known properties plus any
+///     unmatched/obfuscated wire fields captured during deserialization. Used by the
+///     traffic visualizer, which can run per-packet on a live server, so the
+///     reflection cost of property discovery is cached per type. This is separate
+///     from the serialization fast path.
 /// </summary>
 public static class ProtocolInspector
 {
+    private static readonly ConcurrentDictionary<Type, PropertyInfo[]> PocoProperties = new();
+
     public static string ToJson(IMessage message, bool indented = false)
     {
         using var stream = new MemoryStream();
@@ -58,8 +60,6 @@ public static class ProtocolInspector
 
         writer.WriteEndObject();
     }
-
-    private static readonly ConcurrentDictionary<Type, PropertyInfo[]> PocoProperties = new();
 
     private static void WritePocoFields(Utf8JsonWriter writer, IMessage message)
     {

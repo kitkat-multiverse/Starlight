@@ -1,13 +1,13 @@
 namespace Starlight.Protocol;
 
 /// <summary>
-/// Marks a method as a packet handler.
-/// <br/>
-/// A source generator takes all methods annotated with this attribute and
-/// compiles into a switch statement corresponding the message type (substitute for <c>CmdId</c>)
-/// to the appropriate packet handler.
-/// <br/>
-/// For modules looking to start a routine after receiving a packet, look into <see cref="LifecycleEvent"/> instead.
+///     Marks a method as a packet handler.
+///     <br />
+///     A source generator takes all methods annotated with this attribute and
+///     compiles into a switch statement corresponding the message type (substitute for <c>CmdId</c>)
+///     to the appropriate packet handler.
+///     <br />
+///     For modules looking to start a routine after receiving a packet, look into <see cref="LifecycleEvent" /> instead.
 /// </summary>
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class OpcodeAttribute : Attribute

@@ -1,12 +1,12 @@
 namespace Starlight.Protocol;
 
 /// <summary>
-/// A substitute for <see cref="OpcodeAttribute"/>.
-/// <br/>
-/// Marks a method as a <b>lifecycle event handler</b>.
-/// See <see cref="LifecycleEvent"/> for all possible events.
-/// <br/>
-/// Handlers take no message, only the session player. Anything they return is sent to the client.
+///     A substitute for <see cref="OpcodeAttribute" />.
+///     <br />
+///     Marks a method as a <b>lifecycle event handler</b>.
+///     See <see cref="LifecycleEvent" /> for all possible events.
+///     <br />
+///     Handlers take no message, only the session player. Anything they return is sent to the client.
 /// </summary>
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class LifecycleAttribute(LifecycleEvent @event, LifecycleOrder order = LifecycleOrder.Normal) : Attribute
@@ -17,7 +17,11 @@ public sealed class LifecycleAttribute(LifecycleEvent @event, LifecycleOrder ord
 
 public enum LifecycleEvent
 {
-    /// Sent once <c>PlayerLoginReq</c> has loaded the player's data, before <c>PlayerLoginRsp</c> goes out.
+    /// Sent once
+    /// <c>PlayerLoginReq</c>
+    /// has loaded the player's data, before
+    /// <c>PlayerLoginRsp</c>
+    /// goes out.
     PlayerLogin = 0,
     /// Sent when the KCP session is dropped. The tunnel is gone by now, so sends are discarded.
     PlayerDisconnect = 1,

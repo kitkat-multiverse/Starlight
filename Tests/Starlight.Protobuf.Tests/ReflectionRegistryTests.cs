@@ -7,11 +7,11 @@ using Xunit;
 namespace Starlight.Protobuf.Tests;
 
 /// <summary>
-/// Reflection registry: <c>.proto</c> text parsed at runtime into
-/// <see cref="DynamicMessage"/>es (de)serialized through the shared
-/// <see cref="ReflectiveEngine"/>. Proves byte-parity against a Google.Protobuf
-/// oracle, lossless round-trip across every kind, <c>// CmdId:</c>-driven version
-/// detection, first-stop/fall-through semantics, and JSON inspection.
+///     Reflection registry: <c>.proto</c> text parsed at runtime into
+///     <see cref="DynamicMessage" />es (de)serialized through the shared
+///     <see cref="ReflectiveEngine" />. Proves byte-parity against a Google.Protobuf
+///     oracle, lossless round-trip across every kind, <c>// CmdId:</c>-driven version
+///     detection, first-stop/fall-through semantics, and JSON inspection.
 /// </summary>
 public sealed class ReflectionRegistryTests
 {

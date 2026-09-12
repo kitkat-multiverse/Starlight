@@ -9,8 +9,10 @@ namespace Starlight.Game.Player;
 
 public sealed class AvatarModule(IPlayer player, GameData data, GuidManager guidManager, IWeaponEntityService? weaponEntities = null) : IModule
 {
-    private readonly Dictionary<uint, Avatar> _avatars = [];
+    private const uint AetherId = 10000005;
+    private const uint LumineId = 10000007;
     private readonly Dictionary<uint, NetAvatar> _avatarState = [];
+    private readonly Dictionary<uint, Avatar> _avatars = [];
     private bool _loaded;
 
     /// Every avatar the player currently owns, keyed by avatar ID.
@@ -321,9 +323,6 @@ public sealed class AvatarModule(IPlayer player, GameData data, GuidManager guid
             state.SkillLevelMap[skillId] = level;
         }
     }
-
-    private const uint AetherId = 10000005;
-    private const uint LumineId = 10000007;
 
     public async Task<Avatar?> InitializeTraveler(uint avatarId)
     {

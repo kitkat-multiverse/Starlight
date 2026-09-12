@@ -10,24 +10,10 @@ public class PacketParseException(string message) : Exception(message);
 public sealed class GamePacket
 {
     private const ushort Header = 0x4567, Footer = 0x89ab;
+    public readonly byte[] Body;
 
     public readonly ushort CmdId;
     public readonly byte[] RawMetadata;
-    public readonly byte[] Body;
-
-    public Lazy<PacketHead> Metadata => new(() => {
-        var head = new PacketHead();
-        head.MergeFrom(RawMetadata);
-        return head;
-    });
-
-    /// Cheap probe for whether <paramref name="data"/> was decrypted with the right XOR pad,
-    /// for callers that hold more than one candidate pad.
-    public static bool HasValidHeader(ReadOnlySpan<byte> data)
-    {
-        var offset = 0;
-        return data.Length >= sizeof(ushort) && data.ReadBe<ushort>(ref offset) == Header;
-    }
 
     public GamePacket(ReadOnlySpan<byte> data)
     {
@@ -81,6 +67,22 @@ public sealed class GamePacket
         CmdId = cmdId;
         RawMetadata = rawMetadata;
         Body = body;
+    }
+
+    public Lazy<PacketHead> Metadata => new(() => {
+        var head = new PacketHead();
+        head.MergeFrom(RawMetadata);
+        return head;
+    });
+
+    /// Cheap probe for whether
+    /// <paramref name="data" />
+    /// was decrypted with the right XOR pad,
+    /// for callers that hold more than one candidate pad.
+    public static bool HasValidHeader(ReadOnlySpan<byte> data)
+    {
+        var offset = 0;
+        return data.Length >= sizeof(ushort) && data.ReadBe<ushort>(ref offset) == Header;
     }
 
     public byte[] ToBytes()

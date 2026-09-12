@@ -3,10 +3,10 @@ using System.Text.Json.Serialization;
 namespace Starlight.SDK.Http.Models;
 
 /// <summary>
-/// Body of <c>POST /hk4e_global/account/ma-passport/token/verifySToken</c>.
-/// No encryption occurs in any of the fields. <c>mid</c> is an opaque
-/// passport metadata identifier; Starlight accepts it for wire compatibility
-/// but authenticates the account using <c>stoken</c>.
+///     Body of <c>POST /hk4e_global/account/ma-passport/token/verifySToken</c>.
+///     No encryption occurs in any of the fields. <c>mid</c> is an opaque
+///     passport metadata identifier; Starlight accepts it for wire compatibility
+///     but authenticates the account using <c>stoken</c>.
 /// </summary>
 public sealed class MaPassportVerifySTokenRequest
 {
@@ -18,10 +18,10 @@ public sealed class MaPassportVerifySTokenRequest
 }
 
 /// <summary>
-/// Body of <c>POST /hk4e_global/account/ma-passport/api/appLoginByPassword</c>.
-/// Both <c>account</c> and <c>password</c> are RSA-encrypted by the client
-/// (base64-encoded PKCS#1 v1.5 cipher) and must be decrypted with the
-/// server's private key before validation.
+///     Body of <c>POST /hk4e_global/account/ma-passport/api/appLoginByPassword</c>.
+///     Both <c>account</c> and <c>password</c> are RSA-encrypted by the client
+///     (base64-encoded PKCS#1 v1.5 cipher) and must be decrypted with the
+///     server's private key before validation.
 /// </summary>
 public sealed class MaPassportAppLoginByPasswordRequest
 {
@@ -33,9 +33,9 @@ public sealed class MaPassportAppLoginByPasswordRequest
 }
 
 /// <summary>
-/// Body of <c>POST /hk4e_global/account/ma-passport/api/appLoginByAuthTicket</c>.
-/// The ticket is a one-time token previously issued by an
-/// <c>AuthLoginTicket</c> flow (e.g. third-party OAuth completion).
+///     Body of <c>POST /hk4e_global/account/ma-passport/api/appLoginByAuthTicket</c>.
+///     The ticket is a one-time token previously issued by an
+///     <c>AuthLoginTicket</c> flow (e.g. third-party OAuth completion).
 /// </summary>
 public sealed class MaPassportAppLoginByAuthTicketRequest
 {
@@ -44,10 +44,10 @@ public sealed class MaPassportAppLoginByAuthTicketRequest
 }
 
 /// <summary>
-/// Body of <c>POST /hk4e_global/account/ma-passport/api/reactivateAccount</c>.
-/// The action ticket is a one-time token previously issued by the
-/// <c>reactivation</c> flow when an account is flagged
-/// <see cref="Starlight.SDK.Database.Models.Account.RequireActivation"/>.
+///     Body of <c>POST /hk4e_global/account/ma-passport/api/reactivateAccount</c>.
+///     The action ticket is a one-time token previously issued by the
+///     <c>reactivation</c> flow when an account is flagged
+///     <see cref="Starlight.SDK.Database.Models.Account.RequireActivation" />.
 /// </summary>
 public sealed class MaPassportReactivateAccountRequest
 {
@@ -56,9 +56,9 @@ public sealed class MaPassportReactivateAccountRequest
 }
 
 /// <summary>
-/// Payload returned inside <c>ApiResponse.Data</c> for the
-/// <c>appLoginByPassword</c>, <c>appLoginByAuthTicket</c>,
-/// <c>reactivateAccount</c> and <c>verifySToken</c> endpoints.
+///     Payload returned inside <c>ApiResponse.Data</c> for the
+///     <c>appLoginByPassword</c>, <c>appLoginByAuthTicket</c>,
+///     <c>reactivateAccount</c> and <c>verifySToken</c> endpoints.
 /// </summary>
 public sealed class MaPassportLoginData
 {
@@ -93,9 +93,9 @@ public sealed class MaPassportTokenInfo
     public string Token { get; set; } = string.Empty;
 
     /// <summary>
-    /// Token type. Serialised as an integer on the wire — see
-    /// <see cref="Starlight.SDK.Common.MaPassportTokenType"/>.
-    /// Defaults to <see cref="Starlight.SDK.Common.MaPassportTokenType.GameToken"/>.
+    ///     Token type. Serialised as an integer on the wire — see
+    ///     <see cref="Starlight.SDK.Common.MaPassportTokenType" />.
+    ///     Defaults to <see cref="Starlight.SDK.Common.MaPassportTokenType.GameToken" />.
     /// </summary>
     [JsonPropertyName("token_type")]
     public MaPassportTokenType TokenType { get; set; } = MaPassportTokenType.GameToken;
@@ -171,10 +171,10 @@ public sealed class MaPassportAccountLink
 }
 
 /// <summary>
-/// Payload returned inside <c>ApiResponse.Data</c> for
-/// <c>GET /hk4e_global/account/ma-passport/api/getSwitchStatus</c>. Each
-/// entry is a feature flag controlling visibility of a UI element on
-/// the SDK login screen.
+///     Payload returned inside <c>ApiResponse.Data</c> for
+///     <c>GET /hk4e_global/account/ma-passport/api/getSwitchStatus</c>. Each
+///     entry is a feature flag controlling visibility of a UI element on
+///     the SDK login screen.
 /// </summary>
 public sealed class MaPassportSwitchStatusData
 {

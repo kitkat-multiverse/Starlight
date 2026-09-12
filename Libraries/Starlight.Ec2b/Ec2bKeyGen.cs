@@ -5,14 +5,13 @@ using System.Text;
 namespace Starlight.Ec2b;
 
 /// <summary>
-/// Creates a valid 2076-byte Ec2b seed file from a caller-provided seed.
-///
-/// File layout produced here:
-///   0x0000: ASCII "Ec2b" magic, 4 bytes
-///   0x0004: little-endian uint32 0x10, key length
-///   0x0008: generated key, 16 bytes
-///   0x0018: little-endian uint32 0x800, data length
-///   0x001C: generated data, 2048 bytes
+///     Creates a valid 2076-byte Ec2b seed file from a caller-provided seed.
+///     File layout produced here:
+///     0x0000: ASCII "Ec2b" magic, 4 bytes
+///     0x0004: little-endian uint32 0x10, key length
+///     0x0008: generated key, 16 bytes
+///     0x0018: little-endian uint32 0x800, data length
+///     0x001C: generated data, 2048 bytes
 /// </summary>
 public static class Ec2bKeyGen
 {
@@ -24,7 +23,7 @@ public static class Ec2bKeyGen
     private static readonly byte[] Domain = "Starlight-Ec2b"u8.ToArray();
 
     /// <summary>
-    /// Creates a valid Ec2b buffer from arbitrary seed bytes.
+    ///     Creates a valid Ec2b buffer from arbitrary seed bytes.
     /// </summary>
     public static byte[] Create(ReadOnlySpan<byte> seed)
     {
@@ -51,15 +50,15 @@ public static class Ec2bKeyGen
     }
 
     /// <summary>
-    /// Creates a valid Ec2b buffer from UTF-8 text.
-    /// For hex input, prefer CreateFromHexSeed or prefix the seed with "hex:" and call CreateFromSeedString.
+    ///     Creates a valid Ec2b buffer from UTF-8 text.
+    ///     For hex input, prefer CreateFromHexSeed or prefix the seed with "hex:" and call CreateFromSeedString.
     /// </summary>
     public static byte[] Create(string utf8Seed) => string.IsNullOrEmpty(utf8Seed) ?
         throw new ArgumentException("Seed must not be empty.", nameof(utf8Seed)) :
         Create(Encoding.UTF8.GetBytes(utf8Seed));
 
     /// <summary>
-    /// Creates a valid Ec2b buffer from a 64-bit integer seed.
+    ///     Creates a valid Ec2b buffer from a 64-bit integer seed.
     /// </summary>
     public static byte[] Create(ulong seed)
     {
@@ -69,7 +68,7 @@ public static class Ec2bKeyGen
     }
 
     /// <summary>
-    /// Checks only the structural fields this project uses before deriving.
+    ///     Checks only the structural fields this project uses before deriving.
     /// </summary>
     public static bool HasValidLayout(ReadOnlySpan<byte> ec2b) => ec2b.Length == Ec2bSize
                                                                   && ec2b[0] == (byte)'E'

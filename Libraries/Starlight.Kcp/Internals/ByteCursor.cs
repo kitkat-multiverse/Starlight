@@ -86,7 +86,7 @@ public sealed class ByteCursor
     {
         EnsureAvailable(4);
 
-        var value = (uint)_bytes[_location]
+        var value = _bytes[_location]
                     | (uint)_bytes[_location + 1] << 8
                     | (uint)_bytes[_location + 2] << 16
                     | (uint)_bytes[_location + 3] << 24;
@@ -134,7 +134,7 @@ public sealed class ByteCursor
         EnsureAvailable(skipBytes + 4);
         var index = _location + skipBytes;
 
-        return (uint)_bytes[index]
+        return _bytes[index]
                | (uint)_bytes[index + 1] << 8
                | (uint)_bytes[index + 2] << 16
                | (uint)_bytes[index + 3] << 24;

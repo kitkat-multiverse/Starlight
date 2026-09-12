@@ -4,24 +4,27 @@ using Google.Protobuf;
 using Starlight.Protobuf.Core;
 using Starlight.Protobuf.Fixtures;
 using GGoogle = Starlight.Protobuf.Benchmarks.Google;
+using ScalarMatrixSerializer = Starlight.Protobuf.Fixtures.V99.ScalarMatrixSerializer;
 
 namespace Starlight.Protobuf.Benchmarks;
 
-/// <summary>All-scalar message: pure tag/varint/fixed encoding throughput.
-/// Each op (de)serializes a batch of <see cref="N"/> messages.</summary>
+/// <summary>
+///     All-scalar message: pure tag/varint/fixed encoding throughput.
+///     Each op (de)serializes a batch of <see cref="N" /> messages.
+/// </summary>
 [MemoryDiagnoser]
 [GroupBenchmarksBy(BenchmarkLogicalGroupRule.ByCategory)]
 [CategoriesColumn]
 public class ScalarMatrixBenchmarks
 {
-    private static readonly Fixtures.V99.ScalarMatrixSerializer Serializer = Fixtures.V99.ScalarMatrixSerializer.Instance;
+    private static readonly ScalarMatrixSerializer Serializer = ScalarMatrixSerializer.Instance;
 
     [Params(1, 1000)]
     public int N;
 
     private GGoogle.ScalarMatrix[] _google = [];
-    private ScalarMatrix[] _starlight = [];
     private byte[][] _googleBytes = [];
+    private ScalarMatrix[] _starlight = [];
     private byte[][] _starlightBytes = [];
 
     [GlobalSetup]

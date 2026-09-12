@@ -6,6 +6,7 @@ using Starlight.SDK.Common;
 using Starlight.SDK.Database;
 using Starlight.SDK.Http.Models;
 using Starlight.SDK.Services;
+using ApplicationId = Starlight.SDK.Common.ApplicationId;
 
 namespace Starlight.SDK.Http.Endpoints;
 
@@ -111,9 +112,9 @@ public static class ShieldEndpoints
     }
 
     /// <summary>
-    /// Handles <c>GET/POST /hk4e_global/mdk/shield/api/loadConfig</c>.
-    /// Returns the client-side SDK configuration for the requested
-    /// platform and game biz. values come from <see cref="SdkShieldConfig"/>.
+    ///     Handles <c>GET/POST /hk4e_global/mdk/shield/api/loadConfig</c>.
+    ///     Returns the client-side SDK configuration for the requested
+    ///     platform and game biz. values come from <see cref="SdkShieldConfig" />.
     /// </summary>
     private static IResult HandleLoadConfig(
         [FromQuery] int? client,
@@ -138,7 +139,7 @@ public static class ShieldEndpoints
         var data = new ShieldLoadConfigData {
             Id = PlatformConfigMap.GetConfigId(platform),
             GameKey = game_key!,
-            AppId = (int)Common.ApplicationId.Release,
+            AppId = (int)ApplicationId.Release,
             Client = PlatformConfigMap.GetPlatformName(platform),
             Identity = SdkDefaults.ShieldIdentity,
             Guest = s.EnableGuestLogin,

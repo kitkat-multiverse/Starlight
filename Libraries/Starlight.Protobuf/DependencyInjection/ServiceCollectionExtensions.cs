@@ -7,10 +7,10 @@ namespace Starlight.Protobuf.DependencyInjection;
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Discovers every compiled <see cref="ProtocolRegistry"/> (and optional
-    /// plugin DLLs) and registers a singleton <see cref="IProtocolRegistryProvider"/>.
-    /// Discovery runs once, eagerly, while building the provider singleton so the
-    /// server has its version index ready before it accepts connections.
+    ///     Discovers every compiled <see cref="ProtocolRegistry" /> (and optional
+    ///     plugin DLLs) and registers a singleton <see cref="IProtocolRegistryProvider" />.
+    ///     Discovery runs once, eagerly, while building the provider singleton so the
+    ///     server has its version index ready before it accepts connections.
     /// </summary>
     public static IServiceCollection AddStarlightProtocol(
         this IServiceCollection services,

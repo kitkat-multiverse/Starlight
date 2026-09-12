@@ -8,9 +8,9 @@ using Starlight.SDK.Http.Models;
 namespace Starlight.SDK.Http.Endpoints;
 
 /// <summary>
-/// Implements <c>POST /data_abtest_api/config/experiment/list</c>.
-/// The client polls this endpoint at startup and on scene transitions
-/// to fetch the active A/B test configurations for the given scene.
+///     Implements <c>POST /data_abtest_api/config/experiment/list</c>.
+///     The client polls this endpoint at startup and on scene transitions
+///     to fetch the active A/B test configurations for the given scene.
 /// </summary>
 public static class AbTestEndpoints
 {

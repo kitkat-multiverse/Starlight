@@ -1,15 +1,15 @@
 namespace Starlight.SDK.Common;
 
 /// <summary>
-/// Wire-format string keys used in the <c>vals</c> dictionary returned by
-/// <c>/combo/box/api/config/sdk/combo</c>. See
-/// <see cref="Starlight.SDK.Http.Models.ComboBoxConfigData"/>.
+///     Wire-format string keys used in the <c>vals</c> dictionary returned by
+///     <c>/combo/box/api/config/sdk/combo</c>. See
+///     <see cref="Starlight.SDK.Http.Models.ComboBoxConfigData" />.
 /// </summary>
 /// <remarks>
-/// Previously each key was a string literal next to its setter call in
-/// <c>ComboBoxEndpoints.HandleSdkCombo</c>. Centralizing them here makes
-/// typos surface at compile time and gives a single place to document
-/// what each switch actually controls.
+///     Previously each key was a string literal next to its setter call in
+///     <c>ComboBoxEndpoints.HandleSdkCombo</c>. Centralizing them here makes
+///     typos surface at compile time and gives a single place to document
+///     what each switch actually controls.
 /// </remarks>
 public static class ComboBoxConfigKey
 {

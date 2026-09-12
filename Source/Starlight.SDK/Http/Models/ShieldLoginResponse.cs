@@ -3,8 +3,8 @@ using System.Text.Json.Serialization;
 namespace Starlight.SDK.Http.Models;
 
 /// <summary>
-/// Wraps the full account info block the client expects only
-/// after a successful credential login.
+///     Wraps the full account info block the client expects only
+///     after a successful credential login.
 /// </summary>
 public sealed class ShieldLoginResponse
 {
@@ -24,9 +24,9 @@ public sealed class ShieldLoginResponse
     public bool DeviceGrantRequired { get; init; }
 
     /// <summary>
-    /// Real-name flow marker. One of the constants on
-    /// <see cref="RealNameOperations"/>. Defaults to
-    /// <see cref="RealNameOperations.None"/>.
+    ///     Real-name flow marker. One of the constants on
+    ///     <see cref="RealNameOperations" />. Defaults to
+    ///     <see cref="RealNameOperations.None" />.
     /// </summary>
     [JsonPropertyName("real_name_operation")]
     public string RealNameOperation { get; init; } = RealNameOperations.None;

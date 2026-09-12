@@ -3,21 +3,21 @@ namespace Starlight.Kcp.Internals;
 public sealed class ByteBuffer
 {
     private readonly byte[] _bytes;
-    private int _location;
 
     public ByteBuffer(byte[] bytes)
     {
         _bytes = bytes;
     }
 
-    public int BytesWritten => _location;
-    public bool IsEmpty => _location == 0;
-    public int Remaining => _bytes.Length - _location;
+    public int BytesWritten { get; private set; }
+
+    public bool IsEmpty => BytesWritten == 0;
+    public int Remaining => _bytes.Length - BytesWritten;
 
     public byte[] GetWrittenBytes()
     {
-        var result = new byte[_location];
-        Array.Copy(_bytes, sourceIndex: 0, result, destinationIndex: 0, _location);
+        var result = new byte[BytesWritten];
+        Array.Copy(_bytes, sourceIndex: 0, result, destinationIndex: 0, BytesWritten);
         return result;
     }
 
@@ -28,29 +28,29 @@ public sealed class ByteBuffer
             throw new ArgumentOutOfRangeException(nameof(value));
         }
 
-        _location = value;
+        BytesWritten = value;
     }
 
-    public void Clear() => _location = 0;
+    public void Clear() => BytesWritten = 0;
 
     public void Write(byte[] data)
     {
         EnsureCapacity(data.Length);
-        Array.Copy(data, sourceIndex: 0, _bytes, _location, data.Length);
-        _location += data.Length;
+        Array.Copy(data, sourceIndex: 0, _bytes, BytesWritten, data.Length);
+        BytesWritten += data.Length;
     }
 
     public void Write8(byte data)
     {
         EnsureCapacity(1);
-        _bytes[_location++] = data;
+        _bytes[BytesWritten++] = data;
     }
 
     public void Write16LE(int data)
     {
         EnsureCapacity(2);
-        _bytes[_location++] = unchecked((byte)(data & 0xFF));
-        _bytes[_location++] = unchecked((byte)(data >> 8 & 0xFF));
+        _bytes[BytesWritten++] = unchecked((byte)(data & 0xFF));
+        _bytes[BytesWritten++] = unchecked((byte)(data >> 8 & 0xFF));
     }
 
     public void Write32LE(int data)
@@ -59,7 +59,7 @@ public sealed class ByteBuffer
 
         for (var i = 0; i < 4; i++)
         {
-            _bytes[_location++] = unchecked((byte)(data >> i * 8 & 0xFF));
+            _bytes[BytesWritten++] = unchecked((byte)(data >> i * 8 & 0xFF));
         }
     }
 
@@ -69,7 +69,7 @@ public sealed class ByteBuffer
 
         for (var i = 0; i < 4; i++)
         {
-            _bytes[_location++] = (byte)(data >> i * 8 & 0xFF);
+            _bytes[BytesWritten++] = (byte)(data >> i * 8 & 0xFF);
         }
     }
 
@@ -79,7 +79,7 @@ public sealed class ByteBuffer
 
         for (var i = 0; i < 8; i++)
         {
-            _bytes[_location++] = unchecked((byte)(data >> i * 8 & 0xFF));
+            _bytes[BytesWritten++] = unchecked((byte)(data >> i * 8 & 0xFF));
         }
     }
 
@@ -89,15 +89,15 @@ public sealed class ByteBuffer
 
         for (var i = 7; i >= 0; i--)
         {
-            _bytes[_location++] = unchecked((byte)(data >> i * 8 & 0xFF));
+            _bytes[BytesWritten++] = unchecked((byte)(data >> i * 8 & 0xFF));
         }
     }
 
     public int Read16BE()
     {
         EnsureReadable(2);
-        var result = _bytes[_location] << 8 | _bytes[_location + 1];
-        _location += 2;
+        var result = _bytes[BytesWritten] << 8 | _bytes[BytesWritten + 1];
+        BytesWritten += 2;
         return result;
     }
 
@@ -105,18 +105,18 @@ public sealed class ByteBuffer
     {
         EnsureReadable(4);
 
-        var result = _bytes[_location] << 24
-                     | _bytes[_location + 1] << 16
-                     | _bytes[_location + 2] << 8
-                     | _bytes[_location + 3];
-        _location += 4;
+        var result = _bytes[BytesWritten] << 24
+                     | _bytes[BytesWritten + 1] << 16
+                     | _bytes[BytesWritten + 2] << 8
+                     | _bytes[BytesWritten + 3];
+        BytesWritten += 4;
         return result;
     }
 
     public void Skip(int bytes)
     {
         EnsureCapacity(bytes);
-        _location += bytes;
+        BytesWritten += bytes;
     }
 
     private void EnsureCapacity(int count)

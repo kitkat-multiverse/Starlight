@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Starlight.Game.Resources.Binary;
 
 namespace Starlight.Game.Ability.HpDebts;
@@ -41,7 +42,7 @@ internal static class AbilityRuntimeHelpers
         value = string.Empty;
 
         if (!node.Values.TryGetValue(field, out var element) ||
-            element.ValueKind != System.Text.Json.JsonValueKind.String)
+            element.ValueKind != JsonValueKind.String)
             return false;
 
         value = element.GetString() ?? string.Empty;

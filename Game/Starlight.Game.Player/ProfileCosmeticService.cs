@@ -1,6 +1,7 @@
 using Starlight.Game.Resources;
 using Starlight.Game.Resources.Excel;
 using Starlight.Protocol;
+using Starlight.Rpc.Proto;
 
 namespace Starlight.Game.Player;
 
@@ -25,7 +26,7 @@ public sealed class ProfileCosmeticService(GameData data)
                 player.Profile.PictureId = 0;
 
             if (player.Profile.PictureId == 0 &&
-                player.State.BornState != Rpc.Proto.NetPlayerState.Types.PlayerBornState.Pending)
+                player.State.BornState != NetPlayerState.Types.PlayerBornState.Pending)
             {
                 player.Profile.PictureId = FindDefaultProfilePicture(player);
             }

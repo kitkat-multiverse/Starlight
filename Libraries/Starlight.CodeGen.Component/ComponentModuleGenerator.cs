@@ -1,23 +1,23 @@
-using Microsoft.CodeAnalysis;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Microsoft.CodeAnalysis;
 
 namespace Starlight.CodeGen.Component;
 
 /// <summary>
-/// Generates a <c>GeneratedModuleRegistration.Register(ModuleRegistry)</c> method for a component
-/// assembly. Every type implementing <c>IModule</c> is registered with a per-player factory
-/// (<c>(sp, p) =>; ActivatorUtilities.CreateInstance[TModule](sp, p)</c>), so a module's
-/// constructor receives the session <c>IPlayer</c> plus any services resolved from DI; each
-/// <c>[Opcode]</c>-annotated method on those modules is registered as a handler keyed on its
-/// message type, and each <c>[Lifecycle]</c>-annotated method as a handler keyed on its event.
-/// Handlers are bound by analyzing their parameters (the session <c>IPlayer</c> and, for
-/// <c>[Opcode]</c>, the message) and their return shape (sync or
-/// <c>Task</c>/<c>ValueTask</c>, returning nothing, a single message, or an enumerable of
-/// messages); returned messages are sent back through <c>player.Send</c>. The dispatch key is the
-/// message runtime type, never a cmd id, so component modules stay protocol-version agnostic.
+///     Generates a <c>GeneratedModuleRegistration.Register(ModuleRegistry)</c> method for a component
+///     assembly. Every type implementing <c>IModule</c> is registered with a per-player factory
+///     (<c>(sp, p) =>; ActivatorUtilities.CreateInstance[TModule](sp, p)</c>), so a module's
+///     constructor receives the session <c>IPlayer</c> plus any services resolved from DI; each
+///     <c>[Opcode]</c>-annotated method on those modules is registered as a handler keyed on its
+///     message type, and each <c>[Lifecycle]</c>-annotated method as a handler keyed on its event.
+///     Handlers are bound by analyzing their parameters (the session <c>IPlayer</c> and, for
+///     <c>[Opcode]</c>, the message) and their return shape (sync or
+///     <c>Task</c>/<c>ValueTask</c>, returning nothing, a single message, or an enumerable of
+///     messages); returned messages are sent back through <c>player.Send</c>. The dispatch key is the
+///     message runtime type, never a cmd id, so component modules stay protocol-version agnostic.
 /// </summary>
 [Generator]
 public sealed class ComponentModuleGenerator : IIncrementalGenerator

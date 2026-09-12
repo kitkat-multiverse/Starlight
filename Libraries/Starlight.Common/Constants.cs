@@ -21,7 +21,7 @@ public static class Env
     public static bool IsContainerized => GetOrDefault("DOTNET_RUNNING_IN_CONTAINER", out _);
 
     /// <summary>
-    /// Fetches an environment variable or returns false if it is not set or empty.
+    ///     Fetches an environment variable or returns false if it is not set or empty.
     /// </summary>
     public static bool GetOrDefault(string variable, out string value)
     {

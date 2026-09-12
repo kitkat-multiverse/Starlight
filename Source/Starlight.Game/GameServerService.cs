@@ -83,8 +83,12 @@ public sealed class GameServerService(
 
 public static class GameServerExtensions
 {
-    /// Adds the <see cref="GameServerService"/> with a requirement of having an
-    /// immutable <see cref="ModuleRegistry"/> configured.
+    /// Adds the
+    /// <see cref="GameServerService" />
+    /// with a requirement of having an
+    /// immutable
+    /// <see cref="ModuleRegistry" />
+    /// configured.
     public static IHostApplicationBuilder AddGameServer(this IHostApplicationBuilder builder, ModuleRegistry registry)
     {
         if (!registry.Immutable)

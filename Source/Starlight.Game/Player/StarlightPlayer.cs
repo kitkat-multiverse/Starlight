@@ -12,10 +12,10 @@ namespace Starlight.Game.Player;
 
 public sealed class StarlightPlayer : IPlayer
 {
+    private readonly ILogger<StarlightPlayer> _logger;
+    private readonly IModule[] _modules;
     private readonly ModuleRegistry _registry;
     private readonly RpcTunnel _tunnel;
-    private readonly IModule[] _modules;
-    private readonly ILogger<StarlightPlayer> _logger;
 
     public StarlightPlayer(IServiceProvider provider, ModuleRegistry registry, RpcTunnel tunnel)
     {
@@ -32,15 +32,15 @@ public sealed class StarlightPlayer : IPlayer
     public NetPlayerProfile Profile { get; set; } = new();
     public object StateLock { get; } = new();
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public TModule Module<TModule>() where TModule : class, IModule
         => (TModule)_modules[_registry.IndexOf<TModule>()];
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public Task Send(IMessage message)
         => _tunnel.Publish(GameSubjects.OutboundPacket, message);
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public ValueTask Emit(LifecycleEvent @event)
         => _registry.Dispatch(this, _modules, @event);
 

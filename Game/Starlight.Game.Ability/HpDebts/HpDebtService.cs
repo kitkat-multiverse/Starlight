@@ -1,9 +1,11 @@
+using System.Text.Json;
 using Google.Protobuf;
 using Serilog;
 using Starlight.Game.Ability.DynamicProps;
 using Starlight.Game.Resources.Binary;
 using Starlight.Protobuf.Registry;
 using Starlight.Protocol;
+using IMessage = Starlight.Protobuf.Core.IMessage;
 
 namespace Starlight.Game.Ability.HpDebts;
 
@@ -236,16 +238,16 @@ public sealed class HpDebtService(IInvokeForwarder forwarder, ProtocolRegistry p
         return Broadcast(context, new CombatInvocationsNotify { InvokeList = { invoke } });
     }
 
-    private Task Broadcast(AbilityContext context, Starlight.Protobuf.Core.IMessage message) =>
+    private Task Broadcast(AbilityContext context, IMessage message) =>
         forwarder.Forward(context.Player, ForwardType.FORWARD_TYPE_TO_ALL, message, forwardPeer: 0);
 
     private static IEnumerable<string> GetStringArray(AbilityConfigNode node, string field)
     {
-        if (!node.Values.TryGetValue(field, out var value) || value.ValueKind != System.Text.Json.JsonValueKind.Array)
+        if (!node.Values.TryGetValue(field, out var value) || value.ValueKind != JsonValueKind.Array)
             return [];
 
         return value.EnumerateArray()
-            .Where(item => item.ValueKind == System.Text.Json.JsonValueKind.String)
+            .Where(item => item.ValueKind == JsonValueKind.String)
             .Select(item => item.GetString() ?? string.Empty)
             .Where(item => item.Length != 0)
             .ToArray();

@@ -1,16 +1,16 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Starlight.SDK.Common;
 using Starlight.SDK.Http.Models;
-using System.Text.Json;
 
 namespace Starlight.SDK.Http.Endpoints;
 
 /// <summary>
-/// Implements the <c>/combo/box/api/config/sdk/combo</c> and
-/// <c>/combo/box/api/config/sw/precache</c> endpoints.
+///     Implements the <c>/combo/box/api/config/sdk/combo</c> and
+///     <c>/combo/box/api/config/sw/precache</c> endpoints.
 /// </summary>
 public static class ComboBoxEndpoints
 {

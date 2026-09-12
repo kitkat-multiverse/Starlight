@@ -1,15 +1,16 @@
+using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Starlight.Game.Ability.HpDebts;
-using System.Reflection;
 
 namespace Starlight.Game.Ability.Handlers;
 
 public static class AbilityServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers the ability invoke dispatcher and finds all <see cref="IAbilityInvokeHandler"/> implementations in the given assemblies.
-    /// If none are given, the current ability assembly is used.
+    ///     Registers the ability invoke dispatcher and finds all <see cref="IAbilityInvokeHandler" /> implementations in the
+    ///     given assemblies.
+    ///     If none are given, the current ability assembly is used.
     /// </summary>
     public static IServiceCollection AddAbilityInvokeHandlers(
         this IServiceCollection services,

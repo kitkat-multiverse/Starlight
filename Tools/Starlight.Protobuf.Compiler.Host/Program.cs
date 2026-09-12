@@ -1,9 +1,10 @@
+using System.Collections.Immutable;
+using System.Diagnostics;
+using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
 using Starlight.Protobuf.Compiler;
-using System.Collections.Immutable;
-using System.Diagnostics;
 
 var protoFiles = Directory.GetFiles(
     Environment.CurrentDirectory,
@@ -91,5 +92,5 @@ file sealed class ProtoText(string path) : AdditionalText
     public override string Path { get; } = path;
 
     public override SourceText GetText(CancellationToken cancellationToken = default) =>
-        SourceText.From(File.ReadAllText(Path), System.Text.Encoding.UTF8);
+        SourceText.From(File.ReadAllText(Path), Encoding.UTF8);
 }

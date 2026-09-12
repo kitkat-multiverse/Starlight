@@ -1,19 +1,19 @@
-using Starlight.Common;
 using System.Collections.Concurrent;
+using Starlight.Common;
 
 namespace Starlight.Rpc.Tunnel;
 
 public sealed class DirectTunnelBroker : ITunnelBroker
 {
     private static readonly TimeSpan DefaultTtl = TimeSpan.FromSeconds(30);
-
-    private readonly TimeSpan _ttl;
     private readonly ConcurrentDictionary<Guid, Pending> _pending = new();
 
+    private readonly TimeSpan _ttl;
+
     /// <param name="ttl">
-    /// How long an unclaimed end may sit before it is closed and evicted. Must comfortably exceed
-    /// the longest decision window a requester might use (its <c>collectWindow</c>/<c>reqTimeout</c>),
-    /// otherwise the winning end can be reaped before it is claimed.
+    ///     How long an unclaimed end may sit before it is closed and evicted. Must comfortably exceed
+    ///     the longest decision window a requester might use (its <c>collectWindow</c>/<c>reqTimeout</c>),
+    ///     otherwise the winning end can be reaped before it is claimed.
     /// </param>
     public DirectTunnelBroker(TimeSpan? ttl = null)
     {

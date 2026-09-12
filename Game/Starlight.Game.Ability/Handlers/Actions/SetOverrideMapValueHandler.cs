@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Starlight.Game.Ability.DynamicProps;
 using Starlight.Game.Ability.HpDebts;
 using Starlight.Game.Resources.Binary;
@@ -21,7 +22,7 @@ public sealed class SetOverrideMapValueHandler : AbilityActionHandler
         var value = AbilityDynamicFloat.Get(context, action, "value", owner);
 
         if (action.Values.TryGetValue("useLimitRange", out var useLimitRange) &&
-            useLimitRange.ValueKind == System.Text.Json.JsonValueKind.True)
+            useLimitRange.ValueKind == JsonValueKind.True)
         {
             var min = action.Values.ContainsKey("minValue") ?
                 AbilityDynamicFloat.Get(context, action, "minValue", owner, float.NegativeInfinity) :

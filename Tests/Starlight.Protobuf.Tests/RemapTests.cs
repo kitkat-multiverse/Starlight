@@ -1,27 +1,28 @@
+using System.Collections.Concurrent;
 using Google.Protobuf;
 using Starlight.Protobuf.Core;
 using Starlight.Protobuf.Fixtures;
 using Starlight.Protobuf.Serialization;
 using Xunit;
+using RemapProbeSerializer = Starlight.Protobuf.Fixtures.V99.RemapProbeSerializer;
 
 namespace Starlight.Protobuf.Tests;
 
 /// <summary>
-/// Gated remap. <see cref="RemapProbe"/> exercises every branch of the
-/// shared <see cref="ReflectiveEngine"/> (scalars, optional, repeated packed /
-/// unpacked, scalar &amp; message maps, enums, nested messages, oneof). These
-/// tests prove: the reflective path is byte-identical to the fast path when no
-/// number is changed, a remap actually rewrites the wire field number,
-/// <see cref="MessageDescriptor.ClearRemaps"/> restores the fast path, and the
-/// reflective path round-trips losslessly.
-///
-/// The serializer's <c>Descriptor</c> is a process-wide singleton, so every test
-/// mutating it restores the defaults in a <c>finally</c> to stay isolated.
+///     Gated remap. <see cref="RemapProbe" /> exercises every branch of the
+///     shared <see cref="ReflectiveEngine" /> (scalars, optional, repeated packed /
+///     unpacked, scalar &amp; message maps, enums, nested messages, oneof). These
+///     tests prove: the reflective path is byte-identical to the fast path when no
+///     number is changed, a remap actually rewrites the wire field number,
+///     <see cref="MessageDescriptor.ClearRemaps" /> restores the fast path, and the
+///     reflective path round-trips losslessly.
+///     The serializer's <c>Descriptor</c> is a process-wide singleton, so every test
+///     mutating it restores the defaults in a <c>finally</c> to stay isolated.
 /// </summary>
 public sealed class RemapTests
 {
-    private static readonly Fixtures.V99.RemapProbeSerializer Serializer = Fixtures.V99.RemapProbeSerializer.Instance;
-    private static MessageDescriptor Descriptor => Fixtures.V99.RemapProbeSerializer.Descriptor;
+    private static readonly RemapProbeSerializer Serializer = RemapProbeSerializer.Instance;
+    private static MessageDescriptor Descriptor => RemapProbeSerializer.Descriptor;
 
     private static RemapProbe Sample() => new() {
         A = 123,
@@ -146,7 +147,7 @@ public sealed class RemapTests
         // and the fast-path gate read torn from the table it guards. The copy-on-write
         // snapshot must let every reader see one complete, self-consistent state.
         const int duration = 750; // ms
-        var failures = new System.Collections.Concurrent.ConcurrentQueue<Exception>();
+        var failures = new ConcurrentQueue<Exception>();
         using var stop = new CancellationTokenSource(duration);
         var token = stop.Token;
 

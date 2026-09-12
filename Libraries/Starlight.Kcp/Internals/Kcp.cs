@@ -109,6 +109,7 @@ public sealed class Kcp
 
     public IWriter Output { get; set; }
     public KcpVersion KcpVersion { get; set; } = KcpVersion.KCP_UNKNOWN;
+    private int Clock32 => unchecked((int)Current);
 
     public void SetNodelay(bool nodelay, int interval, int resend, bool nc)
     {
@@ -183,7 +184,6 @@ public sealed class Kcp
     private static long TimeDiff(long later, long earlier) => later - earlier;
     private static int TimeDiff(int later, int earlier) => later - earlier;
     private static int TimeDiff32(int later, int earlier) => unchecked(later - earlier);
-    private int Clock32 => unchecked((int)Current);
 
     private void ParseUna(long una)
     {

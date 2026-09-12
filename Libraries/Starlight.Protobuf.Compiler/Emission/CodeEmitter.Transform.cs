@@ -1,79 +1,15 @@
-using Google.Protobuf.Reflection;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using Google.Protobuf.Reflection;
 using FType = Google.Protobuf.Reflection.FieldDescriptorProto.Type;
 
 namespace Starlight.Protobuf.Compiler;
 
 internal static partial class CodeEmitter
 {
-    // ---- field value transforms (add / xor / fop / mask) --------------------
-
-    /// <summary>
-    /// An invertible integer transform applied to a field on the wire. <see cref="Ops"/>
-    /// is the encode chain (real -> wire), one char per step in <c>{ '+', '-', '^' }</c>,
-    /// paired positionally with <see cref="Operands"/>. Decode (wire -> real) applies the
-    /// inverse of each op in reverse order. A <c>mask</c> that <see cref="ParseMask"/> can't
-    /// invert is rejected outright (no transform) and reported as an error, so every
-    /// transform that survives here round-trips on both the fast and reflective paths.
-    /// </summary>
-    internal sealed class Transform
-    {
-        public string Ops = "";
-        public long[] Operands = [];
-    }
-
-    /// <summary>A mask rejected at compile time because it cannot be inverted for decode.</summary>
-    internal sealed class MaskViolation
-    {
-        public string Message = "";
-        public string Field = "";
-        public string Mask = "";
-
-        /// <summary>True = out-of-grammar (SLPB005). False = in-grammar but structurally non-invertible (SLPB006). Both are errors.</summary>
-        public bool Invalid;
-    }
-
-    /// <summary>Per-message field transform lookup, keyed by message name then field (proto) name.</summary>
-    internal sealed class TransformTable
-    {
-        private readonly Dictionary<string, Dictionary<string, Transform>> _map;
-
-        public TransformTable(Dictionary<string, Dictionary<string, Transform>> map, IReadOnlyList<MaskViolation> violations)
-        {
-            _map = map;
-            Violations = violations;
-        }
-
-        public IReadOnlyList<MaskViolation> Violations { get; }
-
-        public Transform? Get(string message, string field) =>
-            _map.TryGetValue(message, out var fields) && fields.TryGetValue(field, out var t) ? t : null;
-    }
-
-    // ---- alternate field names (alts) ---------------------------------------
-
-    /// <summary>
-    /// Per-message alternate-name lookup, keyed by message name then base field name. The
-    /// canonical (base) proto declares <c>[alts = "..."]</c> on a field to list the version
-    /// field names that should correlate to it, so a version may rename a field without
-    /// breaking the <c>base&lt;-&gt;version</c> match. Authored on base protos only.
-    /// </summary>
-    internal sealed class AltsTable
-    {
-        private readonly Dictionary<string, Dictionary<string, List<string>>> _map;
-
-        public AltsTable(Dictionary<string, Dictionary<string, List<string>>> map)
-        {
-            _map = map;
-        }
-
-        public IReadOnlyList<string> Get(string message, string field) =>
-            _map.TryGetValue(message, out var fields) && fields.TryGetValue(field, out var a) ? a : System.Array.Empty<string>();
-    }
-
-    /// <summary>Reads the repeated <c>alts</c> field option off every message in the set into an <see cref="AltsTable"/>.</summary>
+    /// <summary>Reads the repeated <c>alts</c> field option off every message in the set into an <see cref="AltsTable" />.</summary>
     public static AltsTable ReadAlts(FileDescriptorSet set)
     {
         var map = new Dictionary<string, Dictionary<string, List<string>>>();
@@ -123,11 +59,11 @@ internal static partial class CodeEmitter
     }
 
     /// <summary>
-    /// The version field correlated to a base field: matched by prefix-stripped name, or --
-    /// failing that -- by any name the base field lists in its <c>alts</c> option (also
-    /// stripped). The '_' custom-name marker is stripped on both sides, mirroring
-    /// <see cref="FieldsByName"/>. Returns null when the version has no matching field (the
-    /// field is then not serialized for that version).
+    ///     The version field correlated to a base field: matched by prefix-stripped name, or --
+    ///     failing that -- by any name the base field lists in its <c>alts</c> option (also
+    ///     stripped). The '_' custom-name marker is stripped on both sides, mirroring
+    ///     <see cref="FieldsByName" />. Returns null when the version has no matching field (the
+    ///     field is then not serialized for that version).
     /// </summary>
     internal static FieldDescriptorProto? MatchVersionField(
         FieldDescriptorProto baseField,
@@ -156,7 +92,7 @@ internal static partial class CodeEmitter
 
     // ---- codegen ------------------------------------------------------------
 
-    /// <summary>Encode expression (real -> wire) for <paramref name="valueExpr"/>, cast back to <paramref name="csType"/>.</summary>
+    /// <summary>Encode expression (real -> wire) for <paramref name="valueExpr" />, cast back to <paramref name="csType" />.</summary>
     private static string Encode(Transform? t, string valueExpr, string csType)
     {
         if (t is null) return valueExpr;
@@ -168,7 +104,7 @@ internal static partial class CodeEmitter
         return $"unchecked(({csType})({inner}))";
     }
 
-    /// <summary>Decode expression (wire -> real) wrapping <paramref name="readExpr"/>, cast to <paramref name="csType"/>.</summary>
+    /// <summary>Decode expression (wire -> real) wrapping <paramref name="readExpr" />, cast to <paramref name="csType" />.</summary>
     private static string Decode(Transform? t, string readExpr, string csType)
     {
         if (t is null) return readExpr;
@@ -185,18 +121,18 @@ internal static partial class CodeEmitter
     private static string Lit(long v) => $"({v.ToString(CultureInfo.InvariantCulture)}L)";
 
     private static long? ParseOperand(string value) =>
-        long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var n) ? n : (long?)null;
+        long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var n) ? n : null;
 
     // ---- extraction ---------------------------------------------------------
 
     /// <summary>
-    /// Reads field transform options (add / xor / fop / mask) from a parsed descriptor set,
-    /// attributing each to its declaring message through the descriptor tree (so nesting,
-    /// oneofs, comments and option braces are the parser's problem, not ours). The protocol
-    /// writes these as bare options (e.g. <c>[add = 5]</c>) that protobuf-net can't resolve to
-    /// the extra.proto extensions, so it parks each on the field's
-    /// <see cref="FieldOptions.UninterpretedOptions"/> with the literal in
-    /// <see cref="UninterpretedOption.AggregateValue"/> — which is what we read here.
+    ///     Reads field transform options (add / xor / fop / mask) from a parsed descriptor set,
+    ///     attributing each to its declaring message through the descriptor tree (so nesting,
+    ///     oneofs, comments and option braces are the parser's problem, not ours). The protocol
+    ///     writes these as bare options (e.g. <c>[add = 5]</c>) that protobuf-net can't resolve to
+    ///     the extra.proto extensions, so it parks each on the field's
+    ///     <see cref="FieldOptions.UninterpretedOptions" /> with the literal in
+    ///     <see cref="UninterpretedOption.AggregateValue" /> — which is what we read here.
     /// </summary>
     public static TransformTable ReadTransforms(FileDescriptorSet set)
     {
@@ -286,9 +222,9 @@ internal static partial class CodeEmitter
     }
 
     /// <summary>
-    /// Parses a left-deep, fully-parenthesized mask such as <c>(value - 49379) ^ 11523</c>
-    /// into an invertible op-chain. Returns null for anything that doesn't reduce to
-    /// <c>value</c> wrapped in a chain of <c>(sub OP integer)</c> steps.
+    ///     Parses a left-deep, fully-parenthesized mask such as <c>(value - 49379) ^ 11523</c>
+    ///     into an invertible op-chain. Returns null for anything that doesn't reduce to
+    ///     <c>value</c> wrapped in a chain of <c>(sub OP integer)</c> steps.
     /// </summary>
     private static Transform? ParseMask(string mask)
     {
@@ -330,14 +266,14 @@ internal static partial class CodeEmitter
     }
 
     /// <summary>
-    /// Strict grammar gate for a rejected mask, used only to choose the clearer diagnostic:
-    /// foreign tokens (SLPB005) vs. a legal-but-non-invertible chain (SLPB006). Tokenizes the
-    /// mask and verifies the whole token stream parses as a
-    /// well-formed arithmetic expression over the word <c>value</c>, integer literals,
-    /// parentheses, and the binary operators <c>+ - ^</c> (with optional unary <c>+ -</c>).
-    /// Rejects anything else: stray identifiers, run-on tokens like <c>valuevalue</c>,
-    /// adjacent operands, unbalanced parens, call syntax, punctuation.
-    /// <code>
+    ///     Strict grammar gate for a rejected mask, used only to choose the clearer diagnostic:
+    ///     foreign tokens (SLPB005) vs. a legal-but-non-invertible chain (SLPB006). Tokenizes the
+    ///     mask and verifies the whole token stream parses as a
+    ///     well-formed arithmetic expression over the word <c>value</c>, integer literals,
+    ///     parentheses, and the binary operators <c>+ - ^</c> (with optional unary <c>+ -</c>).
+    ///     Rejects anything else: stray identifiers, run-on tokens like <c>valuevalue</c>,
+    ///     adjacent operands, unbalanced parens, call syntax, punctuation.
+    ///     <code>
     /// expr    := unary (('+' | '-' | '^') unary)*
     /// unary   := ('+' | '-')* primary
     /// primary := 'value' | NUMBER | '(' expr ')'
@@ -463,5 +399,72 @@ internal static partial class CodeEmitter
         }
 
         return expr;
+    }
+    // ---- field value transforms (add / xor / fop / mask) --------------------
+
+    /// <summary>
+    ///     An invertible integer transform applied to a field on the wire. <see cref="Ops" />
+    ///     is the encode chain (real -> wire), one char per step in <c>{ '+', '-', '^' }</c>,
+    ///     paired positionally with <see cref="Operands" />. Decode (wire -> real) applies the
+    ///     inverse of each op in reverse order. A <c>mask</c> that <see cref="ParseMask" /> can't
+    ///     invert is rejected outright (no transform) and reported as an error, so every
+    ///     transform that survives here round-trips on both the fast and reflective paths.
+    /// </summary>
+    internal sealed class Transform
+    {
+        public long[] Operands = [];
+        public string Ops = "";
+    }
+
+    /// <summary>A mask rejected at compile time because it cannot be inverted for decode.</summary>
+    internal sealed class MaskViolation
+    {
+        public string Field = "";
+
+        /// <summary>
+        ///     True = out-of-grammar (SLPB005). False = in-grammar but structurally non-invertible (SLPB006). Both are
+        ///     errors.
+        /// </summary>
+        public bool Invalid;
+        public string Mask = "";
+        public string Message = "";
+    }
+
+    /// <summary>Per-message field transform lookup, keyed by message name then field (proto) name.</summary>
+    internal sealed class TransformTable
+    {
+        private readonly Dictionary<string, Dictionary<string, Transform>> _map;
+
+        public TransformTable(Dictionary<string, Dictionary<string, Transform>> map, IReadOnlyList<MaskViolation> violations)
+        {
+            _map = map;
+            Violations = violations;
+        }
+
+        public IReadOnlyList<MaskViolation> Violations { get; }
+
+        public Transform? Get(string message, string field) =>
+            _map.TryGetValue(message, out var fields) && fields.TryGetValue(field, out var t) ? t : null;
+    }
+
+    // ---- alternate field names (alts) ---------------------------------------
+
+    /// <summary>
+    ///     Per-message alternate-name lookup, keyed by message name then base field name. The
+    ///     canonical (base) proto declares <c>[alts = "..."]</c> on a field to list the version
+    ///     field names that should correlate to it, so a version may rename a field without
+    ///     breaking the <c>base&lt;-&gt;version</c> match. Authored on base protos only.
+    /// </summary>
+    internal sealed class AltsTable
+    {
+        private readonly Dictionary<string, Dictionary<string, List<string>>> _map;
+
+        public AltsTable(Dictionary<string, Dictionary<string, List<string>>> map)
+        {
+            _map = map;
+        }
+
+        public IReadOnlyList<string> Get(string message, string field) =>
+            _map.TryGetValue(message, out var fields) && fields.TryGetValue(field, out var a) ? a : Array.Empty<string>();
     }
 }

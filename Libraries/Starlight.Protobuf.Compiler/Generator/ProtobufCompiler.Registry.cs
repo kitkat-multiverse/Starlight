@@ -1,7 +1,7 @@
-using Google.Protobuf.Reflection;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Google.Protobuf.Reflection;
 
 namespace Starlight.Protobuf.Compiler;
 
@@ -11,7 +11,7 @@ public sealed partial class ProtobufCompiler
     {
         int? Cmd(DescriptorProto m)
         {
-            return cmdIds.TryGetValue(m.Name, out var id) ? id : (int?)null;
+            return cmdIds.TryGetValue(m.Name, out var id) ? id : null;
         }
 
         var knownFirstNames = new HashSet<string> { "GetPlayerTokenReq", "PingReq" };

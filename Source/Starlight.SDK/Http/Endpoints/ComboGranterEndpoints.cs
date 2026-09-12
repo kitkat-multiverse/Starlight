@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -7,7 +8,6 @@ using Starlight.Crypto;
 using Starlight.SDK.Common;
 using Starlight.SDK.Http.Models;
 using Starlight.SDK.Services;
-using System.Text.Json;
 
 namespace Starlight.SDK.Http.Endpoints;
 
@@ -156,10 +156,10 @@ public static class ComboGranterEndpoints
     }
 
     /// <summary>
-    /// Handles <c>GET/POST /hk4e_global/combo/granter/api/getConfig</c>.
-    /// Returns the SDK-level configuration: announce URL, log level, QR
-    /// login settings, etc. Client-type-specific switch configs (jpush,
-    /// appsflyer, notifications) are populated per platform.
+    ///     Handles <c>GET/POST /hk4e_global/combo/granter/api/getConfig</c>.
+    ///     Returns the SDK-level configuration: announce URL, log level, QR
+    ///     login settings, etc. Client-type-specific switch configs (jpush,
+    ///     appsflyer, notifications) are populated per platform.
     /// </summary>
     private static IResult HandleGetConfig(
         [FromQuery] int? appId,

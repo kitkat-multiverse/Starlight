@@ -1,22 +1,22 @@
 namespace Starlight.Game.Resources;
 
 /// <summary>
-/// All resources should have an ID value.
+///     All resources should have an ID value.
 /// </summary>
 public abstract class Data
 {
     public uint Id { get; set; }
 
     /// <summary>
-    /// Invoked when the resource is loaded.
+    ///     Invoked when the resource is loaded.
     /// </summary>
     public virtual void OnLoad()
     {}
 }
 
 /// <summary>
-/// The priority of a resource to be loaded.
-/// Higher values are loaded first.
+///     The priority of a resource to be loaded.
+///     Higher values are loaded first.
 /// </summary>
 internal enum LoadPriority
 {

@@ -4,8 +4,9 @@ using Starlight.Protocol;
 namespace Starlight.Game.Ability.Handlers;
 
 /// <summary>
-/// Base interface for handlers that process ability invokes on the server.
-/// Concrete handlers are discovered and registered automatically by <see cref="AbilityServiceCollectionExtensions.AddAbilityInvokeHandlers"/>.
+///     Base interface for handlers that process ability invokes on the server.
+///     Concrete handlers are discovered and registered automatically by
+///     <see cref="AbilityServiceCollectionExtensions.AddAbilityInvokeHandlers" />.
 /// </summary>
 public interface IAbilityInvokeHandler
 {
@@ -91,14 +92,14 @@ public abstract class AbilityArgumentHandler(AbilityInvokeArgument argumentType)
 }
 
 /// <summary>
-/// Keeps track of the registered ability invoke handlers and dispatches invokes to them.
-/// Argument handlers run first, followed by matching action and mixin handlers.
-/// Handlers with a lower <see cref="IAbilityInvokeHandler.Order"/> run first.
+///     Keeps track of the registered ability invoke handlers and dispatches invokes to them.
+///     Argument handlers run first, followed by matching action and mixin handlers.
+///     Handlers with a lower <see cref="IAbilityInvokeHandler.Order" /> run first.
 /// </summary>
 public sealed class AbilityInvokeHandlerRegistry
 {
-    private readonly IReadOnlyDictionary<AbilityInvokeArgument, IAbilityInvokeHandler[]> _arguments;
     private readonly IReadOnlyDictionary<string, IAbilityInvokeHandler[]> _actions;
+    private readonly IReadOnlyDictionary<AbilityInvokeArgument, IAbilityInvokeHandler[]> _arguments;
     private readonly IReadOnlyDictionary<string, IAbilityInvokeHandler[]> _mixins;
 
     public AbilityInvokeHandlerRegistry(IEnumerable<IAbilityInvokeHandler> handlers)

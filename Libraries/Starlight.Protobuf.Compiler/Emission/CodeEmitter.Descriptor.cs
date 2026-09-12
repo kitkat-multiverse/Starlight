@@ -1,6 +1,6 @@
-using Google.Protobuf.Reflection;
 using System.Linq;
 using System.Text;
+using Google.Protobuf.Reflection;
 using FType = Google.Protobuf.Reflection.FieldDescriptorProto.Type;
 using Label = Google.Protobuf.Reflection.FieldDescriptorProto.Label;
 
@@ -15,10 +15,10 @@ internal static partial class CodeEmitter
     private const string FrType = "global::Starlight.Protobuf.Core.FieldRule";
 
     /// <summary>
-    /// Emits the per-message field table that drives the reflective slow path and
-    /// field-ID remap. Only name-matched fields are included, mirroring the fast
-    /// path; nested message references are lazy (<c>() => XSerializer.Descriptor</c>)
-    /// to sidestep static-init ordering.
+    ///     Emits the per-message field table that drives the reflective slow path and
+    ///     field-ID remap. Only name-matched fields are included, mirroring the fast
+    ///     path; nested message references are lazy (<c>() => XSerializer.Descriptor</c>)
+    ///     to sidestep static-init ordering.
     /// </summary>
     private static void EmitDescriptor(
         StringBuilder sb,
@@ -35,7 +35,7 @@ internal static partial class CodeEmitter
         var versionByName = FieldsByName(versionMsg.Fields);
         var type = $"global::{baseNs}.{csPath ?? StripPrefix(baseMsg.Name)}";
 
-        sb.AppendLine($"    public static readonly global::Starlight.Protobuf.Core.MessageDescriptor Descriptor =");
+        sb.AppendLine("    public static readonly global::Starlight.Protobuf.Core.MessageDescriptor Descriptor =");
         sb.AppendLine($"        new global::Starlight.Protobuf.Core.MessageDescriptor(\"{baseMsg.Name}\", typeof({type}), new {FdType}[]");
         sb.AppendLine("        {");
 

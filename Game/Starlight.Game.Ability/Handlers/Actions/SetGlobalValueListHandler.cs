@@ -1,6 +1,6 @@
+using System.Text.Json;
 using Serilog;
 using Starlight.Game.Ability.DynamicProps;
-using System.Text.Json;
 
 namespace Starlight.Game.Ability.Handlers.Actions;
 

@@ -3,25 +3,28 @@ using BenchmarkDotNet.Configs;
 using Google.Protobuf;
 using Starlight.Protobuf.Core;
 using Starlight.Protobuf.Fixtures;
+using CoverageSerializer = Starlight.Protobuf.Fixtures.V99.CoverageSerializer;
 using GGoogle = Starlight.Protobuf.Benchmarks.Google;
 
 namespace Starlight.Protobuf.Benchmarks;
 
-/// <summary>proto3 explicit presence (optional), oneof, and a nested sub-message.
-/// Each op (de)serializes a batch of <see cref="N"/> messages.</summary>
+/// <summary>
+///     proto3 explicit presence (optional), oneof, and a nested sub-message.
+///     Each op (de)serializes a batch of <see cref="N" /> messages.
+/// </summary>
 [MemoryDiagnoser]
 [GroupBenchmarksBy(BenchmarkLogicalGroupRule.ByCategory)]
 [CategoriesColumn]
 public class CoverageBenchmarks
 {
-    private static readonly Fixtures.V99.CoverageSerializer Serializer = Fixtures.V99.CoverageSerializer.Instance;
+    private static readonly CoverageSerializer Serializer = CoverageSerializer.Instance;
 
     [Params(1, 1000)]
     public int N;
 
     private GGoogle.Coverage[] _google = [];
-    private Coverage[] _starlight = [];
     private byte[][] _googleBytes = [];
+    private Coverage[] _starlight = [];
     private byte[][] _starlightBytes = [];
 
     [GlobalSetup]

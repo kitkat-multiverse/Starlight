@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -12,7 +13,6 @@ using Starlight.Rpc;
 using Starlight.Rpc.Proto;
 using Starlight.Rpc.Tunnel;
 using Starlight.Rpc.Tunnel.Connection;
-using System.Collections.Concurrent;
 using KcpLogLevel = Starlight.Kcp.LogLevel;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
@@ -40,6 +40,39 @@ public sealed class GateServerService(
 
     public ProtocolRegistryProvider Registry { get; } = registryProvider;
     public byte[] ServerKey { get; private set; } = [];
+
+    public void OnConnected(KcpConnection conn)
+    {
+        _sessions[conn] = new StarlightSession(this, conn);
+
+        logger.LogDebug("Client connected: {Remote} (conv={Conv})", conn.Remote, conn.Conv);
+    }
+
+    public void OnDisconnected(KcpConnection conn, uint reason)
+    {
+        if (_sessions.TryRemove(conn, out var session))
+        {
+            session.OnClose(reason);
+        }
+
+        logger.LogInformation(
+            "Client disconnected: {Remote} (conv={Conv}, reason={Reason}, reasonCode={ReasonCode}, pendingSendSegments={PendingSendSegments})",
+            conn.Remote,
+            conn.Conv,
+            (DisconnectReason)reason,
+            reason,
+            conn.PendingSendSegments);
+    }
+
+    public void OnReceive(KcpConnection conn, byte[] data)
+    {
+        if (_sessions.TryGetValue(conn, out var session))
+        {
+            session.Receive(data);
+        }
+
+        logger.LogTrace("Received {Length} bytes from {Remote}", data.Length, conn.Remote);
+    }
 
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
@@ -104,39 +137,6 @@ public sealed class GateServerService(
 #pragma warning disable CA2254
         }, message, args);
 #pragma warning restore CA2254
-    }
-
-    public void OnConnected(KcpConnection conn)
-    {
-        _sessions[conn] = new StarlightSession(this, conn);
-
-        logger.LogDebug("Client connected: {Remote} (conv={Conv})", conn.Remote, conn.Conv);
-    }
-
-    public void OnDisconnected(KcpConnection conn, uint reason)
-    {
-        if (_sessions.TryRemove(conn, out var session))
-        {
-            session.OnClose(reason);
-        }
-
-        logger.LogInformation(
-            "Client disconnected: {Remote} (conv={Conv}, reason={Reason}, reasonCode={ReasonCode}, pendingSendSegments={PendingSendSegments})",
-            conn.Remote,
-            conn.Conv,
-            (DisconnectReason)reason,
-            reason,
-            conn.PendingSendSegments);
-    }
-
-    public void OnReceive(KcpConnection conn, byte[] data)
-    {
-        if (_sessions.TryGetValue(conn, out var session))
-        {
-            session.Receive(data);
-        }
-
-        logger.LogTrace("Received {Length} bytes from {Remote}", data.Length, conn.Remote);
     }
 }
 

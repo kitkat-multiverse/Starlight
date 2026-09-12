@@ -1,14 +1,14 @@
-using Konscious.Security.Cryptography;
 using System.Security.Cryptography;
 using System.Text;
+using Konscious.Security.Cryptography;
 
 namespace Starlight.Crypto;
 
 /// <summary>
-/// A cryptography helper specifically for the `Argon2` algorithm.
-/// <br/>
-/// The difference between this and a regular algorithm is that it is
-/// specifically designed for <b>password hashing</b>.
+///     A cryptography helper specifically for the `Argon2` algorithm.
+///     <br />
+///     The difference between this and a regular algorithm is that it is
+///     specifically designed for <b>password hashing</b>.
 /// </summary>
 public static class Argon2Crypto
 {
@@ -21,7 +21,7 @@ public static class Argon2Crypto
     private static string ToHashString(byte[] hash, byte[] salt) => $"argon2id${Convert.ToBase64String(hash)}${Convert.ToBase64String(salt)}";
 
     /// <summary>
-    /// Decodes the given hash string given the above format.
+    ///     Decodes the given hash string given the above format.
     /// </summary>
     /// <param name="hash">A hash formatted as <code>argon2id$[hash]$[salt]</code></param>
     /// <exception cref="InvalidDataException">If the hash does not meet the expected format.</exception>

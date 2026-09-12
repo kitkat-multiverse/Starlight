@@ -8,18 +8,18 @@ public class RpcMessage(byte[] payload)
 {
     private static readonly RpcMessage Empty = new([]);
 
-    /// Allows converting byte payloads into messages.
-    public static implicit operator RpcMessage(byte[] payload) => new(payload);
+    public object? Metadata;
 
     public byte[] Payload => payload;
 
     public string? ReplySubject { protected get; set; }
     public RpcTransport? Transport { protected get; set; }
 
-    public object? Metadata;
+    /// Allows converting byte payloads into messages.
+    public static implicit operator RpcMessage(byte[] payload) => new(payload);
 
     /// <summary>
-    /// Attempts to deserialize the message's payload as a Google Protobuf object.
+    ///     Attempts to deserialize the message's payload as a Google Protobuf object.
     /// </summary>
     /// <typeparam name="T">The message to decode into.</typeparam>
     /// <returns>The parsed message, or null if it failed to parse.</returns>
@@ -47,7 +47,7 @@ public class RpcMessage(byte[] payload)
         => TryDeserialize<T>() ?? throw new NullReferenceException("Failed to deserialize message.");
 
     /// <summary>
-    /// Sends a reply to the requester, if applicable.
+    ///     Sends a reply to the requester, if applicable.
     /// </summary>
     /// <param name="reply">The message to reply with. If null, an empty byte array is used.</param>
     public async Task Reply(RpcMessage? reply)
@@ -60,7 +60,7 @@ public class RpcMessage(byte[] payload)
         await Transport.Publish(ReplySubject, reply ?? Empty);
     }
 
-    /// <inheritdoc cref="Reply"/>
+    /// <inheritdoc cref="Reply" />
     public async Task Reply<T>(T? reply) where T : IMessage
     {
         if (string.IsNullOrEmpty(ReplySubject) || Transport is null)
@@ -75,7 +75,7 @@ public class RpcMessage(byte[] payload)
 public interface IRpcSerializable<out T> where T : IMessage<T>
 {
     /// <summary>
-    /// Serializes this object into an instance of <see cref="T"/>
+    ///     Serializes this object into an instance of <see cref="T" />
     /// </summary>
     T Serialize();
 }

@@ -1,4 +1,5 @@
 using Starlight.Game.Ability;
+using Starlight.Game.Resources.Binary;
 using Xunit;
 
 namespace Starlight.Tests.Ability;
@@ -165,7 +166,7 @@ public sealed class AbilityCoreTests
     public void ResetClientState_PreservesServerInstancedAbilities()
     {
         var component = new AbilityComponent(new AbilityOwner(EntityId: 0x02000001, AbilityOwnerType.Monster));
-        var definition = new Game.Resources.Binary.AbilityConfig { AbilityName = "ServerAbility" };
+        var definition = new AbilityConfig { AbilityName = "ServerAbility" };
         component.AddServerAbility("ServerAbility", "Default", definition);
         component.UpsertAbility(instancedAbilityId: 50, AbilityKey.FromName("ClientAbility"));
         component.MarkClientInitialized();

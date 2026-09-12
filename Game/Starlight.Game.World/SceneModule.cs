@@ -1,12 +1,16 @@
+using System.Globalization;
+using Google.Protobuf;
 using Serilog;
 using Starlight.Game.Ability;
 using Starlight.Game.Modules;
 using Starlight.Game.Player;
 using Starlight.Game.Resources;
+using Starlight.Game.Resources.Excel;
 using Starlight.Protobuf.Core;
 using Starlight.Protobuf.Registry;
 using Starlight.Protocol;
 using Starlight.Rpc.Proto;
+using IMessage = Starlight.Protobuf.Core.IMessage;
 
 namespace Starlight.Game.World;
 
@@ -17,25 +21,6 @@ public sealed class SceneModule(
     GameData? data = null
 ) : IModule
 {
-    #region Beach Simulator
-
-    // These constants are here until we get a permanent solution
-    // scaffolded out and properly implemented.
-
-    private const uint SpawnSceneId = 3;
-    private static readonly Vector SpawnPosition = new() { X = 2747, Y = 194, Z = -1719 };
-
-    private readonly List<SceneEntityInfo> _spawned = [];
-    private readonly Dictionary<ulong, AvatarEntity> _teamEntities = [];
-    private ulong _currentAvatarGuid;
-
-    private MotionInfo? _lastCurrentMotion;
-
-    public uint CurrentAvatarEntityId =>
-        _teamEntities.GetValueOrDefault(_currentAvatarGuid)?.EntityId ?? 0;
-
-    #endregion
-
     [Lifecycle(LifecycleEvent.PlayerLogin)]
     public PlayerEnterSceneNotify? OnLogin()
         => player.State.BornState == NetPlayerState.Types.PlayerBornState.Pending ? null : EnterScene();
@@ -437,7 +422,7 @@ public sealed class SceneModule(
         }
     }
 
-    private void HandleEntityMove(Google.Protobuf.ByteString data)
+    private void HandleEntityMove(ByteString data)
     {
         if (!TryDecode(data, out EntityMoveInfo move))
             return;
@@ -487,7 +472,7 @@ public sealed class SceneModule(
     private static Vector CopyVector(Vector? source) =>
         source is null ? new Vector() : new Vector { X = source.X, Y = source.Y, Z = source.Z };
 
-    private void HandleSetAttackTarget(Google.Protobuf.ByteString data)
+    private void HandleSetAttackTarget(ByteString data)
     {
         if (!TryDecode(data, out EvtSetAttackTargetInfo target))
             return;
@@ -865,22 +850,22 @@ public sealed class SceneModule(
         }
     }
 
-    private void HandleAnimatorParameter(Google.Protobuf.ByteString data)
+    private void HandleAnimatorParameter(ByteString data)
     {
         // TODO: Handle EvtAnimatorParameterInfo.
     }
 
-    private void HandleBeingHealed(Google.Protobuf.ByteString data)
+    private void HandleBeingHealed(ByteString data)
     {
         // TODO: Handle EvtBeingHealedNotify.
     }
 
-    private void HandleSkillAnchorPosition(Google.Protobuf.ByteString data)
+    private void HandleSkillAnchorPosition(ByteString data)
     {
         // TODO: Handle EvtSyncSkillAnchorPosition.
     }
 
-    private bool TryDecode<T>(Google.Protobuf.ByteString data, out T message)
+    private bool TryDecode<T>(ByteString data, out T message)
         where T : class, ISelfSerializable<T>, new()
     {
         message = new T();
@@ -1082,7 +1067,7 @@ public sealed class SceneModule(
         }
     }
 
-    private async Task ApplyElemBallEnergy(Resources.Excel.MaterialData item)
+    private async Task ApplyElemBallEnergy(MaterialData item)
     {
         if (item.ItemUse.Count == 0)
             return;
@@ -1151,7 +1136,7 @@ public sealed class SceneModule(
             .ToArray();
     }
 
-    private float ElemBallEnergyFor(Resources.Excel.ItemUseData use, Avatar avatar)
+    private float ElemBallEnergyFor(ItemUseData use, Avatar avatar)
     {
         if (use.UseOp == "ITEM_USE_ADD_ALL_ENERGY")
             return ParseUseParam(use, index: 0);
@@ -1164,9 +1149,9 @@ public sealed class SceneModule(
         return ParseUseParam(use, particleElement == avatarElement ? 1 : 2);
     }
 
-    private static float ParseUseParam(Resources.Excel.ItemUseData use, int index) =>
+    private static float ParseUseParam(ItemUseData use, int index) =>
         index >= 0 && index < use.UseParam.Count &&
-        float.TryParse(use.UseParam[index], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture,
+        float.TryParse(use.UseParam[index], NumberStyles.Float, CultureInfo.InvariantCulture,
             out var value) ?
             value :
             0f;
@@ -1309,4 +1294,23 @@ public sealed class SceneModule(
         SceneId = SpawnSceneId,
         Pos = SpawnPosition
     };
+
+    #region Beach Simulator
+
+    // These constants are here until we get a permanent solution
+    // scaffolded out and properly implemented.
+
+    private const uint SpawnSceneId = 3;
+    private static readonly Vector SpawnPosition = new() { X = 2747, Y = 194, Z = -1719 };
+
+    private readonly List<SceneEntityInfo> _spawned = [];
+    private readonly Dictionary<ulong, AvatarEntity> _teamEntities = [];
+    private ulong _currentAvatarGuid;
+
+    private MotionInfo? _lastCurrentMotion;
+
+    public uint CurrentAvatarEntityId =>
+        _teamEntities.GetValueOrDefault(_currentAvatarGuid)?.EntityId ?? 0;
+
+    #endregion
 }

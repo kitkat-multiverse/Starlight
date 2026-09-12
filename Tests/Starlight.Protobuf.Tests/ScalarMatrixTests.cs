@@ -2,18 +2,19 @@ using Google.Protobuf;
 using Starlight.Protobuf.Core;
 using Starlight.Protobuf.Fixtures;
 using Xunit;
+using ScalarMatrixSerializer = Starlight.Protobuf.Fixtures.V99.ScalarMatrixSerializer;
 
 namespace Starlight.Protobuf.Tests;
 
 /// <summary>
-/// Exhaustive coverage: every proto3 scalar wire type in one message.
-/// The generated serializer's bytes are compared against an independent oracle
-/// built directly with <see cref="CodedOutputStream"/> (Google.Protobuf's wire
-/// primitives), proving byte-parity, then round-tripped.
+///     Exhaustive coverage: every proto3 scalar wire type in one message.
+///     The generated serializer's bytes are compared against an independent oracle
+///     built directly with <see cref="CodedOutputStream" /> (Google.Protobuf's wire
+///     primitives), proving byte-parity, then round-tripped.
 /// </summary>
 public sealed class ScalarMatrixTests
 {
-    private static readonly Fixtures.V99.ScalarMatrixSerializer Serializer = Fixtures.V99.ScalarMatrixSerializer.Instance;
+    private static readonly ScalarMatrixSerializer Serializer = ScalarMatrixSerializer.Instance;
 
     private static ScalarMatrix Sample() => new() {
         FInt32 = 123,
@@ -33,8 +34,10 @@ public sealed class ScalarMatrixTests
         FBytes = ByteString.CopyFromUtf8("raw")
     };
 
-    /// <summary>Encodes the sample using Google.Protobuf primitives + the V66 wire
-    /// field numbers, in ascending order, as a parity oracle.</summary>
+    /// <summary>
+    ///     Encodes the sample using Google.Protobuf primitives + the V66 wire
+    ///     field numbers, in ascending order, as a parity oracle.
+    /// </summary>
     private static byte[] Oracle(ScalarMatrix m)
     {
         using var stream = new MemoryStream();

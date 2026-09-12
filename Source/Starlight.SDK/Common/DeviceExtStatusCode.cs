@@ -1,9 +1,9 @@
 namespace Starlight.SDK.Common;
 
 /// <summary>
-/// Status codes returned inside <c>DeviceExtListData.code</c> by the
-/// <c>/device-fp/api/getExtList</c> endpoint. These mirror the HTTP-style
-/// numeric codes the official client expects.
+///     Status codes returned inside <c>DeviceExtListData.code</c> by the
+///     <c>/device-fp/api/getExtList</c> endpoint. These mirror the HTTP-style
+///     numeric codes the official client expects.
 /// </summary>
 public enum DeviceExtStatusCode
 {

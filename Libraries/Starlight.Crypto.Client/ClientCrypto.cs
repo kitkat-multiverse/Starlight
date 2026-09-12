@@ -4,12 +4,12 @@ using System.Security.Cryptography;
 namespace Starlight.Crypto.Client;
 
 /// <summary>
-/// Central holder for the client-facing RSA keys used by the SDK and dispatch
-/// flow: the per-<c>key_id</c> content keys, the dispatch signing ('cur') key,
-/// and the SDK password key. Keys are loaded from embedded resources by
-/// default; a configured filesystem path overrides the embedded key when set.
-/// Inject this to access any of the keys or to run the encrypt/sign/decrypt
-/// operations that depend on them.
+///     Central holder for the client-facing RSA keys used by the SDK and dispatch
+///     flow: the per-<c>key_id</c> content keys, the dispatch signing ('cur') key,
+///     and the SDK password key. Keys are loaded from embedded resources by
+///     default; a configured filesystem path overrides the embedded key when set.
+///     Inject this to access any of the keys or to run the encrypt/sign/decrypt
+///     operations that depend on them.
 /// </summary>
 public sealed class ClientCrypto : IDisposable
 {
@@ -35,12 +35,18 @@ public sealed class ClientCrypto : IDisposable
     /// <summary>The SDK password-decryption key.</summary>
     public RSA SdkKey => _sdk.PrivateKey;
 
-    /// <summary>Whether a signing key is available and <see cref="GenerateSignature"/> can be used.</summary>
+    /// <summary>Whether a signing key is available and <see cref="GenerateSignature" /> can be used.</summary>
     public bool CanSign => _dispatch.CanSign;
 
+    public void Dispose()
+    {
+        _dispatch.Dispose();
+        _sdk.Dispose();
+    }
+
     /// <summary>
-    /// Builds a <see cref="ClientCrypto"/> from the embedded keys, honoring any
-    /// filesystem-path overrides supplied in <paramref name="options"/>.
+    ///     Builds a <see cref="ClientCrypto" /> from the embedded keys, honoring any
+    ///     filesystem-path overrides supplied in <paramref name="options" />.
     /// </summary>
     public static ClientCrypto Create(bool generateRsaKeys, ClientCryptoOptions? options = null)
     {
@@ -84,29 +90,29 @@ public sealed class ClientCrypto : IDisposable
     }
 
     /// <summary>
-    /// Encrypts the payload with the content key matching <paramref name="keyId"/>.
-    /// Returns <c>false</c> if no key is registered for that id.
+    ///     Encrypts the payload with the content key matching <paramref name="keyId" />.
+    ///     Returns <c>false</c> if no key is registered for that id.
     /// </summary>
     public bool TryEncryptPayload(byte[] data, int keyId, out string payload)
         => _dispatch.TryEncryptPayload(data, keyId, out payload);
 
     /// <summary>
-    /// Decrypts a single RSA block with the signing ('cur') key (PKCS#1 v1.5).
-    /// Used to recover the client's random seed from <c>client_rand_key</c>.
+    ///     Decrypts a single RSA block with the signing ('cur') key (PKCS#1 v1.5).
+    ///     Used to recover the client's random seed from <c>client_rand_key</c>.
     /// </summary>
     public byte[] DecryptWithSigningKey(byte[] cipher) => _dispatch.DecryptWithSigningKey(cipher);
 
     /// <summary>
-    /// Tries to decrypt a single RSA block with the signing ('cur') key. Returns
-    /// <c>false</c> if no signing key is available or the padding/input is invalid.
+    ///     Tries to decrypt a single RSA block with the signing ('cur') key. Returns
+    ///     <c>false</c> if no signing key is available or the padding/input is invalid.
     /// </summary>
     public bool TryDecryptWithSigningKey(byte[] cipher, out byte[] plain)
         => _dispatch.TryDecryptWithSigningKey(cipher, out plain);
 
     /// <summary>
-    /// Tries to decrypt a single RSA block with the content key matching
-    /// <paramref name="keyId"/>. Returns <c>false</c> if no key is registered for
-    /// that id or the padding/input is invalid.
+    ///     Tries to decrypt a single RSA block with the content key matching
+    ///     <paramref name="keyId" />. Returns <c>false</c> if no key is registered for
+    ///     that id or the padding/input is invalid.
     /// </summary>
     public bool TryDecryptContent(int keyId, byte[] cipher, out byte[] plain)
         => _dispatch.TryDecryptContent(keyId, cipher, out plain);
@@ -118,17 +124,11 @@ public sealed class ClientCrypto : IDisposable
     public string DecryptPassword(string base64Cipher) => _sdk.Decrypt(base64Cipher);
 
     /// <summary>
-    /// Tries to decrypt the supplied cipher with the SDK key. Returns <c>false</c>
-    /// if the padding is invalid or the input is not valid base64.
+    ///     Tries to decrypt the supplied cipher with the SDK key. Returns <c>false</c>
+    ///     if the padding is invalid or the input is not valid base64.
     /// </summary>
     public bool TryDecryptPassword(string base64Cipher, out string plain)
         => _sdk.TryDecrypt(base64Cipher, out plain);
-
-    public void Dispose()
-    {
-        _dispatch.Dispose();
-        _sdk.Dispose();
-    }
 
     private static Dictionary<int, string> LoadContentKeys(Assembly assembly)
     {

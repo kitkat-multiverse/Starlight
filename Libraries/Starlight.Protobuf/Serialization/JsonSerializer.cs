@@ -1,9 +1,10 @@
-using Starlight.Protobuf.Core;
-using Starlight.Protobuf.Registry;
 using System.Collections;
 using System.Globalization;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
+using Starlight.Protobuf.Core;
+using Starlight.Protobuf.Registry;
 using ByteString = Google.Protobuf.ByteString;
 using IMessage = Starlight.Protobuf.Core.IMessage;
 
@@ -402,7 +403,7 @@ public static class JsonSerializer
         return builder.ToString();
     }
 
-    private static System.Text.Json.JsonSerializerOptions CreateJsonOptions(JsonSerializationOptions options) =>
+    private static JsonSerializerOptions CreateJsonOptions(JsonSerializationOptions options) =>
         new() { WriteIndented = options.WriteIndented };
 
     private static void ValidateOptions(JsonSerializationOptions options)

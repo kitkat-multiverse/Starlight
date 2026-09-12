@@ -1,3 +1,7 @@
+using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
+using System.Security.Cryptography;
+using System.Text.Json;
 using Google.Protobuf;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -5,20 +9,16 @@ using Starlight.Common;
 using Starlight.Ec2b;
 using Starlight.Rpc.Proto;
 using Starlight.SDK.Proto;
-using System.Collections.Concurrent;
-using System.Diagnostics.CodeAnalysis;
-using System.Security.Cryptography;
-using System.Text.Json;
 
 namespace Starlight.SDK.Services;
 
 /// <summary>
-/// Builds and owns the immutable dispatch payloads returned by the SDK dispatch endpoints.
-/// <br/>
-/// The region-list payload is cached per public base URL so reverse-proxy / direct-host deployments
-/// do not rebuild protobufs on every request.
-/// <br/>
-/// The per-region payloads are generated on-the-fly depending on gateway circumstances.
+///     Builds and owns the immutable dispatch payloads returned by the SDK dispatch endpoints.
+///     <br />
+///     The region-list payload is cached per public base URL so reverse-proxy / direct-host deployments
+///     do not rebuild protobufs on every request.
+///     <br />
+///     The per-region payloads are generated on-the-fly depending on gateway circumstances.
 /// </summary>
 [SuppressMessage("ReSharper", "InconsistentNaming")]
 public sealed class DispatchRegionCache
@@ -28,30 +28,26 @@ public sealed class DispatchRegionCache
     private const int MaximumEc2bSeedLength = 1024;
     private const int DerivedXorpadSize = 4096;
 
-    private readonly DispatchConfig _config;
-    private readonly ILogger<DispatchRegionCache> _logger;
-
-    /// Temporary variable before moving <see cref="SdkConfig.BindAddress"/> to another location.
+    /// Temporary variable before moving
+    /// <see cref="SdkConfig.BindAddress" />
+    /// to another location.
     private readonly string _bindHost;
     private readonly ByteString _clientSecretKey;
     private readonly byte[] _clientSecretXorpad;
 
+    private readonly DispatchConfig _config;
+    private readonly ILogger<DispatchRegionCache> _logger;
+
     #region Live Data
 
-    /// Map of <c>Region ID</c> -> [<c>Server ID</c> -> <c>GateServerInfo</c>]
+    /// Map of
+    /// <c>Region ID</c>
+    /// -> [
+    /// <c>Server ID</c>
+    /// ->
+    /// <c>GateServerInfo</c>
+    /// ]
     private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, GateServerInfo>> _regions = new();
-
-    #endregion
-
-    #region Cache
-
-    private readonly byte[] _clientCustomConfig;
-    private readonly ConcurrentDictionary<string, ByteString> _regionKeys = new();
-    private readonly ConcurrentDictionary<string, DispatchRegionConfig> _regionInfo = new();
-
-    /// Because <c>dispatch_url</c> can vary depending on endpoint,
-    /// we have a dictionary mapping request host to appropriate region list (with dispatch URL).
-    private readonly ConcurrentDictionary<string, string> _regionListCache = new();
 
     #endregion
 
@@ -95,6 +91,41 @@ public sealed class DispatchRegionCache
             CryptographicOperations.ZeroMemory(secret);
         }
     }
+
+    private byte[] BuildClientCustomConfig()
+    {
+        var payload = JsonSerializer.SerializeToUtf8Bytes(_config.ClientCustomConfig, Constants.JsonOptions);
+        MinXor(payload, _clientSecretXorpad);
+        return payload;
+    }
+
+    /// <summary>
+    ///     Adds or updates the server's info for the region,
+    ///     and also rebuilds the region list if a new region was registered.
+    /// </summary>
+    public void Update(string regionId, GateServerInfo server)
+    {
+        if (!_regions.TryGetValue(regionId, out var servers))
+        {
+            throw new ArgumentException($"Received heartbeat for unknown region '{regionId}'.", nameof(regionId));
+        }
+        servers[server.ServerId] = server;
+        _regions[regionId] = servers;
+    }
+
+    #region Cache
+
+    private readonly byte[] _clientCustomConfig;
+    private readonly ConcurrentDictionary<string, ByteString> _regionKeys = new();
+    private readonly ConcurrentDictionary<string, DispatchRegionConfig> _regionInfo = new();
+
+    /// Because
+    /// <c>dispatch_url</c>
+    /// can vary depending on endpoint,
+    /// we have a dictionary mapping request host to appropriate region list (with dispatch URL).
+    private readonly ConcurrentDictionary<string, string> _regionListCache = new();
+
+    #endregion
 
     #region Secret Key Generation
 
@@ -153,27 +184,6 @@ public sealed class DispatchRegionCache
 
     #endregion
 
-    private byte[] BuildClientCustomConfig()
-    {
-        var payload = JsonSerializer.SerializeToUtf8Bytes(_config.ClientCustomConfig, Constants.JsonOptions);
-        MinXor(payload, _clientSecretXorpad);
-        return payload;
-    }
-
-    /// <summary>
-    /// Adds or updates the server's info for the region,
-    /// and also rebuilds the region list if a new region was registered.
-    /// </summary>
-    public void Update(string regionId, GateServerInfo server)
-    {
-        if (!_regions.TryGetValue(regionId, out var servers))
-        {
-            throw new ArgumentException($"Received heartbeat for unknown region '{regionId}'.", nameof(regionId));
-        }
-        servers[server.ServerId] = server;
-        _regions[regionId] = servers;
-    }
-
     #region Public URL Resolution
 
     private string ResolvePublicBaseUrl(HttpContext httpContext)
@@ -216,8 +226,8 @@ public sealed class DispatchRegionCache
     #region Region List
 
     /// <summary>
-    /// Fetches a cached region list based on the incoming request's host
-    /// or builds it from the given data.
+    ///     Fetches a cached region list based on the incoming request's host
+    ///     or builds it from the given data.
     /// </summary>
     public string GetRegionList(HttpContext context)
     {
@@ -226,7 +236,7 @@ public sealed class DispatchRegionCache
     }
 
     /// <summary>
-    /// Rebuilds the region list for the given host address.
+    ///     Rebuilds the region list for the given host address.
     /// </summary>
     /// <returns></returns>
     private string BuildRegionList(string host)
@@ -259,9 +269,9 @@ public sealed class DispatchRegionCache
     #region Regions
 
     /// <summary>
-    /// Resolves the region's gateways by name (identifier).
-    /// <br/>
-    /// Picks the best server in the region to match the request to.
+    ///     Resolves the region's gateways by name (identifier).
+    ///     <br />
+    ///     Picks the best server in the region to match the request to.
     /// </summary>
     /// <returns>Null if the region does not exist.</returns>
     public byte[]? GetRegion(string regionName)
@@ -332,7 +342,7 @@ public sealed class DispatchRegionCache
         => $"{host}/query_cur_region/{Uri.EscapeDataString(region)}";
 
     /// <summary>
-    /// Performs an XOR cipher on the given data.
+    ///     Performs an XOR cipher on the given data.
     /// </summary>
     /// <exception cref="InvalidOperationException">If the XOR key is empty or too small for the payload.</exception>
     private static void MinXor(Span<byte> payload, ReadOnlySpan<byte> clientSecretXorpad)

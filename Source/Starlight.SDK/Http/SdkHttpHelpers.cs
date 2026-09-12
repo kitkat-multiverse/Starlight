@@ -1,31 +1,33 @@
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.StaticFiles;
 using System.Net.Mime;
 using System.Security.Cryptography;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.StaticFiles;
 
 namespace Starlight.SDK.Http;
 
 /// <summary>
-/// Helpers shared by the SDK HTTP endpoints: random-token generation,
-/// client-IP extraction (honouring reverse-proxy forwarded headers),
-/// string masking for PII fields, country-code -> mobile-dialling-code
-/// mapping, and content-type resolution for the webstatic file server.
+///     Helpers shared by the SDK HTTP endpoints: random-token generation,
+///     client-IP extraction (honouring reverse-proxy forwarded headers),
+///     string masking for PII fields, country-code -> mobile-dialling-code
+///     mapping, and content-type resolution for the webstatic file server.
 /// </summary>
 /// <remarks>
-/// These were previously duplicated as private methods on
-/// <see cref="Endpoints.PassportEndpoints"/>,
-/// <see cref="Endpoints.ShieldEndpoints"/> and
-/// <see cref="Services.AuthService"/>. They are aggregated here so the
-/// behaviour stays consistent across endpoints and any future tweak
-/// (e.g. a new forwarded header, a different mask width) only has to
-/// be made in one place.
+///     These were previously duplicated as private methods on
+///     <see cref="Endpoints.PassportEndpoints" />,
+///     <see cref="Endpoints.ShieldEndpoints" /> and
+///     <see cref="Services.AuthService" />. They are aggregated here so the
+///     behaviour stays consistent across endpoints and any future tweak
+///     (e.g. a new forwarded header, a different mask width) only has to
+///     be made in one place.
 /// </remarks>
 public static class SdkHttpHelpers
 {
+    private static readonly FileExtensionContentTypeProvider ContentTypeProvider = new();
+
     /// <summary>
-    /// Generates a cryptographically random alphanumeric token of the
-    /// given length using the same alphabet as the upstream SDK
-    /// (<c>A-Z a-z 0-9</c>).
+    ///     Generates a cryptographically random alphanumeric token of the
+    ///     given length using the same alphabet as the upstream SDK
+    ///     (<c>A-Z a-z 0-9</c>).
     /// </summary>
     public static string GenerateToken(int length)
     {
@@ -39,10 +41,10 @@ public static class SdkHttpHelpers
     }
 
     /// <summary>
-    /// Resolves the originating client IP from the request, honouring
-    /// <c>X-Forwarded-For</c> and <c>X-Real-IP</c> when set (typical when
-    /// running behind a reverse proxy). Returns <c>null</c> if no IP can
-    /// be determined.
+    ///     Resolves the originating client IP from the request, honouring
+    ///     <c>X-Forwarded-For</c> and <c>X-Real-IP</c> when set (typical when
+    ///     running behind a reverse proxy). Returns <c>null</c> if no IP can
+    ///     be determined.
     /// </summary>
     public static string? GetClientIp(HttpContext httpContext)
     {
@@ -60,10 +62,10 @@ public static class SdkHttpHelpers
     }
 
     /// <summary>
-    /// Masks all but the first/last few characters of a string, suitable
-    /// for returning masked emails/phones in user_info blocks. Returns an
-    /// empty string for null/empty input; returns an all-stars string for
-    /// very short input.
+    ///     Masks all but the first/last few characters of a string, suitable
+    ///     for returning masked emails/phones in user_info blocks. Returns an
+    ///     empty string for null/empty input; returns an all-stars string for
+    ///     very short input.
     /// </summary>
     public static string MaskString(string? text)
     {
@@ -80,10 +82,10 @@ public static class SdkHttpHelpers
     }
 
     /// <summary>
-    /// Maps an ISO-3166-1 alpha-2 country code to its ITU mobile dialling
-    /// code (without the leading +). Used by the ma-passport config
-    /// endpoint to populate <c>area_code</c> for the SDK's phone-input
-    /// flow. Returns an empty string for unknown countries.
+    ///     Maps an ISO-3166-1 alpha-2 country code to its ITU mobile dialling
+    ///     code (without the leading +). Used by the ma-passport config
+    ///     endpoint to populate <c>area_code</c> for the SDK's phone-input
+    ///     flow. Returns an empty string for unknown countries.
     /// </summary>
     public static string CountryToMobileCode(string countryCode)
     {
@@ -135,14 +137,12 @@ public static class SdkHttpHelpers
         };
     }
 
-    private static readonly FileExtensionContentTypeProvider ContentTypeProvider = new();
-
     /// <summary>
-    /// Resolves a content-type string for a file path. Uses the built-in
-    /// <see cref="FileExtensionContentTypeProvider"/> so we don't have to
-    /// maintain our own extension table; falls back to
-    /// <see cref="MediaTypeNames.Application.Octet"/> for unknown
-    /// extensions.
+    ///     Resolves a content-type string for a file path. Uses the built-in
+    ///     <see cref="FileExtensionContentTypeProvider" /> so we don't have to
+    ///     maintain our own extension table; falls back to
+    ///     <see cref="MediaTypeNames.Application.Octet" /> for unknown
+    ///     extensions.
     /// </summary>
     public static string GetContentType(string path)
     {

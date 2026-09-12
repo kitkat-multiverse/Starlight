@@ -4,11 +4,11 @@ using System.Text;
 namespace Starlight.Crypto;
 
 /// <summary>
-/// SHA-256 helpers for hashing and constant-time digest comparison.
+///     SHA-256 helpers for hashing and constant-time digest comparison.
 /// </summary>
 public static class Sha256Crypto
 {
-    /// <summary>SHA-256 of <paramref name="content"/> as lowercase hex.</summary>
+    /// <summary>SHA-256 of <paramref name="content" /> as lowercase hex.</summary>
     public static string Hash(string content)
     {
         var bytes = Encoding.UTF8.GetBytes(content);
@@ -17,8 +17,8 @@ public static class Sha256Crypto
     }
 
     /// <summary>
-    /// Constant-time equality check between a candidate plain-text password
-    /// and a previously stored SHA-256 hex digest.
+    ///     Constant-time equality check between a candidate plain-text password
+    ///     and a previously stored SHA-256 hex digest.
     /// </summary>
     public static bool Verify(string content, string expectedHash)
     {

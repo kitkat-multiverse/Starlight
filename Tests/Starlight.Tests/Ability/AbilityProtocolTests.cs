@@ -1,7 +1,8 @@
+using System.Text;
 using Starlight.Game.Ability;
 using Starlight.Game.Resources;
+using Starlight.Game.Resources.Binary;
 using Starlight.Protocol;
-using System.Text;
 using Xunit;
 
 namespace Starlight.Tests.Ability;
@@ -105,7 +106,7 @@ public sealed class AbilityProtocolTests
     public void SyncState_OmitsStaticServerAbilitiesWithoutOverridesForNonTargetEntities()
     {
         var component = new AbilityComponent(new AbilityOwner(EntityId: 0x02000001, AbilityOwnerType.Monster));
-        var definition = new Starlight.Game.Resources.Binary.AbilityConfig { AbilityName = "Static" };
+        var definition = new AbilityConfig { AbilityName = "Static" };
         component.AddServerAbility("Static", "Default", definition);
 
         var sync = AbilityProtocol.ToSyncState(component);
@@ -117,7 +118,7 @@ public sealed class AbilityProtocolTests
     public void SyncState_EmitsNonTargetServerAbilityWhenItHasOverrides()
     {
         var component = new AbilityComponent(new AbilityOwner(EntityId: 0x02000001, AbilityOwnerType.Monster));
-        var definition = new Starlight.Game.Resources.Binary.AbilityConfig { AbilityName = "Static" };
+        var definition = new AbilityConfig { AbilityName = "Static" };
         var ability = component.AddServerAbility("Static", "Default", definition)!;
         ability.SetOverride(AbilityKey.FromName("Value"), AbilityScalarValue.FromFloat(1f));
 

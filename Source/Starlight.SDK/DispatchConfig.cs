@@ -1,71 +1,71 @@
-using Starlight.SDK.Proto;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
+using Starlight.SDK.Proto;
 
 namespace Starlight.SDK;
 
 /// <summary>
-/// Configuration for the dispatch endpoints that provide the game region list
-/// and the selected region's connection metadata.
+///     Configuration for the dispatch endpoints that provide the game region list
+///     and the selected region's connection metadata.
 /// </summary>
 [SuppressMessage("ReSharper", "InconsistentNaming")]
 public sealed class DispatchConfig
 {
     /// <summary>
-    /// Public base URL used to build region dispatch URLs. Leave empty to derive
-    /// the URL from the incoming request Host/Scheme, including common
-    /// X-Forwarded-* reverse-proxy headers.
+    ///     Public base URL used to build region dispatch URLs. Leave empty to derive
+    ///     the URL from the incoming request Host/Scheme, including common
+    ///     X-Forwarded-* reverse-proxy headers.
     /// </summary>
     public string? PublicBaseUrl { get; set; }
 
     /// <summary>
-    /// Whether the PC login flow is enabled in <c>QueryRegionListHttpRsp</c>.
+    ///     Whether the PC login flow is enabled in <c>QueryRegionListHttpRsp</c>.
     /// </summary>
     public bool EnableLoginPc { get; set; } = true;
 
     /// <summary>
-    /// Default name applied when the region list is empty or a region omits a
-    /// name. Region names must be unique because they are used in the
-    /// <c>/query_cur_region/{name}</c> route.
+    ///     Default name applied when the region list is empty or a region omits a
+    ///     name. Region names must be unique because they are used in the
+    ///     <c>/query_cur_region/{name}</c> route.
     /// </summary>
     public string FallbackRegionName { get; set; } = "sl_local";
 
     /// <summary>
-    /// Default region type surfaced in <see cref="RegionSimpleInfo.Type"/>.
+    ///     Default region type surfaced in <see cref="RegionSimpleInfo.Type" />.
     /// </summary>
     public string RegionType { get; set; } = "DEV_PUBLIC";
 
     /// <summary>
-    /// Configured game regions returned by <c>/query_region_list</c>.
+    ///     Configured game regions returned by <c>/query_region_list</c>.
     /// </summary>
     public List<DispatchRegionConfig> Regions { get; set; } = [];
 
     /// <summary>
-    /// Length, in bytes, of the random seed used to generate the process-local
-    /// EC2B client secret at startup. The EC2B payload itself is always 2076
-    /// bytes, and the matching 4096-byte xorpad is derived and cached in memory.
-    /// No dispatch key material is read from or written to disk.
+    ///     Length, in bytes, of the random seed used to generate the process-local
+    ///     EC2B client secret at startup. The EC2B payload itself is always 2076
+    ///     bytes, and the matching 4096-byte xorpad is derived and cached in memory.
+    ///     No dispatch key material is read from or written to disk.
     /// </summary>
     public int GeneratedEc2bSeedLength { get; set; } = 32;
 
     /// <summary>
-    /// Filesystem path to the PKCS#8 RSA private key used for signing
-    /// the region payload.
-    /// <br/>
-    /// Relative paths are resolved from the application content root. When empty,
-    /// <c>GenerateRsaKeys=true</c> uses <c>keys/signing.pem</c>; otherwise the
-    /// embedded signing ('cur') key is used.
+    ///     Filesystem path to the PKCS#8 RSA private key used for signing
+    ///     the region payload.
+    ///     <br />
+    ///     Relative paths are resolved from the application content root. When empty,
+    ///     <c>GenerateRsaKeys=true</c> uses <c>keys/signing.pem</c>; otherwise the
+    ///     embedded signing ('cur') key is used.
     /// </summary>
     public string? RsaSigningKeyPath { get; set; } = "";
 
     /// <summary>
-    /// JSON custom config embedded into <c>client_custom_config_encrypted</c>.
+    ///     JSON custom config embedded into <c>client_custom_config_encrypted</c>.
     /// </summary>
     public DispatchClientCustomConfig ClientCustomConfig { get; set; } = new();
 }
 
 /// <summary>
-/// One game region advertised by the dispatch service.
+///     One game region advertised by the dispatch service.
 /// </summary>
 [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
 public sealed class DispatchRegionConfig
@@ -103,8 +103,8 @@ public sealed class DispatchRegionConfig
 }
 
 /// <summary>
-/// Custom config object serialized into the dispatch region-list response.
-/// Property names intentionally match the client's lower-case wire keys.
+///     Custom config object serialized into the dispatch region-list response.
+///     Property names intentionally match the client's lower-case wire keys.
 /// </summary>
 [SuppressMessage("ReSharper", "UnusedMember.Global")]
 public sealed class DispatchClientCustomConfig

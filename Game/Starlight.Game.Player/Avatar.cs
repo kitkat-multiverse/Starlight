@@ -1,6 +1,4 @@
-using Starlight.Game;
 using Starlight.Game.Resources;
-using Starlight.Game.Resources.Binary;
 using Starlight.Game.Resources.Excel;
 using Starlight.Protocol;
 
@@ -15,10 +13,8 @@ public sealed class Avatar
     private const uint AvatarTypeFormal = 1;
 
     private readonly GameData _data;
-    private readonly HashSet<uint> _talentIds;
     private readonly Dictionary<uint, uint> _skillLevelMap;
-    private readonly FightPropertyStore _fightProps = new();
-    private WeaponItem? _equippedWeapon;
+    private readonly HashSet<uint> _talentIds;
 
     private Avatar(GameData data, IEnumerable<uint> talentIds, IReadOnlyDictionary<uint, uint>? skillLevels)
     {
@@ -49,10 +45,11 @@ public sealed class Avatar
     public uint WeaponItemId { get; private set; }
     public uint WeaponGadgetId { get; private set; }
     public ulong WeaponGuid { get; private set; }
-    public WeaponItem? Weapon => _equippedWeapon;
+    public WeaponItem? Weapon { get; private set; }
 
-    public IReadOnlyDictionary<uint, float> FightProps => _fightProps;
-    public FightPropertyStore FightPropertyStore => _fightProps;
+    public IReadOnlyDictionary<uint, float> FightProps => FightPropertyStore;
+    public FightPropertyStore FightPropertyStore { get; } = new();
+
     public IReadOnlyDictionary<uint, uint> AllSkillLevels => _skillLevelMap;
     public IReadOnlyCollection<uint> AllTalentIds => _talentIds;
 
@@ -107,7 +104,7 @@ public sealed class Avatar
         WeaponItemId = weapon.ItemId;
         WeaponGadgetId = weapon.GadgetId;
         WeaponGuid = weapon.Guid;
-        _equippedWeapon = weapon;
+        Weapon = weapon;
         weapon.EquipAvatarId = AvatarId;
 
         if (recalculate)
@@ -116,13 +113,13 @@ public sealed class Avatar
 
     internal WeaponItem? UnequipWeapon()
     {
-        var weapon = _equippedWeapon;
+        var weapon = Weapon;
 
         if (weapon is null)
             return null;
 
         weapon.EquipAvatarId = 0;
-        _equippedWeapon = null;
+        Weapon = null;
         WeaponItemId = 0;
         WeaponGadgetId = 0;
         WeaponGuid = 0;
@@ -142,7 +139,7 @@ public sealed class Avatar
         return true;
     }
 
-    public float GetFightProperty(FightProperty property) => _fightProps.Get(property);
+    public float GetFightProperty(FightProperty property) => FightPropertyStore.Get(property);
 
     public uint GetSkillLevel(uint skill) => _skillLevelMap.GetValueOrDefault(skill, defaultValue: 1u);
 
@@ -213,7 +210,7 @@ public sealed class Avatar
                     !_data.AvatarSkillData.TryGetValue(entry.SkillId, out var skill))
                     continue;
 
-                var charge = Math.Max(val1: 0L, (long)skill.MaxChargeNum + entry.PointDelta);
+                var charge = Math.Max(val1: 0L, skill.MaxChargeNum + entry.PointDelta);
                 result[entry.SkillId] = (uint)charge;
             }
         }
@@ -262,7 +259,7 @@ public sealed class Avatar
             CandSkillDepotIdList = [.. CandSkillDepotIds]
         };
 
-        foreach (var (property, value) in _fightProps)
+        foreach (var (property, value) in FightPropertyStore)
         {
             info.FightPropMap[property] = value;
         }
@@ -367,7 +364,7 @@ public sealed class Avatar
         var oldHpDebt = GetFightProperty(FightProperty.FIGHT_PROP_CUR_HP_DEBTS);
         var oldEnergy = GetCurrentEnergyProperty() is {} currentEnergy ? GetFightProperty(currentEnergy) : 0f;
 
-        _fightProps.Clear();
+        FightPropertyStore.Clear();
 
         AddFightProperty(
             FightProperty.FIGHT_PROP_BASE_HP,
@@ -423,10 +420,10 @@ public sealed class Avatar
         if (!_data.WeaponData.TryGetValue(WeaponItemId, out var weaponData))
             return;
 
-        var level = _equippedWeapon?.Level ?? 1u;
-        var promoteLevel = _equippedWeapon?.PromoteLevel ?? 0u;
-        var refinement = _equippedWeapon?.Refinement ?? 1u;
-        var affixId = _equippedWeapon?.AffixId ?? weaponData.SkillAffix.FirstOrDefault();
+        var level = Weapon?.Level ?? 1u;
+        var promoteLevel = Weapon?.PromoteLevel ?? 0u;
+        var refinement = Weapon?.Refinement ?? 1u;
+        var affixId = Weapon?.AffixId ?? weaponData.SkillAffix.FirstOrDefault();
 
         _data.WeaponCurveData.TryGetValue(level, out var curve);
 
@@ -457,9 +454,9 @@ public sealed class Avatar
     }
 
     private void AddFightProperty(FightProperty property, float value) =>
-        _fightProps.Add(property, value);
+        FightPropertyStore.Add(property, value);
 
-    private void SetFightProperty(FightProperty property, float value) => _fightProps.Set(property, value);
+    private void SetFightProperty(FightProperty property, float value) => FightPropertyStore.Set(property, value);
 
     private FightProperty? GetCurrentEnergyProperty()
     {

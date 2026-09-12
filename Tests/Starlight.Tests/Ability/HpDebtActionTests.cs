@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Google.Protobuf;
 using Microsoft.Extensions.DependencyInjection;
 using Starlight.Game.Ability;
@@ -12,8 +13,8 @@ using Starlight.Protobuf.Registry;
 using Starlight.Protocol;
 using Starlight.Protocol.V70;
 using Starlight.Rpc.Tunnel;
-using System.Text.Json;
 using Xunit;
+using IMessage = Starlight.Protobuf.Core.IMessage;
 
 namespace Starlight.Tests.Ability;
 
@@ -260,7 +261,7 @@ public sealed class HpDebtActionTests
     }
 
     private static T RoundTrip<T>(ProtocolRegistry protocol, T message)
-        where T : class, Starlight.Protobuf.Core.IMessage, new()
+        where T : class, IMessage, new()
     {
         var data = protocol.Serialize(message);
         var result = new T();
@@ -321,18 +322,6 @@ public sealed class HpDebtActionTests
         };
     }
 
-    private sealed class RecordingForwarder : IInvokeForwarder
-    {
-        public List<Starlight.Protobuf.Core.IMessage> Messages { get; } = [];
-
-        public Task Forward(IPlayer sender, ForwardType type, Starlight.Protobuf.Core.IMessage message, uint forwardPeer)
-        {
-            Assert.Equal(ForwardType.FORWARD_TYPE_TO_ALL, type);
-            Messages.Add(message);
-            return Task.CompletedTask;
-        }
-    }
-
     private static StarlightPlayer Player()
     {
         var services = new ServiceCollection().AddLogging().BuildServiceProvider();
@@ -340,5 +329,17 @@ public sealed class HpDebtActionTests
         registry.Build();
         var (_, server) = DirectTunnel.CreatePair();
         return new StarlightPlayer(services, registry, server) { Uid = 1 };
+    }
+
+    private sealed class RecordingForwarder : IInvokeForwarder
+    {
+        public List<IMessage> Messages { get; } = [];
+
+        public Task Forward(IPlayer sender, ForwardType type, IMessage message, uint forwardPeer)
+        {
+            Assert.Equal(ForwardType.FORWARD_TYPE_TO_ALL, type);
+            Messages.Add(message);
+            return Task.CompletedTask;
+        }
     }
 }

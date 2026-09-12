@@ -1,6 +1,6 @@
+using System.Collections.Frozen;
 using Starlight.Game.Player;
 using Starlight.Protocol;
-using System.Collections.Frozen;
 using IMessage = Starlight.Protobuf.Core.IMessage;
 
 namespace Starlight.Game.Modules;
@@ -8,30 +8,33 @@ namespace Starlight.Game.Modules;
 /// <summary>Invokes a single module's handler for a message, sending any reply through the player.</summary>
 public delegate ValueTask ModuleHandler(IModule module, IPlayer player, IMessage message);
 
-/// <summary>Invokes a single module's handler for a <see cref="LifecycleEvent"/>, which carries no message.</summary>
+/// <summary>Invokes a single module's handler for a <see cref="LifecycleEvent" />, which carries no message.</summary>
 public delegate ValueTask LifecycleHandler(IModule module, IPlayer player);
 
 /// <summary>
-/// Central, version-agnostic table mapping module types to a dense index and message types to the
-/// handlers that should run for them. Components register modules and handlers at startup; after
-/// <see cref="Build"/> the registry is read-only and every lookup on the hot path is an array index
-/// or a <see cref="FrozenDictionary{TKey,TValue}"/> read.
+///     Central, version-agnostic table mapping module types to a dense index and message types to the
+///     handlers that should run for them. Components register modules and handlers at startup; after
+///     <see cref="Build" /> the registry is read-only and every lookup on the hot path is an array index
+///     or a <see cref="FrozenDictionary{TKey,TValue}" /> read.
 /// </summary>
 public sealed class ModuleRegistry
 {
     private readonly List<Func<IServiceProvider, IPlayer, IModule>> _factories = [];
-    private readonly Dictionary<Type, int> _moduleIndex = [];
     private readonly Dictionary<Type, List<PendingHandler>> _handlers = [];
     private readonly Dictionary<LifecycleEvent, List<PendingLifecycle>> _lifecycles = [];
+    private readonly Dictionary<Type, int> _moduleIndex = [];
 
     private Func<IServiceProvider, IPlayer, IModule>[] _compiledFactories = [];
     private FrozenDictionary<Type, int> _compiledIndex = FrozenDictionary<Type, int>.Empty;
-    private FrozenDictionary<Type, CompiledHandler[]> _table = FrozenDictionary<Type, CompiledHandler[]>.Empty;
 
     private FrozenDictionary<LifecycleEvent, CompiledLifecycle[]> _lifecycleTable =
         FrozenDictionary<LifecycleEvent, CompiledLifecycle[]>.Empty;
+    private FrozenDictionary<Type, CompiledHandler[]> _table = FrozenDictionary<Type, CompiledHandler[]>.Empty;
 
     public bool Immutable { get; private set; }
+
+    /// <summary>Number of registered module types; the size of each player's module array.</summary>
+    public int ModuleCount => _compiledFactories.Length;
 
     /// <summary>Registers a module type and its per-player factory. Idempotent per type.</summary>
     public void AddModule<TModule>(Func<IServiceProvider, IPlayer, TModule> factory) where TModule : class, IModule
@@ -45,7 +48,7 @@ public sealed class ModuleRegistry
         _factories.Add(factory);
     }
 
-    /// <summary>Registers a handler for <typeparamref name="TMessage"/> living on <typeparamref name="TModule"/>.</summary>
+    /// <summary>Registers a handler for <typeparamref name="TMessage" /> living on <typeparamref name="TModule" />.</summary>
     public void AddHandler<TModule, TMessage>(ModuleHandler handler)
         where TModule : class, IModule
         where TMessage : class, IMessage
@@ -58,7 +61,7 @@ public sealed class ModuleRegistry
         list.Add(new PendingHandler(typeof(TModule), handler));
     }
 
-    /// <summary>Registers a handler for <paramref name="event"/> living on <typeparamref name="TModule"/>.</summary>
+    /// <summary>Registers a handler for <paramref name="event" /> living on <typeparamref name="TModule" />.</summary>
     public void AddLifecycle<TModule>(LifecycleEvent @event, LifecycleOrder order, LifecycleHandler handler)
         where TModule : class, IModule
     {
@@ -125,10 +128,7 @@ public sealed class ModuleRegistry
         }
     }
 
-    /// <summary>Number of registered module types; the size of each player's module array.</summary>
-    public int ModuleCount => _compiledFactories.Length;
-
-    /// <summary>Builds a fresh module set for <paramref name="player"/>, indexed by module index.</summary>
+    /// <summary>Builds a fresh module set for <paramref name="player" />, indexed by module index.</summary>
     public IModule[] CreateModules(IServiceProvider provider, IPlayer player)
     {
         var modules = new IModule[_compiledFactories.Length];
@@ -138,10 +138,10 @@ public sealed class ModuleRegistry
         return modules;
     }
 
-    /// <summary>The dense index of <typeparamref name="TModule"/>, for resolving an instance from a player's array.</summary>
+    /// <summary>The dense index of <typeparamref name="TModule" />, for resolving an instance from a player's array.</summary>
     public int IndexOf<TModule>() where TModule : class, IModule => _compiledIndex[typeof(TModule)];
 
-    /// <summary>Runs every handler registered for the runtime type of <paramref name="message"/>.</summary>
+    /// <summary>Runs every handler registered for the runtime type of <paramref name="message" />.</summary>
     public async ValueTask Dispatch(IPlayer player, IModule[] modules, IMessage message)
     {
         if (!_table.TryGetValue(message.GetType(), out var handlers))
@@ -153,7 +153,7 @@ public sealed class ModuleRegistry
         }
     }
 
-    /// <summary>Runs every handler registered for <paramref name="event"/>.</summary>
+    /// <summary>Runs every handler registered for <paramref name="event" />.</summary>
     public async ValueTask Dispatch(IPlayer player, IModule[] modules, LifecycleEvent @event)
     {
         if (!_lifecycleTable.TryGetValue(@event, out var handlers))

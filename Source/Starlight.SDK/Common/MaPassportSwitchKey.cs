@@ -1,14 +1,14 @@
 namespace Starlight.SDK.Common;
 
 /// <summary>
-/// Wire-format string keys used in the
-/// <see cref="Starlight.SDK.Http.Models.MaPassportSwitchStatusData.SwitchStatusMap"/>
-/// returned by <c>/hk4e_global/account/ma-passport/api/getSwitchStatus</c>.
+///     Wire-format string keys used in the
+///     <see cref="Starlight.SDK.Http.Models.MaPassportSwitchStatusData.SwitchStatusMap" />
+///     returned by <c>/hk4e_global/account/ma-passport/api/getSwitchStatus</c>.
 /// </summary>
 /// <remarks>
-/// These were previously inline string literals in
-/// <c>PassportEndpoints.HandleGetSwitchStatus</c>; grouping them here
-/// prevents typos from silently disabling a UI affordance on the client.
+///     These were previously inline string literals in
+///     <c>PassportEndpoints.HandleGetSwitchStatus</c>; grouping them here
+///     prevents typos from silently disabling a UI affordance on the client.
 /// </remarks>
 public static class MaPassportSwitchKey
 {

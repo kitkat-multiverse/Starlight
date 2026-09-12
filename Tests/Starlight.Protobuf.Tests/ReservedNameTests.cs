@@ -4,10 +4,10 @@ using Xunit;
 namespace Starlight.Protobuf.Tests;
 
 /// <summary>
-/// Unit tests for the compiler's reserved-name rules (<see cref="ReservedNames"/>),
-/// the pure core behind the SLPB003 diagnostic. Verbatim-emitted names (type and
-/// enum-value names) must reject C# keywords; field property names must reject
-/// collisions with emitter-generated members.
+///     Unit tests for the compiler's reserved-name rules (<see cref="ReservedNames" />),
+///     the pure core behind the SLPB003 diagnostic. Verbatim-emitted names (type and
+///     enum-value names) must reject C# keywords; field property names must reject
+///     collisions with emitter-generated members.
 /// </summary>
 public sealed class ReservedNameTests
 {

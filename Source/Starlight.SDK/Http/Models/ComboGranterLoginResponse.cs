@@ -1,5 +1,5 @@
-using Starlight.SDK.Common;
 using System.Text.Json.Serialization;
+using Starlight.SDK.Common;
 
 namespace Starlight.SDK.Http.Models;
 
@@ -28,8 +28,8 @@ public sealed class ComboGranterLoginResponse
 }
 
 /// <summary>
-/// Payload nested inside <see cref="ComboGranterLoginResponse.Data"/> as a
-/// JSON string.
+///     Payload nested inside <see cref="ComboGranterLoginResponse.Data" /> as a
+///     JSON string.
 /// </summary>
 public sealed class ComboInnerData
 {

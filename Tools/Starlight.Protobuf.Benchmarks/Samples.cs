@@ -5,9 +5,9 @@ using GGoogle = Starlight.Protobuf.Benchmarks.Google;
 namespace Starlight.Protobuf.Benchmarks;
 
 /// <summary>
-/// Builds matching Google and Starlight sample messages. The two sides carry
-/// identical field values and identical wire numbers, so they encode to the
-/// exact same bytes — keeping each serialize/deserialize comparison fair.
+///     Builds matching Google and Starlight sample messages. The two sides carry
+///     identical field values and identical wire numbers, so they encode to the
+///     exact same bytes — keeping each serialize/deserialize comparison fair.
 /// </summary>
 internal static class Samples
 {
@@ -61,8 +61,10 @@ internal static class Samples
         ChoiceMsg = new CoverageSub { Value = 99 }
     };
 
-    /// <summary>Builds an array of <paramref name="count"/> items from a factory,
-    /// the "bunch of data" a bulk benchmark serializes/deserializes per op.</summary>
+    /// <summary>
+    ///     Builds an array of <paramref name="count" /> items from a factory,
+    ///     the "bunch of data" a bulk benchmark serializes/deserializes per op.
+    /// </summary>
     public static T[] Batch<T>(int count, Func<T> factory)
     {
         var items = new T[count];

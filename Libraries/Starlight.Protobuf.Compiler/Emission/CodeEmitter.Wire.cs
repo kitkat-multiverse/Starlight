@@ -1,7 +1,7 @@
-using Google.Protobuf.Reflection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Google.Protobuf.Reflection;
 using FType = Google.Protobuf.Reflection.FieldDescriptorProto.Type;
 using Label = Google.Protobuf.Reflection.FieldDescriptorProto.Label;
 
@@ -9,18 +9,6 @@ namespace Starlight.Protobuf.Compiler;
 
 internal static partial class CodeEmitter
 {
-    // ---- wire info ----------------------------------------------------------
-
-    private sealed class Wire
-    {
-        public string CsType = "";
-        public int WireType;
-        public string Write = "";
-        public string Read = "";
-        public string Compute = "";
-        public bool IsEnum;
-    }
-
     private static Wire Scalar(FType type, string enumCsType)
     {
         switch (type)
@@ -157,4 +145,15 @@ internal static partial class CodeEmitter
         FType.TypeMessage => "Message",
         _ => throw new InvalidOperationException($"Unsupported proto type for descriptor: {type}")
     };
+    // ---- wire info ----------------------------------------------------------
+
+    private sealed class Wire
+    {
+        public string Compute = "";
+        public string CsType = "";
+        public bool IsEnum;
+        public string Read = "";
+        public int WireType;
+        public string Write = "";
+    }
 }

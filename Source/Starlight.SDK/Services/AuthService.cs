@@ -11,8 +11,8 @@ using Starlight.SDK.Http;
 namespace Starlight.SDK.Services;
 
 /// <summary>
-/// Default <see cref="IAuthService"/>. Holds the RSA password-decryption key
-/// in memory and reads/writes accounts through <see cref="SdkDbContext"/>.
+///     Default <see cref="IAuthService" />. Holds the RSA password-decryption key
+///     in memory and reads/writes accounts through <see cref="SdkDbContext" />.
 /// </summary>
 public sealed class AuthService(
     SdkDbContext db,

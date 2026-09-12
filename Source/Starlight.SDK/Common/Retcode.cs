@@ -1,7 +1,7 @@
 namespace Starlight.SDK.Common;
 
 /// <summary>
-/// SDK retcode set.
+///     SDK retcode set.
 /// </summary>
 public enum Retcode
 {

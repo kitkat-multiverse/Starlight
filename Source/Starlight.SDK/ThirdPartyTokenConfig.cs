@@ -3,8 +3,8 @@ using System.Text.Json.Serialization;
 namespace Starlight.SDK;
 
 /// <summary>
-/// Per-app third-party login token configuration. Used as the value
-/// type of <see cref="SdkShieldConfig.ThirdPartyConfigs"/>.
+///     Per-app third-party login token configuration. Used as the value
+///     type of <see cref="SdkShieldConfig.ThirdPartyConfigs" />.
 /// </summary>
 public sealed class ThirdPartyTokenConfig
 {
@@ -12,25 +12,25 @@ public sealed class ThirdPartyTokenConfig
     public string TokenType { get; set; } = TokenKind.GameToken;
 
     /// <summary>
-    /// Lifetime of the issued game token in seconds.
+    ///     Lifetime of the issued game token in seconds.
     /// </summary>
     [JsonPropertyName("game_token_expires_in")]
     public long GameTokenExpiresIn { get; set; } = TokenExpiry.ThirtyDays;
 }
 
-/// <summary>Well-known token-type markers used in <see cref="ThirdPartyTokenConfig.TokenType"/>.</summary>
+/// <summary>Well-known token-type markers used in <see cref="ThirdPartyTokenConfig.TokenType" />.</summary>
 public static class TokenKind
 {
     /// <summary>
-    /// Marker indicating the issued token is a game token (rather than
-    /// an OAuth access token).
+    ///     Marker indicating the issued token is a game token (rather than
+    ///     an OAuth access token).
     /// </summary>
     public const string GameToken = "TK_GAME_TOKEN";
 }
 
 /// <summary>
-/// Token-expiry constants used as default values for
-/// <see cref="ThirdPartyTokenConfig.GameTokenExpiresIn"/>.
+///     Token-expiry constants used as default values for
+///     <see cref="ThirdPartyTokenConfig.GameTokenExpiresIn" />.
 /// </summary>
 public static class TokenExpiry
 {

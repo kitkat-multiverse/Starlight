@@ -1,6 +1,7 @@
 using Serilog;
 using Starlight.Game.Ability.HpDebts;
 using Starlight.Game.Resources;
+using Starlight.Game.Resources.Binary;
 using Starlight.Protobuf.Registry;
 using Starlight.Protocol;
 
@@ -108,6 +109,6 @@ public sealed class ModifierChangeArgumentHandler(
         return ValueTask.CompletedTask;
     }
 
-    private static Resources.Binary.AbilityConfig? ResolveAbility(GameData data, AbilityKey key) =>
+    private static AbilityConfig? ResolveAbility(GameData data, AbilityKey key) =>
         key.Name is not null ? data.ResolveAbility(key.Name) ?? data.ResolveAbility(key.Hash) : data.ResolveAbility(key.Hash);
 }

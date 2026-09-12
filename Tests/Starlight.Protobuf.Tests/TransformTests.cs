@@ -2,20 +2,21 @@ using Google.Protobuf;
 using Starlight.Protobuf.Core;
 using Starlight.Protobuf.Fixtures;
 using Xunit;
+using TransformedSerializer = Starlight.Protobuf.Fixtures.V99.TransformedSerializer;
 
 namespace Starlight.Protobuf.Tests;
 
 /// <summary>
-/// Field value transforms (proto <c>add</c>/<c>xor</c>/<c>fop</c>/<c>mask</c> options).
-/// Proves the generated fast path writes the obfuscated wire value and inverts it on
-/// read, that the reflective slow path produces byte-identical output, and that both
-/// round-trip losslessly. Expected wire values are recomputed by hand here so the test
-/// is an independent oracle, not a mirror of the generated arithmetic.
+///     Field value transforms (proto <c>add</c>/<c>xor</c>/<c>fop</c>/<c>mask</c> options).
+///     Proves the generated fast path writes the obfuscated wire value and inverts it on
+///     read, that the reflective slow path produces byte-identical output, and that both
+///     round-trip losslessly. Expected wire values are recomputed by hand here so the test
+///     is an independent oracle, not a mirror of the generated arithmetic.
 /// </summary>
 public sealed class TransformTests
 {
-    private static readonly Fixtures.V99.TransformedSerializer Serializer = Fixtures.V99.TransformedSerializer.Instance;
-    private static MessageDescriptor Descriptor => Fixtures.V99.TransformedSerializer.Descriptor;
+    private static readonly TransformedSerializer Serializer = TransformedSerializer.Instance;
+    private static MessageDescriptor Descriptor => TransformedSerializer.Descriptor;
 
     private static Transformed Sample() => new() { A = 7, B = 1000, C = 42, D = 5, E = 1000 };
 

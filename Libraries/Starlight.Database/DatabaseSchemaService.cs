@@ -7,10 +7,10 @@ using Microsoft.Extensions.Logging;
 namespace Starlight.Database;
 
 /// <summary>
-/// Brings <typeparamref name="TContext"/>'s schema into existence on startup.
+///     Brings <typeparamref name="TContext" />'s schema into existence on startup.
 /// </summary>
 /// <remarks>
-/// TODO: Replace with real migrations once the data models are done!
+///     TODO: Replace with real migrations once the data models are done!
 /// </remarks>
 internal sealed class DatabaseSchemaService<TContext>(
     IServiceScopeFactory scopes,

@@ -21,7 +21,7 @@ public sealed class ComboGranterLoginRequest
 }
 
 /// <summary>
-/// Inner payload encoded inside <c>ComboGranterLoginRequest.data</c>.
+///     Inner payload encoded inside <c>ComboGranterLoginRequest.data</c>.
 /// </summary>
 public sealed class ComboLoginV2Data
 {
@@ -36,7 +36,7 @@ public sealed class ComboLoginV2Data
 }
 
 /// <summary>
-/// Body of <c>POST /hk4e_global/combo/granter/api/compareProtocolVersion</c>.
+///     Body of <c>POST /hk4e_global/combo/granter/api/compareProtocolVersion</c>.
 /// </summary>
 public sealed class CompareProtocolVersionRequest
 {

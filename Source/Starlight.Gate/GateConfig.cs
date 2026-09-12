@@ -19,7 +19,8 @@ public sealed class GateConfig
     public ConnectionConfig Connections { get; set; } = new();
 
     /// Filesystem paths to the RSA keys shared with the all-in-one launcher's
-    /// <see cref="ClientCrypto"/>. Leave empty to use the embedded keys. When the
+    /// <see cref="ClientCrypto" />
+    /// . Leave empty to use the embedded keys. When the
     /// gate runs alongside the SDK server, the SDK server's paths win on conflict.
     public ClientCryptoOptions Keys { get; set; } = new();
 }
@@ -35,8 +36,8 @@ public sealed class ConnectionConfig
     public bool LogPackets { get; set; } = false;
 
     /// <summary>
-    /// Adds a debug log which logs the abilities being invoked.
-    /// By default, it is not recommended to enable this option, as it will log a lot of data.
+    ///     Adds a debug log which logs the abilities being invoked.
+    ///     By default, it is not recommended to enable this option, as it will log a lot of data.
     /// </summary>
     public bool LogAbilities { get; set; } = false;
 }

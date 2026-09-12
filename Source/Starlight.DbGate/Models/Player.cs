@@ -1,7 +1,7 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
 using Starlight.Rpc;
 using Starlight.Rpc.Proto;
-using System.ComponentModel.DataAnnotations;
 
 namespace Starlight.DbGate.Models;
 
@@ -10,12 +10,14 @@ namespace Starlight.DbGate.Models;
 public sealed record Player : IRpcSerializable<NetPlayer>
 {
     /// The region-specific player ID.
-    /// <br/>
+    /// <br />
     /// This is the traditional 9-digit ID you see in the
     /// bottom right corner of your screen during gameplay.
     [Key] public uint Id { get; set; }
 
-    /// The ID assigned to the account by <see cref="Starlight.SDK"/>.
+    /// The ID assigned to the account by
+    /// <see cref="Starlight.SDK" />
+    /// .
     [MaxLength(64)]
     public required string AccountId { get; set; }
 

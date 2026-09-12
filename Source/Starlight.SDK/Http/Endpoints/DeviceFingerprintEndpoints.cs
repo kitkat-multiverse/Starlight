@@ -8,9 +8,9 @@ using Starlight.SDK.Http.Models;
 namespace Starlight.SDK.Http.Endpoints;
 
 /// <summary>
-/// Implements the <c>/device-fp/api/getExtList</c> endpoint. The client
-/// uses this to fetch per-platform device fingerprint extension fields
-/// that get folded into the device_fp sent with later SDK requests.
+///     Implements the <c>/device-fp/api/getExtList</c> endpoint. The client
+///     uses this to fetch per-platform device fingerprint extension fields
+///     that get folded into the device_fp sent with later SDK requests.
 /// </summary>
 public static class DeviceFingerprintEndpoints
 {

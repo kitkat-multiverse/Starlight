@@ -1,12 +1,11 @@
-using Serilog;
 using Starlight.Game.Resources;
 using Starlight.Protocol;
 
 namespace Starlight.Game.World;
 
 /// <summary>
-/// Base for runtime entities in a scene.
-/// Fight properties live here and are shared directly with the entity's ability component.
+///     Base for runtime entities in a scene.
+///     Fight properties live here and are shared directly with the entity's ability component.
 /// </summary>
 public abstract class SceneEntity
 {

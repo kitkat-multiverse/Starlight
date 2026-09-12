@@ -1,11 +1,12 @@
 using Google.Protobuf;
-using Starlight.Game;
 using Starlight.Game.Ability.Handlers;
 using Starlight.Game.Modules;
 using Starlight.Game.Player;
 using Starlight.Game.Resources;
+using Starlight.Game.Resources.Binary;
 using Starlight.Protobuf.Registry;
 using Starlight.Protocol;
+using IMessage = Starlight.Protobuf.Core.IMessage;
 
 namespace Starlight.Game.Ability;
 
@@ -24,6 +25,8 @@ public sealed class AbilityModule(
     private const int CombinedEntityLimit = 50;
     private const int CombinedInvokeLimit = 50;
     private const int AbilityChangeInvokeLimit = 500;
+
+    public AbilityScope CurrentScope => ResolveScope().Scope;
 
     public event Func<AbilityContext, ValueTask>? Invocation;
 
@@ -86,8 +89,6 @@ public sealed class AbilityModule(
 
     public void Append(AbilityComponent component, IEnumerable<AbilityEmbryoSeed> abilities) =>
         initializer.Append(component, abilities);
-
-    public AbilityScope CurrentScope => ResolveScope().Scope;
 
     public bool TryGetComponent(uint entityId, out AbilityComponent component)
     {
@@ -325,6 +326,155 @@ public sealed class AbilityModule(
         await Publish(context with { Ability = ability, Modifier = modifier });
     }
 
+    private static AbilityInstance? ResolveModifierAbility(
+        AbilityScopeContext world,
+        AbilityComponent source,
+        AbilityModifierInstance modifier
+    )
+    {
+        if (modifier.InstancedAbilityId == 0)
+            return null;
+
+        if (modifier.ParentAbilityEntityId != 0 &&
+            world.TryGet(modifier.ParentAbilityEntityId, out var parent) &&
+            parent.TryGetAbility(modifier.InstancedAbilityId, out var parentAbility))
+            return parentAbility;
+
+        return source.TryGetAbility(modifier.InstancedAbilityId, out var sourceAbility) ? sourceAbility : null;
+    }
+
+    private AbilityConfig? ResolveAbility(AbilityKey key) =>
+        key.Name is not null ? data.ResolveAbility(key.Name) ?? data.ResolveAbility(key.Hash) : data.ResolveAbility(key.Hash);
+
+    private bool IsServerGlobalValue(AbilityKey key) =>
+        key.Name?.StartsWith("SGV_", StringComparison.Ordinal) == true ||
+        data.ServerGlobalValueHashes.Contains(key.Hash);
+
+    private bool TryDecode<T>(ByteString data, out T message)
+        where T : class, IMessage, new()
+    {
+        message = new T();
+
+        try
+        {
+            using var input = data.CreateCodedInput();
+            protocol.Deserialize(message, input);
+            return true;
+        }
+        catch (InvalidProtocolBufferException)
+        {
+            message = null!;
+            return false;
+        }
+    }
+
+    private AbilityScopeContext ResolveScope()
+    {
+        if (scopes.TryResolve(player, out var context))
+            return context;
+
+        throw new InvalidOperationException("Player is not attached to an ability scope.");
+    }
+
+    private async ValueTask Publish(AbilityContext context)
+    {
+        if (Invocation is null)
+            return;
+
+        foreach (var handler in Invocation.GetInvocationList().Cast<Func<AbilityContext, ValueTask>>())
+        {
+            await handler(context);
+        }
+    }
+
+    private async Task ForwardRuntime(IEnumerable<AbilityInvokeEntry> invokes)
+    {
+        foreach (var group in GroupForForwarding(invokes))
+        {
+            await forwarder.Forward(
+                player,
+                group.Key.Type,
+                new AbilityInvocationsNotify { Invokes = [.. group] },
+                group.Key.Peer);
+        }
+    }
+
+    private async Task ForwardInitFinish(uint entityId, IEnumerable<AbilityInvokeEntry> invokes)
+    {
+        foreach (var group in GroupForForwarding(invokes))
+        {
+            await forwarder.Forward(
+                player,
+                group.Key.Type,
+                new ClientAbilityInitFinishNotify { EntityId = entityId, Invokes = [.. group] },
+                group.Key.Peer);
+        }
+    }
+
+    private async Task ForwardCombined(IEnumerable<EntityAbilityInvokeEntry> entries)
+    {
+        var grouped = new Dictionary<ForwardKey, List<EntityAbilityInvokeEntry>>();
+
+        foreach (var entity in entries)
+        {
+            foreach (var invokeGroup in GroupForForwarding(entity.Invokes))
+            {
+                if (!grouped.TryGetValue(invokeGroup.Key, out var list))
+                    grouped[invokeGroup.Key] = list = [];
+
+                list.Add(new EntityAbilityInvokeEntry {
+                    EntityId = entity.EntityId,
+                    Invokes = [.. invokeGroup]
+                });
+            }
+        }
+
+        foreach (var (key, entityInvokes) in grouped)
+        {
+            await forwarder.Forward(
+                player,
+                key.Type,
+                new ClientAbilitiesInitFinishCombineNotify { EntityInvokeList = entityInvokes },
+                key.Peer);
+        }
+    }
+
+    private async Task ForwardAbilityChange(
+        uint entityId,
+        bool isInitHash,
+        IEnumerable<AbilityInvokeEntry> invokes
+    )
+    {
+        foreach (var group in GroupForForwarding(invokes))
+        {
+            await forwarder.Forward(
+                player,
+                group.Key.Type,
+                new ClientAbilityChangeNotify {
+                    EntityId = entityId,
+                    IsInitHash = isInitHash,
+                    Invokes = [.. group]
+                },
+                group.Key.Peer);
+        }
+    }
+
+    private static bool CanHandle(AbilityComponent component, uint peerId, bool ignoreAuth) =>
+        ignoreAuth ||
+        component.Owner.Type is AbilityOwnerType.Scene or AbilityOwnerType.Team ||
+        component.Owner.AuthorityPeerId == 0 ||
+        component.Owner.AuthorityPeerId == peerId;
+
+    private static IEnumerable<IGrouping<ForwardKey, AbilityInvokeEntry>> GroupForForwarding(
+        IEnumerable<AbilityInvokeEntry> invokes
+    ) =>
+        invokes
+            .Where(invoke => invoke.ForwardType is not ForwardType.FORWARD_TYPE_LOCAL and
+                not ForwardType.FORWARD_TYPE_ONLY_SERVER)
+            .GroupBy(invoke => new ForwardKey(invoke.ForwardType, invoke.ForwardPeer));
+
+    private readonly record struct ForwardKey(ForwardType Type, uint Peer);
+
     #region DO NOT DELETE, KEPT AS COMMENT FOR REFERENCE
 
     /*
@@ -526,153 +676,4 @@ public sealed class AbilityModule(
     */
 
     #endregion
-
-    private static AbilityInstance? ResolveModifierAbility(
-        AbilityScopeContext world,
-        AbilityComponent source,
-        AbilityModifierInstance modifier
-    )
-    {
-        if (modifier.InstancedAbilityId == 0)
-            return null;
-
-        if (modifier.ParentAbilityEntityId != 0 &&
-            world.TryGet(modifier.ParentAbilityEntityId, out var parent) &&
-            parent.TryGetAbility(modifier.InstancedAbilityId, out var parentAbility))
-            return parentAbility;
-
-        return source.TryGetAbility(modifier.InstancedAbilityId, out var sourceAbility) ? sourceAbility : null;
-    }
-
-    private Resources.Binary.AbilityConfig? ResolveAbility(AbilityKey key) =>
-        key.Name is not null ? data.ResolveAbility(key.Name) ?? data.ResolveAbility(key.Hash) : data.ResolveAbility(key.Hash);
-
-    private bool IsServerGlobalValue(AbilityKey key) =>
-        key.Name?.StartsWith("SGV_", StringComparison.Ordinal) == true ||
-        data.ServerGlobalValueHashes.Contains(key.Hash);
-
-    private bool TryDecode<T>(ByteString data, out T message)
-        where T : class, Starlight.Protobuf.Core.IMessage, new()
-    {
-        message = new T();
-
-        try
-        {
-            using var input = data.CreateCodedInput();
-            protocol.Deserialize(message, input);
-            return true;
-        }
-        catch (InvalidProtocolBufferException)
-        {
-            message = null!;
-            return false;
-        }
-    }
-
-    private AbilityScopeContext ResolveScope()
-    {
-        if (scopes.TryResolve(player, out var context))
-            return context;
-
-        throw new InvalidOperationException("Player is not attached to an ability scope.");
-    }
-
-    private async ValueTask Publish(AbilityContext context)
-    {
-        if (Invocation is null)
-            return;
-
-        foreach (var handler in Invocation.GetInvocationList().Cast<Func<AbilityContext, ValueTask>>())
-        {
-            await handler(context);
-        }
-    }
-
-    private async Task ForwardRuntime(IEnumerable<AbilityInvokeEntry> invokes)
-    {
-        foreach (var group in GroupForForwarding(invokes))
-        {
-            await forwarder.Forward(
-                player,
-                group.Key.Type,
-                new AbilityInvocationsNotify { Invokes = [.. group] },
-                group.Key.Peer);
-        }
-    }
-
-    private async Task ForwardInitFinish(uint entityId, IEnumerable<AbilityInvokeEntry> invokes)
-    {
-        foreach (var group in GroupForForwarding(invokes))
-        {
-            await forwarder.Forward(
-                player,
-                group.Key.Type,
-                new ClientAbilityInitFinishNotify { EntityId = entityId, Invokes = [.. group] },
-                group.Key.Peer);
-        }
-    }
-
-    private async Task ForwardCombined(IEnumerable<EntityAbilityInvokeEntry> entries)
-    {
-        var grouped = new Dictionary<ForwardKey, List<EntityAbilityInvokeEntry>>();
-
-        foreach (var entity in entries)
-        {
-            foreach (var invokeGroup in GroupForForwarding(entity.Invokes))
-            {
-                if (!grouped.TryGetValue(invokeGroup.Key, out var list))
-                    grouped[invokeGroup.Key] = list = [];
-
-                list.Add(new EntityAbilityInvokeEntry {
-                    EntityId = entity.EntityId,
-                    Invokes = [.. invokeGroup]
-                });
-            }
-        }
-
-        foreach (var (key, entityInvokes) in grouped)
-        {
-            await forwarder.Forward(
-                player,
-                key.Type,
-                new ClientAbilitiesInitFinishCombineNotify { EntityInvokeList = entityInvokes },
-                key.Peer);
-        }
-    }
-
-    private async Task ForwardAbilityChange(
-        uint entityId,
-        bool isInitHash,
-        IEnumerable<AbilityInvokeEntry> invokes
-    )
-    {
-        foreach (var group in GroupForForwarding(invokes))
-        {
-            await forwarder.Forward(
-                player,
-                group.Key.Type,
-                new ClientAbilityChangeNotify {
-                    EntityId = entityId,
-                    IsInitHash = isInitHash,
-                    Invokes = [.. group]
-                },
-                group.Key.Peer);
-        }
-    }
-
-    private static bool CanHandle(AbilityComponent component, uint peerId, bool ignoreAuth) =>
-        ignoreAuth ||
-        component.Owner.Type is AbilityOwnerType.Scene or AbilityOwnerType.Team ||
-        component.Owner.AuthorityPeerId == 0 ||
-        component.Owner.AuthorityPeerId == peerId;
-
-    private static IEnumerable<IGrouping<ForwardKey, AbilityInvokeEntry>> GroupForForwarding(
-        IEnumerable<AbilityInvokeEntry> invokes
-    ) =>
-        invokes
-            .Where(invoke => invoke.ForwardType is not ForwardType.FORWARD_TYPE_LOCAL and
-                not ForwardType.FORWARD_TYPE_ONLY_SERVER)
-            .GroupBy(invoke => new ForwardKey(invoke.ForwardType, invoke.ForwardPeer));
-
-    private readonly record struct ForwardKey(ForwardType Type, uint Peer);
 }

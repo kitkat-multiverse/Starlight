@@ -178,11 +178,11 @@ public sealed class ChatServiceTests
 
     private sealed class EchoCommand : ICommand
     {
+        public IPlayer? Invoker { get; private set; }
         public string Name => "echo";
         public string Description => "echo";
         public string Usage => "echo <text>";
         public string[] Aliases => [];
-        public IPlayer? Invoker { get; private set; }
 
         public async Task ExecuteAsync(CommandContext context, string[] args)
         {

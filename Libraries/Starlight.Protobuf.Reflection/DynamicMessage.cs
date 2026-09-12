@@ -1,24 +1,24 @@
+using System.Collections;
 using Google.Protobuf;
 using Starlight.Protobuf.Core;
 using Starlight.Protobuf.Serialization;
-using System.Collections;
 using UnknownFieldSet = Starlight.Protobuf.Core.UnknownFieldSet;
 
 namespace Starlight.Protobuf.Reflection;
 
 /// <summary>
-/// A schema-less protobuf message: a property bag keyed by canonical field name,
-/// driven entirely by its <see cref="MessageDescriptor"/>. Produced by the
-/// <see cref="ReflectionRegistry"/> for messages loaded from <c>.proto</c> text at
-/// runtime (no compiled POCO). The shared <see cref="ReflectiveEngine"/> reads and
-/// writes it through <see cref="IDynamicAccessor"/>.
+///     A schema-less protobuf message: a property bag keyed by canonical field name,
+///     driven entirely by its <see cref="MessageDescriptor" />. Produced by the
+///     <see cref="ReflectionRegistry" /> for messages loaded from <c>.proto</c> text at
+///     runtime (no compiled POCO). The shared <see cref="ReflectiveEngine" /> reads and
+///     writes it through <see cref="IDynamicAccessor" />.
 /// </summary>
 public sealed class DynamicMessage : IDynamicMessage
 {
-    private readonly Dictionary<string, object?> _values = new();
     private readonly Dictionary<string, IList> _lists = new();
     private readonly Dictionary<string, IDictionary> _maps = new();
     private readonly Dictionary<string, (int Case, object? Value)> _oneofs = new();
+    private readonly Dictionary<string, object?> _values = new();
 
     public DynamicMessage(MessageDescriptor descriptor)
     {

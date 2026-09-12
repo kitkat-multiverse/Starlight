@@ -1,6 +1,6 @@
+using System.Collections;
 using Google.Protobuf;
 using Starlight.Protobuf.Core;
-using System.Collections;
 using IMessage = Starlight.Protobuf.Core.IMessage;
 using UnknownFieldSet = Starlight.Protobuf.Core.UnknownFieldSet;
 using WireType = Google.Protobuf.WireFormat.WireType;
@@ -8,11 +8,11 @@ using WireType = Google.Protobuf.WireFormat.WireType;
 namespace Starlight.Protobuf.Serialization;
 
 /// <summary>
-/// Descriptor-driven (de)serialization shared by the opt-in remap slow path
-/// (compiled POCOs) and the reflection registry (dynamic messages). Off the hot
-/// path: a message only routes here when <see cref="MessageDescriptor.HasRemaps"/>
-/// is set, or when it has no compiled serializer at all. Field encoding matches
-/// the generated fast path byte-for-byte when no remap is active.
+///     Descriptor-driven (de)serialization shared by the opt-in remap slow path
+///     (compiled POCOs) and the reflection registry (dynamic messages). Off the hot
+///     path: a message only routes here when <see cref="MessageDescriptor.HasRemaps" />
+///     is set, or when it has no compiled serializer at all. Field encoding matches
+///     the generated fast path byte-for-byte when no remap is active.
 /// </summary>
 public static class ReflectiveEngine
 {

@@ -1,3 +1,5 @@
+using System.Net;
+using System.Threading.Channels;
 using Google.Protobuf;
 using Serilog;
 using Starlight.Common;
@@ -9,20 +11,21 @@ using Starlight.Protobuf.Serialization;
 using Starlight.Protocol;
 using Starlight.Rpc;
 using Starlight.Rpc.Tunnel;
-using System.Net;
-using System.Threading.Channels;
 using IMessage = Starlight.Protobuf.Core.IMessage;
 
 namespace Starlight.Gate.Session;
 
 public sealed class StarlightSession : INetworkSession
 {
-    private static readonly ILogger Logger = Log.ForContext<StarlightSession>();
-
-    /// A client that outruns <see cref="ConsumeInbound"/> gets dropped rather than growing
+    /// A client that outruns
+    /// <see cref="ConsumeInbound" />
+    /// gets dropped rather than growing
     /// the queue until the process runs out of memory.
     private const int MaxQueuedPackets = 1024;
     private const int MaxPendingSendSegments = 32;
+    private static readonly ILogger Logger = Log.ForContext<StarlightSession>();
+
+    private readonly CancellationTokenSource _closing = new();
 
     private readonly KcpConnection _connection;
 
@@ -34,21 +37,21 @@ public sealed class StarlightSession : INetworkSession
         FullMode = BoundedChannelFullMode.Wait
     });
 
-    private readonly CancellationTokenSource _closing = new();
-
-    /// Handlers aren't the only callers of <see cref="Send"/>; the game tunnel's relay
+    /// Handlers aren't the only callers of
+    /// <see cref="Send" />
+    /// ; the game tunnel's relay
     /// subscriptions call it off their own tasks.
     private readonly Lock _sendLock = new();
-
-    private byte[] _xorPad;
 
     /// The pad the client moves to once it has processed GetPlayerTokenRsp. Staged rather than
     /// applied, because until that lands the client is still both encrypting and decrypting
     /// with the old one, and a reply under the new pad is unreadable to it.
     private byte[]? _pendingPad;
+    private ProtocolRegistry? _registry;
 
     private uint _sequenceId = 10;
-    private ProtocolRegistry? _registry;
+
+    private byte[] _xorPad;
 
     public StarlightSession(GateServerService server, KcpConnection connection)
     {
@@ -71,7 +74,7 @@ public sealed class StarlightSession : INetworkSession
     public RpcTunnel? GameTunnel { get; private set; }
     public CancellationToken Closing => _closing.Token;
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public void Rekey(byte[] pad)
     {
         lock (_sendLock)
@@ -110,6 +113,65 @@ public sealed class StarlightSession : INetworkSession
 
         tunnel.Dispose();
         return false;
+    }
+
+    public void OnClose(uint reason)
+    {
+        _closing.Cancel();
+        _inbound.Writer.TryComplete();
+
+        // Under the same lock AttachTunnel takes, so a login still awaiting Tunnel.Open can't
+        // hand us a tunnel after this point.
+        lock (_sendLock)
+        {
+            GameTunnel?.Dispose();
+            GameTunnel = null;
+        }
+    }
+
+    public void Send(IMessage message, PacketHead? metadata = null)
+    {
+        var registry = _registry ?? throw new InvalidOperationException(
+            "Cannot send a message before the session's protocol version has been resolved.");
+
+        lock (_sendLock)
+        {
+            metadata ??= new PacketHead();
+
+            if (metadata.ClientSequenceId == 0)
+                metadata.ClientSequenceId = ++_sequenceId;
+
+            if (metadata.SentMs == 0)
+                metadata.SentMs = Time.CurrentMs();
+
+            var packet = new GamePacket(registry, message, metadata);
+            var bytes = packet.ToBytes();
+
+            if (Server.Config.Connections.LogPackets)
+            {
+                Logger.Debug("S>C | Packet: {Message} [{CmdId}] ({Length} bytes)",
+                    message.GetType().Name, packet.CmdId, packet.Body.Length);
+                var jsonObj = JsonSerializer.SerializeToObject(message, _registry);
+                Logger.Debug($"{System.Text.Json.JsonSerializer.Serialize(jsonObj)}");
+            }
+
+            CryptoHelper.Xor(bytes, _xorPad);
+            _connection.Send(bytes);
+        }
+    }
+
+    public async Task SendAsync(IMessage message, PacketHead? metadata = null)
+    {
+        await _connection.WaitForSendCapacityAsync(MaxPendingSendSegments, Closing);
+        Send(message, metadata);
+    }
+
+    public void Disconnect(uint reason, bool flush)
+    {
+        if (flush)
+            _connection.DisconnectAfterFlush(reason);
+        else
+            _connection.Disconnect(reason);
     }
 
     private async Task ConsumeInbound()
@@ -208,64 +270,5 @@ public sealed class StarlightSession : INetworkSession
         {
             await tunnel.Publish(GameSubjects.InboundPacket, message, packet.RawMetadata);
         }
-    }
-
-    public void OnClose(uint reason)
-    {
-        _closing.Cancel();
-        _inbound.Writer.TryComplete();
-
-        // Under the same lock AttachTunnel takes, so a login still awaiting Tunnel.Open can't
-        // hand us a tunnel after this point.
-        lock (_sendLock)
-        {
-            GameTunnel?.Dispose();
-            GameTunnel = null;
-        }
-    }
-
-    public void Send(IMessage message, PacketHead? metadata = null)
-    {
-        var registry = _registry ?? throw new InvalidOperationException(
-            "Cannot send a message before the session's protocol version has been resolved.");
-
-        lock (_sendLock)
-        {
-            metadata ??= new PacketHead();
-
-            if (metadata.ClientSequenceId == 0)
-                metadata.ClientSequenceId = ++_sequenceId;
-
-            if (metadata.SentMs == 0)
-                metadata.SentMs = Time.CurrentMs();
-
-            var packet = new GamePacket(registry, message, metadata);
-            var bytes = packet.ToBytes();
-
-            if (Server.Config.Connections.LogPackets)
-            {
-                Logger.Debug("S>C | Packet: {Message} [{CmdId}] ({Length} bytes)",
-                    message.GetType().Name, packet.CmdId, packet.Body.Length);
-                var jsonObj = JsonSerializer.SerializeToObject(message, _registry);
-                Logger.Debug($"{System.Text.Json.JsonSerializer.Serialize(jsonObj)}");
-            }
-
-            CryptoHelper.Xor(bytes, _xorPad);
-            _connection.Send(bytes);
-        }
-    }
-
-    public async Task SendAsync(IMessage message, PacketHead? metadata = null)
-    {
-        await _connection.WaitForSendCapacityAsync(MaxPendingSendSegments, Closing);
-        Send(message, metadata);
-    }
-
-    public void Disconnect(uint reason, bool flush)
-    {
-        if (flush)
-            _connection.DisconnectAfterFlush(reason);
-        else
-            _connection.Disconnect(reason);
     }
 }

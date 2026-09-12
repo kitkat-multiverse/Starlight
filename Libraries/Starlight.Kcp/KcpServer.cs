@@ -7,11 +7,11 @@ namespace Starlight.Kcp;
 
 public sealed class KcpServer : IDisposable
 {
-    private readonly UdpClient _socket;
-    private readonly IKcpServerHandler _handler;
     private readonly ConcurrentDictionary<(uint Conv, uint Token), KcpConnection> _connections = new();
     private readonly CancellationTokenSource _cts = new();
+    private readonly IKcpServerHandler _handler;
     private readonly LogDelegate _logger;
+    private readonly UdpClient _socket;
 
     public KcpServer(string address, int port, LogDelegate logger, IKcpServerHandler handler)
     {
@@ -22,6 +22,13 @@ public sealed class KcpServer : IDisposable
         _socket = new UdpClient(endpoint);
         _handler = handler;
         _logger = logger;
+    }
+
+    public void Dispose()
+    {
+        _cts.Cancel();
+        _socket.Dispose();
+        DisconnectAll();
     }
 
     public async Task RunAsync(CancellationToken ct = default)
@@ -173,12 +180,5 @@ public sealed class KcpServer : IDisposable
     {
         var ep = (IPEndPoint)remote;
         _socket.Send(data, ep);
-    }
-
-    public void Dispose()
-    {
-        _cts.Cancel();
-        _socket.Dispose();
-        DisconnectAll();
     }
 }

@@ -20,7 +20,7 @@ public static class SystemHelper
     }
 
     /// <summary>
-    /// Fetches the system's public IP address, even if they're behind NAT.
+    ///     Fetches the system's public IP address, even if they're behind NAT.
     /// </summary>
     /// <returns>The IP address fetched from an echo API.</returns>
     /// <exception cref="HttpRequestException">Thrown when IP discovery fails.</exception>

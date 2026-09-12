@@ -1,5 +1,3 @@
-using Starlight.Game;
-
 namespace Starlight.Game.Ability;
 
 public static class AbilityEntityIds

@@ -1,14 +1,14 @@
 namespace Starlight.Protobuf.Registry;
 
 /// <summary>
-/// Default <see cref="IProtocolRegistryProvider"/>: indexes a fixed set of
-/// registries by version string and by their first-packet CmdIds. Immutable and
-/// thread-safe after construction.
+///     Default <see cref="IProtocolRegistryProvider" />: indexes a fixed set of
+///     registries by version string and by their first-packet CmdIds. Immutable and
+///     thread-safe after construction.
 /// </summary>
 public sealed class ProtocolRegistryProvider : IProtocolRegistryProvider
 {
-    private readonly Dictionary<string, ProtocolRegistry> _byVersion;
     private readonly Dictionary<int, ProtocolRegistry> _byFirstPacket;
+    private readonly Dictionary<string, ProtocolRegistry> _byVersion;
 
     public ProtocolRegistryProvider(IEnumerable<ProtocolRegistry> registries)
     {

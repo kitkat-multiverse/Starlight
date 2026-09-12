@@ -7,11 +7,11 @@ using Microsoft.Extensions.Logging;
 namespace Starlight.SDK.Http.Endpoints;
 
 /// <summary>
-/// Serves the small static JSON files that the Genshin client fetches
-/// during boot, primarily the <c>*-version.json</c> files under
-/// <c>/admin/mi18n/**</c>. Optional filesystem serving for arbitrary
-/// <c>webstatic/</c>, <c>sdk-public/</c> and <c>launcher-public/</c>
-/// resources is enabled via <see cref="WebstaticConfig.ResourceRoot"/>.
+///     Serves the small static JSON files that the Genshin client fetches
+///     during boot, primarily the <c>*-version.json</c> files under
+///     <c>/admin/mi18n/**</c>. Optional filesystem serving for arbitrary
+///     <c>webstatic/</c>, <c>sdk-public/</c> and <c>launcher-public/</c>
+///     resources is enabled via <see cref="WebstaticConfig.ResourceRoot" />.
 /// </summary>
 public static class WebstaticEndpoints
 {

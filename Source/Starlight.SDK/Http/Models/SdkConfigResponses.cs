@@ -1,18 +1,18 @@
-using Starlight.SDK.Common;
 using System.Text.Json.Serialization;
+using Starlight.SDK.Common;
 
 namespace Starlight.SDK.Http.Models;
 
 /// <summary>
-/// Payload returned inside <c>ApiResponse.Data</c> for
-/// <c>/device-fp/api/getExtList</c>. Note that the success and error
-/// variants use different field names for the message (<c>msg</c> vs
-/// <c>message</c>).
+///     Payload returned inside <c>ApiResponse.Data</c> for
+///     <c>/device-fp/api/getExtList</c>. Note that the success and error
+///     variants use different field names for the message (<c>msg</c> vs
+///     <c>message</c>).
 /// </summary>
 public sealed class DeviceExtListData
 {
     /// <summary>
-    /// HTTP-style status code. See <see cref="DeviceExtStatusCode"/>.
+    ///     HTTP-style status code. See <see cref="DeviceExtStatusCode" />.
     /// </summary>
     [JsonPropertyName("code")]
     public DeviceExtStatusCode Code { get; set; } = DeviceExtStatusCode.Ok;
@@ -34,8 +34,8 @@ public sealed class DeviceExtListData
 }
 
 /// <summary>
-/// Payload returned inside <c>ApiResponse.Data</c> for
-/// <c>/hk4e_global/combo/granter/api/compareProtocolVersion</c>.
+///     Payload returned inside <c>ApiResponse.Data</c> for
+///     <c>/hk4e_global/combo/granter/api/compareProtocolVersion</c>.
 /// </summary>
 public sealed class CompareProtocolVersionData
 {
@@ -83,8 +83,8 @@ public sealed class ProtocolInfo
 }
 
 /// <summary>
-/// Payload returned inside <c>ApiResponse.Data</c> for
-/// <c>/hk4e_global/combo/granter/api/getConfig</c>.
+///     Payload returned inside <c>ApiResponse.Data</c> for
+///     <c>/hk4e_global/combo/granter/api/getConfig</c>.
 /// </summary>
 public sealed class ComboGranterConfigData
 {
@@ -125,17 +125,17 @@ public sealed class ComboGranterConfigData
     public bool EnableUserCenter { get; set; }
 
     /// <summary>
-    /// Per-platform functional switch configs. Keys are
-    /// <see cref="FunctionalSwitchKey"/> constants; values are the
-    /// underlying boolean flag.
+    ///     Per-platform functional switch configs. Keys are
+    ///     <see cref="FunctionalSwitchKey" /> constants; values are the
+    ///     underlying boolean flag.
     /// </summary>
     [JsonPropertyName("functional_switch_configs")]
     public Dictionary<string, bool> FunctionalSwitchConfigs { get; set; } = new();
 }
 
 /// <summary>
-/// Payload returned inside <c>ApiResponse.Data</c> for
-/// <c>/hk4e_global/mdk/shield/api/loadConfig</c>.
+///     Payload returned inside <c>ApiResponse.Data</c> for
+///     <c>/hk4e_global/mdk/shield/api/loadConfig</c>.
 /// </summary>
 public sealed class ShieldLoadConfigData
 {
@@ -188,10 +188,10 @@ public sealed class ShieldLoadConfigData
     public bool EnablePsBindAccount { get; set; }
 
     /// <summary>
-    /// Per-app third-party login token configurations. Typed as
-    /// <see cref="ThirdPartyTokenConfig"/> rather than
-    /// <c>Dictionary[string, object]</c> so the inner shape is
-    /// compile-checked. Keys are <see cref="ThirdPartyApp"/> constants.
+    ///     Per-app third-party login token configurations. Typed as
+    ///     <see cref="ThirdPartyTokenConfig" /> rather than
+    ///     <c>Dictionary[string, object]</c> so the inner shape is
+    ///     compile-checked. Keys are <see cref="ThirdPartyApp" /> constants.
     /// </summary>
     [JsonPropertyName("thirdparty_login_configs")]
     public Dictionary<string, ThirdPartyTokenConfig> ThirdpartyLoginConfigs { get; set; } = new();
@@ -242,11 +242,11 @@ public sealed class ShieldLoadConfigData
 public sealed class ComboBoxConfigData
 {
     /// <summary>
-    /// Per-platform SDK config bag. Keys are
-    /// <see cref="ComboBoxConfigKey"/> constants; values are either a
-    /// stringified boolean, a stringified integer, or a JSON-encoded
-    /// object string. The shape is intentionally <c>string</c>-valued
-    /// because the upstream client expects all values as strings.
+    ///     Per-platform SDK config bag. Keys are
+    ///     <see cref="ComboBoxConfigKey" /> constants; values are either a
+    ///     stringified boolean, a stringified integer, or a JSON-encoded
+    ///     object string. The shape is intentionally <c>string</c>-valued
+    ///     because the upstream client expects all values as strings.
     /// </summary>
     [JsonPropertyName("vals")]
     public Dictionary<string, string> Vals { get; set; } = new();
@@ -268,8 +268,8 @@ public sealed class ComboBoxPrecacheInner
 }
 
 /// <summary>
-/// Payload returned inside <c>ApiResponse.Data</c> for
-/// <c>/hk4e_global/account/ma-passport/api/getConfig</c>.
+///     Payload returned inside <c>ApiResponse.Data</c> for
+///     <c>/hk4e_global/account/ma-passport/api/getConfig</c>.
 /// </summary>
 public sealed class MaPassportConfigData
 {
@@ -305,7 +305,7 @@ public sealed class MaPassportIpInfo
 }
 
 /// <summary>
-/// Body of <c>POST /data_abtest_api/config/experiment/list</c>.
+///     Body of <c>POST /data_abtest_api/config/experiment/list</c>.
 /// </summary>
 public sealed class ExperimentListRequest
 {
@@ -323,10 +323,10 @@ public sealed class ExperimentListRequest
 }
 
 /// <summary>
-/// Response wrapper for <c>/data_abtest_api/config/experiment/list</c>.
-/// Unlike most other endpoints this one carries an extra
-/// <see cref="Success"/> flag alongside the standard
-/// <c>retcode/message/data</c> triple.
+///     Response wrapper for <c>/data_abtest_api/config/experiment/list</c>.
+///     Unlike most other endpoints this one carries an extra
+///     <see cref="Success" /> flag alongside the standard
+///     <c>retcode/message/data</c> triple.
 /// </summary>
 public sealed class ExperimentListResponse
 {

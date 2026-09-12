@@ -2,14 +2,6 @@ namespace Starlight.Game.Resources.Binary;
 
 internal static class AbilityLocalIdIndex
 {
-    private enum ContainerType : long
-    {
-        Action = 1,
-        Mixin = 2,
-        ModifierAction = 3,
-        ModifierMixin = 4
-    }
-
     public static void Initialize(AbilityConfig ability)
     {
         var actions = new Dictionary<int, AbilityConfigNode>();
@@ -106,6 +98,14 @@ internal static class AbilityLocalIdIndex
             ModifierIndex = modifierIndex,
             ConfigIndex = configIndex
         }.InitializeActions(nodes, actions);
+    }
+
+    private enum ContainerType : long
+    {
+        Action = 1,
+        Mixin = 2,
+        ModifierAction = 3,
+        ModifierMixin = 4
     }
 
     private sealed class Generator(ContainerType type)

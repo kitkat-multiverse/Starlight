@@ -1,16 +1,17 @@
-using Google.Protobuf.Reflection;
-using Microsoft.CodeAnalysis;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Google.Protobuf.Reflection;
+using Microsoft.CodeAnalysis;
 
 namespace Starlight.Protobuf.Compiler;
 
 [Generator]
 public sealed partial class ProtobufCompiler : IIncrementalGenerator
 {
+    private const string Roof = "Starlight.Protobuf";
     private static readonly DiagnosticDescriptor ParseError = new(
         "SLPB001",
         "Protobuf parse error",
@@ -67,8 +68,6 @@ public sealed partial class ProtobufCompiler : IIncrementalGenerator
         DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    private const string Roof = "Starlight.Protobuf";
-
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var protos = context.AdditionalTextsProvider
@@ -87,36 +86,6 @@ public sealed partial class ProtobufCompiler : IIncrementalGenerator
             .Collect();
 
         context.RegisterSourceOutput(protos, Generate);
-    }
-
-    private readonly struct Proto
-    {
-        public Proto(string fileName, string fullPath, string content, string role)
-        {
-            FileName = fileName;
-            FullPath = fullPath;
-            Content = content;
-            Role = role;
-        }
-
-        public string FileName { get; }
-        public string FullPath { get; }
-        public string Content { get; }
-        public string Role { get; }
-
-        public string ResolvedRole
-        {
-            get
-            {
-                if (!string.IsNullOrEmpty(Role)) return Role;
-
-                var p = FullPath.Replace(oldChar: '\\', newChar: '/');
-                if (p.Contains("/Base/")) return "Base";
-                if (FileName == "extra.proto") return "Independent";
-
-                return "Version";
-            }
-        }
     }
 
     private static void ReportMaskViolations(SourceProductionContext ctx, CodeEmitter.TransformTable transforms)
@@ -199,7 +168,7 @@ public sealed partial class ProtobufCompiler : IIncrementalGenerator
                     // field numbers -- a lossless wire format for server-to-server exchange.
                     foreach (var msg in file.MessageTypes)
                     {
-                        CodeEmitter.EmitPoco(body, msg, baseNs, cmdIds.TryGetValue(msg.Name, out var id) ? id : (int?)null, baseResolver,
+                        CodeEmitter.EmitPoco(body, msg, baseNs, cmdIds.TryGetValue(msg.Name, out var id) ? id : null, baseResolver,
                             baseCsNames, selfSerializable: true);
                         body.AppendLine();
                     }
@@ -307,7 +276,7 @@ public sealed partial class ProtobufCompiler : IIncrementalGenerator
 
                 foreach (var msg in f.MessageTypes)
                 {
-                    CodeEmitter.EmitPoco(body, msg, ns, cmdIds.TryGetValue(msg.Name, out var id) ? id : (int?)null, resolver, csNames,
+                    CodeEmitter.EmitPoco(body, msg, ns, cmdIds.TryGetValue(msg.Name, out var id) ? id : null, resolver, csNames,
                         selfSerializable: true);
                     body.AppendLine();
                     ValidateTransforms(ctx, msg, msg, transforms, resolver, alts: null);
@@ -377,6 +346,36 @@ public sealed partial class ProtobufCompiler : IIncrementalGenerator
             if (!versionNested.TryGetValue(CodeEmitter.StripPrefix(nb.Name), out var nv)) continue;
 
             EmitSerializerTree(sb, nb, nv, baseNs, resolve, csNames, transforms, alts, $"{csPath}.Types.{CodeEmitter.StripPrefix(nb.Name)}");
+        }
+    }
+
+    private readonly struct Proto
+    {
+        public Proto(string fileName, string fullPath, string content, string role)
+        {
+            FileName = fileName;
+            FullPath = fullPath;
+            Content = content;
+            Role = role;
+        }
+
+        public string FileName { get; }
+        public string FullPath { get; }
+        public string Content { get; }
+        public string Role { get; }
+
+        public string ResolvedRole
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(Role)) return Role;
+
+                var p = FullPath.Replace(oldChar: '\\', newChar: '/');
+                if (p.Contains("/Base/")) return "Base";
+                if (FileName == "extra.proto") return "Independent";
+
+                return "Version";
+            }
         }
     }
 }

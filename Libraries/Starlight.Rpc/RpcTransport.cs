@@ -8,39 +8,24 @@ public delegate Task AsyncDataHandler(RpcMessage message);
 public delegate Task AsyncMessageHandler<in T>(T msg, RpcMessage rpc) where T : IMessage;
 
 /// <summary>
-/// A remote-procedure-call (RPC) transport defines how the services
-/// communicate with each other.
+///     A remote-procedure-call (RPC) transport defines how the services
+///     communicate with each other.
 /// </summary>
 public abstract class RpcTransport : IHostedService
 {
-    #region Transport
-
     /// <summary>
-    /// Subscribes to a subject, registering a handler for messages relating to it.
-    /// </summary>
-    /// <returns>A subscription. Disposing this object will cancel the subscription, preventing the handler from receiving more messages.</returns>
-    public abstract Task<IDisposable> Subscribe(string subject, AsyncDataHandler handler);
-
-    /// <summary>
-    /// Publishes a message to a subject. All handlers (across the network) will receive this message.
-    /// </summary>
-    public abstract Task Publish(string subject, RpcMessage message);
-
-    #endregion
-
-    /// <summary>
-    /// Serializes the protobuf message into an <see cref="RpcMessage"/>.
-    /// <br/>
-    /// Used for abstraction/transport efficiency.
+    ///     Serializes the protobuf message into an <see cref="RpcMessage" />.
+    ///     <br />
+    ///     Used for abstraction/transport efficiency.
     /// </summary>
     protected virtual RpcMessage Serialize(IMessage message) => new(message.ToByteArray());
 
     /// <summary>
-    /// Determines whether a subject currently has any responders (subscribers).
-    /// <br/>
-    /// Used by <see cref="Request{TRequest,TResponse}"/> to fail fast instead of
-    /// waiting for a timeout. Transports that cannot cheaply determine this should
-    /// return <c>true</c> so that requests fall back to the timeout behaviour.
+    ///     Determines whether a subject currently has any responders (subscribers).
+    ///     <br />
+    ///     Used by <see cref="Request{TRequest,TResponse}" /> to fail fast instead of
+    ///     waiting for a timeout. Transports that cannot cheaply determine this should
+    ///     return <c>true</c> so that requests fall back to the timeout behaviour.
     /// </summary>
     protected virtual bool HasResponders(string subject) => true;
 
@@ -48,13 +33,16 @@ public abstract class RpcTransport : IHostedService
         => Publish(subject, Serialize(message));
 
     /// <summary>
-    /// Subscribes to a subject, registering a handler for messages relating to it.
-    /// <br/>
-    /// This method exclusively takes in a protobuf-type handler, requiring all received messages on
-    /// the subject to deserialize to the type before invoking the handler with the data.
+    ///     Subscribes to a subject, registering a handler for messages relating to it.
+    ///     <br />
+    ///     This method exclusively takes in a protobuf-type handler, requiring all received messages on
+    ///     the subject to deserialize to the type before invoking the handler with the data.
     /// </summary>
     /// <typeparam name="T">The protobuf type to deserialize messages as.</typeparam>
-    /// <returns>A subscription. Disposing this object will cancel the subscription, preventing the handler from receiving more messages.</returns>
+    /// <returns>
+    ///     A subscription. Disposing this object will cancel the subscription, preventing the handler from receiving more
+    ///     messages.
+    /// </returns>
     public virtual Task<IDisposable> Subscribe<T>(string subject, AsyncMessageHandler<T> handler) where T : IMessage<T>
     {
         return Subscribe(subject, ActivityListener);
@@ -69,9 +57,9 @@ public abstract class RpcTransport : IHostedService
     }
 
     /// <summary>
-    /// A true 'procedure call'.
-    /// <br/>
-    /// Publishes a message to the subject, then expects a reply from somewhere else.
+    ///     A true 'procedure call'.
+    ///     <br />
+    ///     Publishes a message to the subject, then expects a reply from somewhere else.
     /// </summary>
     /// <param name="subject">The subject to publish the request on.</param>
     /// <param name="request">The request data.</param>
@@ -79,7 +67,7 @@ public abstract class RpcTransport : IHostedService
     /// <param name="ct">The cancellation token to use for the request.</param>
     /// <typeparam name="TRequest">The protobuf message type for the request.</typeparam>
     /// <typeparam name="TResponse">The protobuf message type for the response.</typeparam>
-    /// <exception cref="OperationCanceledException">If the request is canceled with <see cref="ct"/> instead of by timeout.</exception>
+    /// <exception cref="OperationCanceledException">If the request is canceled with <see cref="ct" /> instead of by timeout.</exception>
     /// <returns>The response data, deserialized.</returns>
     public virtual async Task<TResponse> Request<TRequest, TResponse>(
         string subject,
@@ -134,6 +122,24 @@ public abstract class RpcTransport : IHostedService
         // Deserialize the response.
         return reply.Deserialize<TResponse>();
     }
+
+    #region Transport
+
+    /// <summary>
+    ///     Subscribes to a subject, registering a handler for messages relating to it.
+    /// </summary>
+    /// <returns>
+    ///     A subscription. Disposing this object will cancel the subscription, preventing the handler from receiving more
+    ///     messages.
+    /// </returns>
+    public abstract Task<IDisposable> Subscribe(string subject, AsyncDataHandler handler);
+
+    /// <summary>
+    ///     Publishes a message to a subject. All handlers (across the network) will receive this message.
+    /// </summary>
+    public abstract Task Publish(string subject, RpcMessage message);
+
+    #endregion
 
     #region Lifecycle
 

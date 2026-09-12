@@ -1,5 +1,5 @@
-using Starlight.Game.Resources.Binary;
 using System.Text.Json;
+using Starlight.Game.Resources.Binary;
 
 namespace Starlight.Game.Ability.Handlers.Actions;
 

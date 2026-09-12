@@ -3,14 +3,14 @@ using IMessage = Starlight.Protobuf.Core.IMessage;
 namespace Starlight.Rpc.Tunnel;
 
 /// <summary>
-/// Zero-copy in-memory tunnel end. Two ends are linked via <see cref="CreatePair"/>;
-/// publishing on one end delivers to the other's subscribers.
+///     Zero-copy in-memory tunnel end. Two ends are linked via <see cref="CreatePair" />;
+///     publishing on one end delivers to the other's subscribers.
 /// </summary>
 public sealed class DirectTunnel : RpcTunnel
 {
-    private DirectTunnel _peer = null!;
     private readonly Dictionary<int, List<AsyncTunnelHandler>> _intHandlers = new();
     private readonly Dictionary<string, List<AsyncTunnelHandler>> _stringHandlers = new();
+    private DirectTunnel _peer = null!;
 
     private DirectTunnel()
     {}
@@ -120,7 +120,7 @@ public sealed class DirectTunnel : RpcTunnel
     }
 }
 
-/// <summary>Zero-copy message wrapper: stashes the live <see cref="IMessage"/> in <see cref="TunnelMessage.Metadata"/>.</summary>
+/// <summary>Zero-copy message wrapper: stashes the live <see cref="IMessage" /> in <see cref="TunnelMessage.Metadata" />.</summary>
 public sealed class DirectTunnelMessage : TunnelMessage
 {
     public DirectTunnelMessage(IMessage message)

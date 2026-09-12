@@ -1,14 +1,14 @@
 namespace Starlight.Crypto.Client;
 
 /// <summary>
-/// Optional filesystem settings for <see cref="ClientCrypto"/>. Configured paths
-/// must exist when generation is disabled; when enabled, missing keys are generated.
+///     Optional filesystem settings for <see cref="ClientCrypto" />. Configured paths
+///     must exist when generation is disabled; when enabled, missing keys are generated.
 /// </summary>
 public sealed class ClientCryptoOptions
 {
     /// <summary>
-    /// Base directory used to resolve relative key paths and the generated
-    /// <c>keys/signing.pem</c> and <c>keys/sdk.pem</c> defaults.
+    ///     Base directory used to resolve relative key paths and the generated
+    ///     <c>keys/signing.pem</c> and <c>keys/sdk.pem</c> defaults.
     /// </summary>
     public string? BasePath { get; set; }
 

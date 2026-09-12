@@ -4,10 +4,10 @@ using Xunit;
 namespace Starlight.Protobuf.Tests;
 
 /// <summary>
-/// Unit tests for the compiler's base-vs-version field correlation rule
-/// (<see cref="FieldCorrelation"/>), the pure core behind the SLPB004 diagnostic.
-/// A base field whose type diverges from the same-named version field would make
-/// the emitter generate a serializer with the wrong wire codec.
+///     Unit tests for the compiler's base-vs-version field correlation rule
+///     (<see cref="FieldCorrelation" />), the pure core behind the SLPB004 diagnostic.
+///     A base field whose type diverges from the same-named version field would make
+///     the emitter generate a serializer with the wrong wire codec.
 /// </summary>
 public sealed class FieldCorrelationTests
 {

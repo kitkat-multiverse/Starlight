@@ -5,20 +5,18 @@ using Starlight.Protobuf.Fixtures;
 using Starlight.Protobuf.Fixtures.V99;
 using Starlight.Protobuf.Registry;
 using Xunit;
+using IMessage = Starlight.Protobuf.Core.IMessage;
 
 namespace Starlight.Protobuf.Tests;
 
 /// <summary>
-/// Version detection + DI initialization, driven entirely by the synthetic
-/// fixtures (no live protocol). Covers assembly discovery, first-packet
-/// resolution, version lookup, collision tie-break, and the
-/// <c>AddStarlightProtocol</c> DI extension.
+///     Version detection + DI initialization, driven entirely by the synthetic
+///     fixtures (no live protocol). Covers assembly discovery, first-packet
+///     resolution, version lookup, collision tie-break, and the
+///     <c>AddStarlightProtocol</c> DI extension.
 /// </summary>
 public sealed class VersionDetectionTests
 {
-    private static IProtocolRegistryProvider Provider() =>
-        new ProtocolRegistryProvider(ProtocolHelper.DiscoverRegistries());
-
     // The first-packet cmd id is version-specific and lives on the registry, not
     // the canonical base POCO. PingReq is a first-packet message in the fixtures.
     private static readonly int PingReqCmdId;
@@ -33,6 +31,9 @@ public sealed class VersionDetectionTests
         var registry = new V99ProtocolRegistry();
         PingReqCmdId = registry.GetCmdId(new PingReq());
     }
+
+    private static IProtocolRegistryProvider Provider() =>
+        new ProtocolRegistryProvider(ProtocolHelper.DiscoverRegistries());
 
     [Fact]
     public void Discover_FindsCompiledV99Registry()
@@ -111,14 +112,14 @@ public sealed class VersionDetectionTests
         public override string Version { get; } = version;
         public override IReadOnlySet<int> KnownFirst { get; } = new HashSet<int>(knownFirst);
 
-        public override int GetCmdId(Starlight.Protobuf.Core.IMessage message) => throw new NotSupportedException();
-        public override Starlight.Protobuf.Core.IMessage Create(int cmdId) => throw new NotSupportedException();
-        public override int CalculateSize(Starlight.Protobuf.Core.IMessage message) => throw new NotSupportedException();
+        public override int GetCmdId(IMessage message) => throw new NotSupportedException();
+        public override IMessage Create(int cmdId) => throw new NotSupportedException();
+        public override int CalculateSize(IMessage message) => throw new NotSupportedException();
 
-        public override void Serialize(Starlight.Protobuf.Core.IMessage message, CodedOutputStream output) =>
+        public override void Serialize(IMessage message, CodedOutputStream output) =>
             throw new NotSupportedException();
 
-        public override void Deserialize(Starlight.Protobuf.Core.IMessage message, CodedInputStream input) =>
+        public override void Deserialize(IMessage message, CodedInputStream input) =>
             throw new NotSupportedException();
     }
 }

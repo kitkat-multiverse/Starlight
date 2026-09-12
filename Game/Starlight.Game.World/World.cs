@@ -7,14 +7,14 @@ namespace Starlight.Game.World;
 public sealed class World
 {
     private const uint OwnerPeerId = 1;
+    private readonly Dictionary<IPlayer, uint> _peerIds = [];
+    private readonly Dictionary<uint, IPlayer> _peers = [];
 
     private readonly Dictionary<uint, Scene> _scenes = [];
-    private readonly Dictionary<uint, IPlayer> _peers = [];
-    private readonly Dictionary<IPlayer, uint> _peerIds = [];
     private readonly Dictionary<IPlayer, uint> _teamEntityIds = [];
+    private uint _levelEntityId;
 
     private uint _nextEntityId;
-    private uint _levelEntityId;
 
     public World(IPlayer owner)
     {

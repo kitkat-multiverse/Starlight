@@ -3,6 +3,7 @@ using Serilog;
 using Starlight.Protobuf.Serialization;
 using Starlight.Protocol;
 using Starlight.Rpc;
+using IMessage = Starlight.Protobuf.Core.IMessage;
 
 namespace Starlight.Gate.Session.Modules;
 
@@ -20,7 +21,7 @@ public sealed class NetworkModule(INetworkSession session)
 
             var body = cmd.Body.ToByteArray();
 
-            Starlight.Protobuf.Core.IMessage message;
+            IMessage message;
 
             try
             {

@@ -27,9 +27,9 @@ public readonly struct NameViolation
 }
 
 /// <summary>
-/// Pure name-collision rules shared by the generator's validation pass and its
-/// tests. Keyword checks apply to names the emitter writes verbatim (type and
-/// enum-value names); generated-member checks apply to field property names.
+///     Pure name-collision rules shared by the generator's validation pass and its
+///     tests. Keyword checks apply to names the emitter writes verbatim (type and
+///     enum-value names); generated-member checks apply to field property names.
 /// </summary>
 public static class ReservedNames
 {
@@ -56,20 +56,20 @@ public static class ReservedNames
     public static NameViolation? CheckKeyword(string kind, string name) => CheckKeyword(kind, name, name);
 
     /// <summary>
-    /// As <see cref="CheckKeyword(string,string)"/> but checks the emitted C# identifier
-    /// (<paramref name="csName"/>, e.g. with a prefix stripped) while reporting the raw
-    /// proto name (<paramref name="protoName"/>).
+    ///     As <see cref="CheckKeyword(string,string)" /> but checks the emitted C# identifier
+    ///     (<paramref name="csName" />, e.g. with a prefix stripped) while reporting the raw
+    ///     proto name (<paramref name="protoName" />).
     /// </summary>
     public static NameViolation? CheckKeyword(string kind, string protoName, string csName) =>
         IsReservedKeyword(csName) ? new NameViolation(kind, protoName, csName, "is a reserved C# keyword") : null;
 
     /// <summary>
-    /// Field property names that collide with a member the emitter synthesizes on the
-    /// same message: <c>UnknownFields</c>, the optional <c>CmdId</c> const, the
-    /// <c>Serializer</c> static (version-independent messages only), and per real
-    /// oneof the <c>{Name}Case</c> property, <c>Clear{Name}</c> method, and
-    /// <c>{Name}OneofCase</c> enum. <paramref name="realOneofNames"/> are raw proto oneof
-    /// names (Pascaled here to match emission).
+    ///     Field property names that collide with a member the emitter synthesizes on the
+    ///     same message: <c>UnknownFields</c>, the optional <c>CmdId</c> const, the
+    ///     <c>Serializer</c> static (version-independent messages only), and per real
+    ///     oneof the <c>{Name}Case</c> property, <c>Clear{Name}</c> method, and
+    ///     <c>{Name}OneofCase</c> enum. <paramref name="realOneofNames" /> are raw proto oneof
+    ///     names (Pascaled here to match emission).
     /// </summary>
     public static IReadOnlyList<NameViolation> GeneratedMemberCollisions(
         string messageName,

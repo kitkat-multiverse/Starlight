@@ -1,75 +1,74 @@
-using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Http.Json;
 using System.Net.Sockets;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Logging;
 
 namespace Starlight.SDK.Services;
 
 /// <summary>
-/// Real <see cref="IGeoIpLookup"/> backed by the ip-api.com JSON endpoint
-/// (<a href="https://ip-api.com/docs/api:json">documentation</a>).
+///     Real <see cref="IGeoIpLookup" /> backed by the ip-api.com JSON endpoint
+///     (<a href="https://ip-api.com/docs/api:json">documentation</a>).
 /// </summary>
 /// <remarks>
-/// <para>
-/// The free tier of ip-api.com is HTTP-only, requires no API key, and is
-/// rate-limited to 45 requests per minute per server IP. This
-/// implementation does three things to stay safely under that limit:
-/// </para>
-/// <list type="bullet">
-///   <item>
-///     <description>
-///     Short-circuits loopback / private / reserved addresses locally so
-///     we never burn a request on a client that obviously cannot be
-///     geolocated (e.g. <c>127.0.0.1</c>, <c>192.168.x.x</c>,
-///     <c>::1</c>, ULA <c>fc00::/7</c>).
-///     </description>
-///   </item>
-///   <item>
-///     <description>
-///     Caches successful lookups per IP for
-///     <see cref="IpApiGeoIpConfig.CacheTtlSeconds"/> seconds so the
-///     typical "user logs in, then exchanges the session token a few
-///     seconds later" flow only consumes one ip-api.com request.
-///     </description>
-///   </item>
-///   <item>
-///     <description>
-///     Honours the <c>X-Rl</c> (requests remaining) and <c>X-Ttl</c>
-///     (seconds until the rate-limit window resets) response headers
-///     exactly as the docs require: when <c>X-Rl</c> reaches 0 we stop
-///     sending requests for <c>X-Ttl</c> seconds and fall back to
-///     <see cref="SdkConfig.DefaultCountryCode"/> for every caller.
-///     </description>
-///   </item>
-/// </list>
-/// <para>
-/// Any failure (timeout, non-2xx, malformed body, <c>status:"fail"</c>
-/// from ip-api for a reserved range we missed) results in
-/// <see cref="SdkConfig.DefaultCountryCode"/> being returned, the lookup
-/// must never break the login flow.
-/// </para>
+///     <para>
+///         The free tier of ip-api.com is HTTP-only, requires no API key, and is
+///         rate-limited to 45 requests per minute per server IP. This
+///         implementation does three things to stay safely under that limit:
+///     </para>
+///     <list type="bullet">
+///         <item>
+///             <description>
+///                 Short-circuits loopback / private / reserved addresses locally so
+///                 we never burn a request on a client that obviously cannot be
+///                 geolocated (e.g. <c>127.0.0.1</c>, <c>192.168.x.x</c>,
+///                 <c>::1</c>, ULA <c>fc00::/7</c>).
+///             </description>
+///         </item>
+///         <item>
+///             <description>
+///                 Caches successful lookups per IP for
+///                 <see cref="IpApiGeoIpConfig.CacheTtlSeconds" /> seconds so the
+///                 typical "user logs in, then exchanges the session token a few
+///                 seconds later" flow only consumes one ip-api.com request.
+///             </description>
+///         </item>
+///         <item>
+///             <description>
+///                 Honours the <c>X-Rl</c> (requests remaining) and <c>X-Ttl</c>
+///                 (seconds until the rate-limit window resets) response headers
+///                 exactly as the docs require: when <c>X-Rl</c> reaches 0 we stop
+///                 sending requests for <c>X-Ttl</c> seconds and fall back to
+///                 <see cref="SdkConfig.DefaultCountryCode" /> for every caller.
+///             </description>
+///         </item>
+///     </list>
+///     <para>
+///         Any failure (timeout, non-2xx, malformed body, <c>status:"fail"</c>
+///         from ip-api for a reserved range we missed) results in
+///         <see cref="SdkConfig.DefaultCountryCode" /> being returned, the lookup
+///         must never break the login flow.
+///     </para>
 /// </remarks>
 public sealed class IpApiGeoIpLookup : IGeoIpLookup
 {
-    private readonly HttpClient _http;
-    private readonly SdkConfig _sdkConfig;
-    private readonly ILogger<IpApiGeoIpLookup> _logger;
-
     /// <summary>
-    /// Per-IP cache of successful lookups. Keyed by the raw IP string the
-    /// caller passed in (so we don't accidentally normalize
-    /// <c>192.168.0.1</c> and <c>192.168.000.001</c> differently, both
-    /// would be short-circuited anyway).
+    ///     Per-IP cache of successful lookups. Keyed by the raw IP string the
+    ///     caller passed in (so we don't accidentally normalize
+    ///     <c>192.168.0.1</c> and <c>192.168.000.001</c> differently, both
+    ///     would be short-circuited anyway).
     /// </summary>
     private readonly ConcurrentDictionary<string, CacheEntry> _cache = new();
+    private readonly HttpClient _http;
+    private readonly ILogger<IpApiGeoIpLookup> _logger;
+    private readonly SdkConfig _sdkConfig;
 
     /// <summary>
-    /// UTC ticks at which the current rate-limit window resets and we may
-    /// start sending requests again. 0 means "no active throttle". Read
-    /// and written via <see cref="Interlocked"/> because the lookup is
-    /// invoked concurrently from every login request.
+    ///     UTC ticks at which the current rate-limit window resets and we may
+    ///     start sending requests again. 0 means "no active throttle". Read
+    ///     and written via <see cref="Interlocked" /> because the lookup is
+    ///     invoked concurrently from every login request.
     /// </summary>
     private long _rateLimitResetTicks;
 
@@ -83,6 +82,9 @@ public sealed class IpApiGeoIpLookup : IGeoIpLookup
         _sdkConfig = sdkConfig;
         _logger = logger;
     }
+
+    private string FallbackCountry =>
+        string.IsNullOrWhiteSpace(_sdkConfig.DefaultCountryCode) ? "US" : _sdkConfig.DefaultCountryCode;
 
     public async Task<string> GetCountryCodeAsync(string? ipAddress, CancellationToken ct = default)
     {
@@ -164,9 +166,6 @@ public sealed class IpApiGeoIpLookup : IGeoIpLookup
         }
     }
 
-    private string FallbackCountry =>
-        string.IsNullOrWhiteSpace(_sdkConfig.DefaultCountryCode) ? "US" : _sdkConfig.DefaultCountryCode;
-
     private string BuildRequestUrl(string ipAddress)
     {
         var fields = "status,message,countryCode";
@@ -180,11 +179,11 @@ public sealed class IpApiGeoIpLookup : IGeoIpLookup
     }
 
     /// <summary>
-    /// Reads the <c>X-Rl</c> (requests remaining) and <c>X-Ttl</c>
-    /// (seconds until reset) headers from the response and, if the
-    /// remaining count has hit zero, marks the lookup as throttled until
-    /// the reset time. Per the ip-api.com docs, callers MUST NOT send
-    /// further requests while the throttle is active.
+    ///     Reads the <c>X-Rl</c> (requests remaining) and <c>X-Ttl</c>
+    ///     (seconds until reset) headers from the response and, if the
+    ///     remaining count has hit zero, marks the lookup as throttled until
+    ///     the reset time. Per the ip-api.com docs, callers MUST NOT send
+    ///     further requests while the throttle is active.
     /// </summary>
     private void UpdateRateLimitWindow(HttpResponseMessage response)
     {

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Serilog.Events;
 using Starlight.Chat;
 using Starlight.Common;
@@ -5,7 +6,6 @@ using Starlight.DbGate;
 using Starlight.Game;
 using Starlight.Gate;
 using Starlight.SDK;
-using System.Text.Json;
 
 // ReSharper disable UnusedType.Global
 // ReSharper disable UnusedMember.Global
@@ -13,18 +13,18 @@ using System.Text.Json;
 namespace Starlight;
 
 /// <summary>
-/// A combined configuration class for the Starlight all-in-one launcher.
-/// <br/>
-/// Developers who launch each service individually; feel free to do as you please.
+///     A combined configuration class for the Starlight all-in-one launcher.
+///     <br />
+///     Developers who launch each service individually; feel free to do as you please.
 /// </summary>
 public sealed class Config
 {
     public LogEventLevel LogLevel { get; set; } = LogEventLevel.Information;
     public ChatConfig Chat { get; set; } = new();
     /// <summary>
-    /// Generates missing configured RSA keys, or the default files under <c>keys/</c>
-    /// when no paths are configured. When disabled, empty paths use embedded keys and
-    /// configured paths must already exist.
+    ///     Generates missing configured RSA keys, or the default files under <c>keys/</c>
+    ///     when no paths are configured. When disabled, empty paths use embedded keys and
+    ///     configured paths must already exist.
     /// </summary>
     public bool GenerateRsaKeys { get; set; } = true;
     public GameConfig Game { get; set; } = new();

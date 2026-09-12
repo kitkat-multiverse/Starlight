@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Starlight.Game.Ability;
@@ -7,9 +8,9 @@ using Starlight.Game.Player;
 using Starlight.Game.Resources;
 using Starlight.Game.Resources.Binary;
 using Starlight.Game.Resources.Excel;
+using Starlight.Protobuf.Core;
 using Starlight.Protocol;
 using Starlight.Rpc.Tunnel;
-using System.Text.Json;
 using Xunit;
 
 namespace Starlight.Tests.Ability;
@@ -178,16 +179,6 @@ public sealed class ReviveElemEnergyResolutionTests
         return doc.RootElement.Clone();
     }
 
-    private sealed class RecordingForwarder : IInvokeForwarder
-    {
-        public Task Forward(
-            IPlayer sender,
-            ForwardType type,
-            Protobuf.Core.IMessage message,
-            uint forwardPeer
-        ) => Task.CompletedTask;
-    }
-
     private static StarlightPlayer Player()
     {
         var services = new ServiceCollection().AddLogging().BuildServiceProvider();
@@ -195,5 +186,15 @@ public sealed class ReviveElemEnergyResolutionTests
         registry.Build();
         var (_, server) = DirectTunnel.CreatePair();
         return new StarlightPlayer(services, registry, server) { Uid = 1 };
+    }
+
+    private sealed class RecordingForwarder : IInvokeForwarder
+    {
+        public Task Forward(
+            IPlayer sender,
+            ForwardType type,
+            IMessage message,
+            uint forwardPeer
+        ) => Task.CompletedTask;
     }
 }

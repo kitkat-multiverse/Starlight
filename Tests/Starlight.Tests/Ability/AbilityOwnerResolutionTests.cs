@@ -1,9 +1,9 @@
+using System.Text.Json;
 using Starlight.Game.Ability;
 using Starlight.Game.Ability.Handlers;
 using Starlight.Game.Ability.Handlers.Actions;
 using Starlight.Game.Resources.Binary;
 using Starlight.Protocol;
-using System.Text.Json;
 using Xunit;
 
 namespace Starlight.Tests.Ability;

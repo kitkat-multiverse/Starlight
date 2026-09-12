@@ -1,18 +1,18 @@
-using Serilog;
-using Starlight.Common;
-using Starlight.Game.Resources.Binary;
 using System.Collections;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Serilog;
+using Starlight.Common;
+using Starlight.Game.Resources.Binary;
 
 namespace Starlight.Game.Resources;
 
 internal static partial class DataLoader
 {
     /// <summary>
-    /// Invokes the data loaders here, then outputs the data in the class's fields.
+    ///     Invokes the data loaders here, then outputs the data in the class's fields.
     /// </summary>
     public static void Initialize(GameData output)
     {
@@ -53,7 +53,7 @@ internal static partial class DataLoader
     }
 
     /// <summary>
-    /// Loads all ExcelBinOutput (xlsx -> json) files.
+    ///     Loads all ExcelBinOutput (xlsx -> json) files.
     /// </summary>
     private static void LoadExcels(GameData output)
     {
@@ -160,7 +160,7 @@ internal static partial class DataLoader
             catch (Exception exception)
             {
                 Log.Debug(exception, "Failed to read ability resource {Path}", path);
-                return static () => { };
+                return static () => {};
             }
 
             var hashes = ScanServerGlobalValues(raw);
@@ -428,7 +428,7 @@ internal static partial class DataLoader
     }
 
     /// <summary>
-    /// Loads every avatar's <c>ConfigAvatar</c> file, keyed by avatar ID.
+    ///     Loads every avatar's <c>ConfigAvatar</c> file, keyed by avatar ID.
     /// </summary>
     private static void LoadAvatars(GameData output)
     {
@@ -460,7 +460,7 @@ internal static partial class DataLoader
     }
 
     /// <summary>
-    /// Loads all teleport waypoints for all scenes.
+    ///     Loads all teleport waypoints for all scenes.
     /// </summary>
     private static void LoadScenePoints(GameData output)
     {

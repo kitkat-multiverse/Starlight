@@ -1,6 +1,6 @@
-using Starlight.Ec2b;
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
+using Starlight.Ec2b;
 
 namespace Starlight.Gate.Crypto;
 
@@ -9,7 +9,7 @@ public static class MtKey
     private const int Length = 4096;
 
     /// <summary>
-    /// Generates a key using <see cref="Mt19937_64"/>.
+    ///     Generates a key using <see cref="Mt19937_64" />.
     /// </summary>
     public static byte[] Generate(ulong seed)
     {

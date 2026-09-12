@@ -1,4 +1,3 @@
-using Starlight.Game;
 using Starlight.Game.Player;
 using Starlight.Game.Resources;
 using Starlight.Protocol;

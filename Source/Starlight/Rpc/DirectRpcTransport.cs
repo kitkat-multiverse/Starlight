@@ -1,10 +1,10 @@
-using Google.Protobuf;
 using System.Collections.Concurrent;
+using Google.Protobuf;
 
 namespace Starlight.Rpc;
 
 /// <summary>
-/// A fully in-memory, single process transport for 'remote' procedure calls.
+///     A fully in-memory, single process transport for 'remote' procedure calls.
 /// </summary>
 public sealed class DirectRpcTransport : RpcTransport
 {

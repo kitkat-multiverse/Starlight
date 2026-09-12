@@ -1,18 +1,20 @@
+using Google.Protobuf;
 using Starlight.Protobuf.Core;
 using Starlight.Protobuf.Fixtures;
 using Xunit;
+using CoverageSerializer = Starlight.Protobuf.Fixtures.V99.CoverageSerializer;
 
 namespace Starlight.Protobuf.Tests;
 
 /// <summary>
-/// Coverage: proto3 <c>optional</c> explicit presence, <c>oneof</c>
-/// discriminated unions, and the version-independent (<c>independent.proto</c>)
-/// path. The version dump shifts field numbers away from the base structural
-/// ones, so these also prove name-match correlation survives presence/oneof.
+///     Coverage: proto3 <c>optional</c> explicit presence, <c>oneof</c>
+///     discriminated unions, and the version-independent (<c>independent.proto</c>)
+///     path. The version dump shifts field numbers away from the base structural
+///     ones, so these also prove name-match correlation survives presence/oneof.
 /// </summary>
 public sealed class CoverageSerializerTests
 {
-    private static readonly Fixtures.V99.CoverageSerializer Serializer = Fixtures.V99.CoverageSerializer.Instance;
+    private static readonly CoverageSerializer Serializer = CoverageSerializer.Instance;
 
     // ---- proto3 optional (explicit presence) --------------------------------
 
@@ -176,7 +178,7 @@ public sealed class CoverageSerializerTests
     public void Independent_Crate_PropertyCollisionSuffix_RoundTrips()
     {
         // Field `crate` collides with message `Crate`, so the property is `Crate_`.
-        var original = new Crate { Crate_ = Google.Protobuf.ByteString.CopyFromUtf8("payload") };
+        var original = new Crate { Crate_ = ByteString.CopyFromUtf8("payload") };
 
         var restored = new Crate();
         restored.MergeFrom(CrateSerializer.Instance, original.ToByteArray(CrateSerializer.Instance));

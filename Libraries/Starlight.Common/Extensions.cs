@@ -5,7 +5,7 @@ namespace Starlight.Common;
 public static class RandomExtensions
 {
     /// <summary>
-    /// Generates a random version 4 UUID.
+    ///     Generates a random version 4 UUID.
     /// </summary>
     public static Guid NextUuid(this Random random)
     {
@@ -22,7 +22,7 @@ public static class RandomExtensions
 public static class StringExtensions
 {
     /// <summary>
-    /// Returns the file extension of a file name.
+    ///     Returns the file extension of a file name.
     /// </summary>
     public static string FileExtension(this string fileName)
     {

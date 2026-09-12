@@ -1,14 +1,17 @@
-using Google.Protobuf.Reflection;
-using Microsoft.CodeAnalysis;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Google.Protobuf.Reflection;
+using Microsoft.CodeAnalysis;
 
 namespace Starlight.Protobuf.Compiler;
 
 public sealed partial class ProtobufCompiler
 {
+    private static readonly string[] TransformOptionNames = ["add", "xor", "fop", "mask", "alts"];
+
     private static FileDescriptorSet Parse(SourceProductionContext ctx, IEnumerable<Proto> group, IEnumerable<Proto> allFiles)
     {
         // The filesystem exposes every proto so `import` directives resolve, even
@@ -54,16 +57,14 @@ public sealed partial class ProtobufCompiler
         return set;
     }
 
-    private static readonly string[] TransformOptionNames = ["add", "xor", "fop", "mask", "alts"];
-
     private static bool IsTransformOptionError(string message)
     {
-        if (message.IndexOf("custom option", System.StringComparison.OrdinalIgnoreCase) < 0)
+        if (message.IndexOf("custom option", StringComparison.OrdinalIgnoreCase) < 0)
             return false;
 
         foreach (var name in TransformOptionNames)
         {
-            if (message.IndexOf($"'{name}'", System.StringComparison.Ordinal) >= 0)
+            if (message.IndexOf($"'{name}'", StringComparison.Ordinal) >= 0)
                 return true;
         }
         return false;
@@ -106,9 +107,9 @@ public sealed partial class ProtobufCompiler
     }
 
     /// <summary>
-    /// Builds the proto-FQ-name -> dotted-C#-path resolver. The proto key carries the package and
-    /// message nesting (matching <see cref="FieldDescriptorProto.TypeName"/>); the C# value drops
-    /// the package and keeps only the message nesting, prefix-stripped per segment.
+    ///     Builds the proto-FQ-name -> dotted-C#-path resolver. The proto key carries the package and
+    ///     message nesting (matching <see cref="FieldDescriptorProto.TypeName" />); the C# value drops
+    ///     the package and keeps only the message nesting, prefix-stripped per segment.
     /// </summary>
     private static CodeEmitter.CsName BuildCsNames(FileDescriptorSet set)
     {

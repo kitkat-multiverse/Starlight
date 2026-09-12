@@ -9,7 +9,7 @@ using Starlight.Rpc.Proto;
 namespace Starlight.Game.Player;
 
 /// <summary>
-/// Primary data operations module used across everything.
+///     Primary data operations module used across everything.
 /// </summary>
 public sealed class PlayerModule(
     RpcTransport rpc,
@@ -21,8 +21,8 @@ public sealed class PlayerModule(
     private bool _removedFromPlayerManager;
 
     /// <summary>
-    /// Authenticates the player and loads their data, then hands off to every
-    /// <see cref="LifecycleEvent.PlayerLogin"/> handler before answering the client.
+    ///     Authenticates the player and loads their data, then hands off to every
+    ///     <see cref="LifecycleEvent.PlayerLogin" /> handler before answering the client.
     /// </summary>
     [Opcode]
     public async Task<PlayerLoginRsp> OnLogin(PlayerLoginReq msg)

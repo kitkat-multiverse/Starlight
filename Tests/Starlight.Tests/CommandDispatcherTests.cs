@@ -76,13 +76,13 @@ public sealed class CommandDispatcherTests
 
     private sealed class RecordingCommand : ICommand
     {
+        public bool Executed { get; private set; }
+        public string[] Args { get; private set; } = [];
         public string Name => "record";
         public string Description => "records arguments";
         public string Usage => "record <args>";
         public string[] Aliases => [];
         public CommandSource Sources { get; set; } = CommandSource.All;
-        public bool Executed { get; private set; }
-        public string[] Args { get; private set; } = [];
 
         public async Task ExecuteAsync(CommandContext context, string[] args)
         {

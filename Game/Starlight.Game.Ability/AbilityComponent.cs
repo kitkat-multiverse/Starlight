@@ -1,4 +1,4 @@
-using Starlight.Game;
+using Starlight.Game.Ability.DynamicProps;
 using Starlight.Game.Resources;
 using Starlight.Game.Resources.Binary;
 
@@ -6,18 +6,17 @@ namespace Starlight.Game.Ability;
 
 public sealed class AbilityComponent
 {
-    private readonly List<AbilityEmbryoState> _embryos = [];
     private readonly SortedDictionary<uint, AbilityInstance> _appliedAbilities = [];
     private readonly SortedDictionary<uint, AbilityModifierInstance> _appliedModifiers = [];
     private readonly Dictionary<AbilityKey, AbilityScalarValue> _dynamicValues = [];
-    private readonly Dictionary<AbilityKey, AbilityScalarValue> _serverGlobalValues = [];
-    private FightPropertyStore _fightProperties;
-    private readonly Dictionary<AbilityKey, Dictionary<AbilityKey, AbilitySpecialAdjustment>> _targetAbilitySpecials = [];
-    private readonly HashSet<string> _limitedHpDebtTags = new(StringComparer.Ordinal);
+    private readonly List<AbilityEmbryoState> _embryos = [];
     private readonly HashSet<uint> _hpDebtLimitModifierIds = [];
-    private float _maxHpDebtLimit = float.PositiveInfinity;
+    private readonly HashSet<string> _limitedHpDebtTags = new(StringComparer.Ordinal);
+    private readonly Dictionary<AbilityKey, AbilityScalarValue> _serverGlobalValues = [];
+    private readonly Dictionary<AbilityKey, Dictionary<AbilityKey, AbilitySpecialAdjustment>> _targetAbilitySpecials = [];
     private uint _lastEmbryoId;
     private uint _lastServerAbilityId;
+    private float _maxHpDebtLimit = float.PositiveInfinity;
 
     public AbilityComponent(AbilityOwner owner, FightPropertyStore? fightProperties = null)
     {
@@ -25,7 +24,7 @@ public sealed class AbilityComponent
             throw new ArgumentOutOfRangeException(nameof(owner));
 
         Owner = owner;
-        _fightProperties = fightProperties ?? new FightPropertyStore();
+        FightPropertyStore = fightProperties ?? new FightPropertyStore();
     }
 
     public AbilityOwner Owner { get; private set; }
@@ -37,8 +36,9 @@ public sealed class AbilityComponent
     public IReadOnlyDictionary<uint, AbilityModifierInstance> AppliedModifiers => _appliedModifiers;
     public IReadOnlyDictionary<AbilityKey, AbilityScalarValue> DynamicValues => _dynamicValues;
     public IReadOnlyDictionary<AbilityKey, AbilityScalarValue> ServerGlobalValues => _serverGlobalValues;
-    public IReadOnlyDictionary<uint, float> FightProperties => _fightProperties;
-    public FightPropertyStore FightPropertyStore => _fightProperties;
+    public IReadOnlyDictionary<uint, float> FightProperties => FightPropertyStore;
+    public FightPropertyStore FightPropertyStore { get; private set; }
+
     public IReadOnlyDictionary<AbilityKey, Dictionary<AbilityKey, AbilitySpecialAdjustment>> TargetAbilitySpecials =>
         _targetAbilitySpecials;
 
@@ -53,7 +53,7 @@ public sealed class AbilityComponent
     public void BindFightProperties(FightPropertyStore fightProperties)
     {
         ArgumentNullException.ThrowIfNull(fightProperties);
-        _fightProperties = fightProperties;
+        FightPropertyStore = fightProperties;
     }
 
     public void ResetEmbryos(IEnumerable<string> abilityNames) =>
@@ -212,15 +212,15 @@ public sealed class AbilityComponent
         return _appliedModifiers.Remove(instancedModifierId);
     }
 
-    public float GetFightProperty(uint property) => _fightProperties.Get(property);
+    public float GetFightProperty(uint property) => FightPropertyStore.Get(property);
 
-    public void SetFightProperty(uint property, float value) => _fightProperties.Set(property, value);
+    public void SetFightProperty(uint property, float value) => FightPropertyStore.Set(property, value);
 
     internal void SetHpDebtLimit(float ratio, IEnumerable<string> hpDebtTags)
     {
         _maxHpDebtLimit =
-            GetFightProperty(DynamicProps.AbilityFightProperty.MaxHp) * ratio +
-            GetFightProperty(DynamicProps.AbilityFightProperty.CurHpDebts);
+            GetFightProperty(AbilityFightProperty.MaxHp) * ratio +
+            GetFightProperty(AbilityFightProperty.CurHpDebts);
 
         _limitedHpDebtTags.Clear();
 
@@ -240,7 +240,7 @@ public sealed class AbilityComponent
 
     internal float GetHpDebtMaximum(string hpDebtTag)
     {
-        var defaultMaximum = GetFightProperty(DynamicProps.AbilityFightProperty.MaxHp) * 2f;
+        var defaultMaximum = GetFightProperty(AbilityFightProperty.MaxHp) * 2f;
         return _limitedHpDebtTags.Contains(hpDebtTag) ? Math.Min(defaultMaximum, _maxHpDebtLimit) : defaultMaximum;
     }
 
@@ -256,10 +256,10 @@ public sealed class AbilityComponent
     }
 
     public void ReinitializeFightProperties(IEnumerable<KeyValuePair<uint, float>> values) =>
-        _fightProperties.Replace(values);
+        FightPropertyStore.Replace(values);
 
     public void ReinitializeFightProperties(IEnumerable<KeyValuePair<FightProperty, float>> values) =>
-        _fightProperties.Replace(values);
+        FightPropertyStore.Replace(values);
 
     public void SetDynamicValue(AbilityKey key, AbilityScalarValue value) => _dynamicValues[key] = value;
     public bool ClearDynamicValue(AbilityKey key) => _dynamicValues.Remove(key);

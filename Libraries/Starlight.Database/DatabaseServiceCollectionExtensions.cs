@@ -6,8 +6,8 @@ namespace Starlight.Database;
 public static class DatabaseServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers <typeparamref name="TContext"/> against the configured provider and makes
-    /// sure its schema exists before the services that depend on it start.
+    ///     Registers <typeparamref name="TContext" /> against the configured provider and makes
+    ///     sure its schema exists before the services that depend on it start.
     /// </summary>
     public static IServiceCollection AddStarlightDbContext<TContext>(
         this IServiceCollection services,

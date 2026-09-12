@@ -1,15 +1,15 @@
-using Serilog;
-using Starlight.Common;
 using System.IO.Compression;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Serilog;
+using Starlight.Common;
 
 namespace Starlight.Game.Resources;
 
 public interface IResourceLoader
 {
     /// <summary>
-    /// Lists all files in a directory.
+    ///     Lists all files in a directory.
     /// </summary>
     /// <param name="path">The path to the directory, relative to its base.</param>
     /// <param name="searchPattern">The pattern of files to search for.</param>
@@ -18,7 +18,7 @@ public interface IResourceLoader
     string[] ListFiles(string path, string searchPattern = "*", bool recursive = false);
 
     /// <summary>
-    /// Reads the raw binary data of a resource.
+    ///     Reads the raw binary data of a resource.
     /// </summary>
     /// <param name="path">The path to the resource, relative to its base.</param>
     /// <returns>The resource's binary data.</returns>
@@ -28,7 +28,7 @@ public interface IResourceLoader
 internal static class ResourceLoaderExtensions
 {
     /// <summary>
-    /// Reads a JSON file and deserializes it into an object.
+    ///     Reads a JSON file and deserializes it into an object.
     /// </summary>
     /// <param name="loader">The resource loader.</param>
     /// <param name="path">The relative path to the resource.</param>
@@ -47,7 +47,7 @@ internal static class ResourceLoaderExtensions
     }
 
     /// <summary>
-    /// Reads a JSON file and deserializes it into an object.
+    ///     Reads a JSON file and deserializes it into an object.
     /// </summary>
     /// <param name="loader">The resource loader.</param>
     /// <param name="path">The relative path to the resource.</param>

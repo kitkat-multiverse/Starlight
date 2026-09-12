@@ -3,10 +3,9 @@ using Serilog.Core;
 #pragma warning disable CA1050
 public static class Debug
 {
-#pragma warning restore CA1050
     /// <summary>
-    /// Logs a message at the 'Debug' level.
-    /// Only occurs in Debug builds.
+    ///     Logs a message at the 'Debug' level.
+    ///     Only occurs in Debug builds.
     /// </summary>
     [MessageTemplateFormatMethod("msg")]
     public static void Log(string msg, params object?[] args)
@@ -19,8 +18,8 @@ public static class Debug
     }
 
     /// <summary>
-    /// Logs a message at the 'Info' level.
-    /// Only occurs in Debug builds.
+    ///     Logs a message at the 'Info' level.
+    ///     Only occurs in Debug builds.
     /// </summary>
     [MessageTemplateFormatMethod("msg")]
     public static void Info(string msg, params object?[] args)
@@ -33,8 +32,8 @@ public static class Debug
     }
 
     /// <summary>
-    /// Logs a message at the 'Debug' level.
-    /// Only occurs in Debug builds.
+    ///     Logs a message at the 'Debug' level.
+    ///     Only occurs in Debug builds.
     /// </summary>
     [MessageTemplateFormatMethod("msg")]
     public static void Verbose(string msg, params object?[] args)
@@ -45,4 +44,5 @@ public static class Debug
 #pragma warning restore CA2254
 #endif
     }
+#pragma warning restore CA1050
 }

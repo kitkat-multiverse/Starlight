@@ -1,15 +1,16 @@
 using Starlight.Protobuf.Core;
 using Starlight.Protobuf.Fixtures;
 using Xunit;
+using PingReqSerializer = Starlight.Protobuf.Fixtures.V99.PingReqSerializer;
 
 namespace Starlight.Protobuf.Tests;
 
 /// <summary>
-/// Base serializers: the canonical, version-independent wire format used for
-/// server-to-server exchange. Unlike the per-version serializers, a base message
-/// serializes with its own structural field numbers via the argument-free
-/// <see cref="MessageExtensions.ToByteArray{T}(T)"/> / <c>MergeFrom</c> path, so any
-/// server holding the base contract can decode it losslessly.
+///     Base serializers: the canonical, version-independent wire format used for
+///     server-to-server exchange. Unlike the per-version serializers, a base message
+///     serializes with its own structural field numbers via the argument-free
+///     <see cref="MessageExtensions.ToByteArray{T}(T)" /> / <c>MergeFrom</c> path, so any
+///     server holding the base contract can decode it losslessly.
 /// </summary>
 public sealed class BaseSerializerTests
 {
@@ -78,6 +79,6 @@ public sealed class BaseSerializerTests
         // The same message encodes differently under the canonical base format
         // (field 2) and the v99 wire format (field 4) -- the whole point of keeping
         // a separate base serializer for server-to-server traffic.
-        Assert.NotEqual(message.ToByteArray(), message.ToByteArray(Fixtures.V99.PingReqSerializer.Instance));
+        Assert.NotEqual(message.ToByteArray(), message.ToByteArray(PingReqSerializer.Instance));
     }
 }
