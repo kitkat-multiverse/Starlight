@@ -27,7 +27,7 @@ public sealed class PropCommand(PlayerManager players) : ICommand
 
         if (player is null)
         {
-            if (args.Length < 3 || !uint.TryParse(args[0], out var uid) || uid == 0)
+            if (args.Length != 3 || !uint.TryParse(args[0], out var uid) || uid == 0)
             {
                 await UsageError(context);
                 return;

@@ -38,6 +38,9 @@ public sealed class PlayerProps
         if (value > max)
             return $"Value for {prop} must be {DescribeRange(min, max)}.";
 
+        if (CurrentFor(prop) is {} current && Get(current) > value)
+            _explicit[(uint)current] = value;
+
         _explicit[(uint)prop] = value;
         return null;
     }
@@ -81,7 +84,16 @@ public sealed class PlayerProps
         => prop switch {
             PlayerProperty.CurSpringVolume => Get(PlayerProperty.MaxSpringVolume),
             PlayerProperty.CurPersistStamina => Get(PlayerProperty.MaxStamina),
+            PlayerProperty.CurPersistDiveStamina => Get(PlayerProperty.MaxDiveStamina),
             _ => PlayerPropertyInfo.Max(prop)
+        };
+
+    internal static PlayerProperty? CurrentFor(PlayerProperty prop)
+        => prop switch {
+            PlayerProperty.MaxSpringVolume => PlayerProperty.CurSpringVolume,
+            PlayerProperty.MaxStamina => PlayerProperty.CurPersistStamina,
+            PlayerProperty.MaxDiveStamina => PlayerProperty.CurPersistDiveStamina,
+            _ => null
         };
 
     private static string DescribeRange(long min, long max) => (min, max) switch {

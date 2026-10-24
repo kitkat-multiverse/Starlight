@@ -5,33 +5,43 @@ namespace Starlight.Game.Player;
 
 public sealed class PropsModule(IPlayer player) : IModule
 {
+    private readonly CheatToggles _cheats = new();
     private PlayerProps? _props;
 
     public PlayerProps Props
     {
         get
         {
-            if (_props is not null)
-                return _props;
-
-            lock (player.StateLock)
-            {
-                if (_props is not null)
-                    return _props;
-
-                Cheats.Load(player.State);
-                _props = PlayerProps.FromState(player.State);
-            }
-
-            return _props;
+            LoadState();
+            return _props!;
         }
     }
 
-    public CheatToggles Cheats { get; } = new();
+    public CheatToggles Cheats
+    {
+        get
+        {
+            LoadState();
+            return _cheats;
+        }
+    }
+
+    private void LoadState()
+    {
+        lock (player.StateLock)
+        {
+            if (_props is not null)
+                return;
+
+            _cheats.Load(player.State);
+            _props = PlayerProps.FromState(player.State);
+        }
+    }
 
     public async Task<string?> SetPropAsync(PlayerProperty prop, long value)
     {
         long previous;
+        var notify = new PlayerPropNotify();
 
         lock (player.StateLock)
         {
@@ -43,9 +53,13 @@ public sealed class PropsModule(IPlayer player) : IModule
                 return error;
 
             Props.WriteTo(player.State);
+            notify.PropMap[(uint)prop] = prop.Value(value);
+
+            if (PlayerProps.CurrentFor(prop) is {} current)
+                notify.PropMap[(uint)current] = current.Value(Props.Get(current));
         }
 
-        if (ReasonFor(prop) is {} reason)
+        if (value > previous && ReasonFor(prop) is {} reason)
         {
             await player.Send(new PlayerPropChangeReasonNotify {
                 PropType = (uint)prop,
@@ -55,14 +69,17 @@ public sealed class PropsModule(IPlayer player) : IModule
             });
         }
 
-        await player.Send(new PlayerPropNotify {
-            PropMap = { [(uint)prop] = prop.Value(value) }
-        });
+        await player.Send(notify);
 
-        await player.Send(new PlayerPropChangeNotify {
-            PropType = (uint)prop,
-            PropDelta = (uint)(value - previous)
-        });
+        var delta = (decimal)value - previous;
+
+        if (delta is > 0 and <= uint.MaxValue)
+        {
+            await player.Send(new PlayerPropChangeNotify {
+                PropType = (uint)prop,
+                PropDelta = (uint)delta
+            });
+        }
 
         return null;
     }

@@ -16,10 +16,13 @@ public sealed class MapModule(IPlayer player, GameData? data = null) : IModule
     [Opcode]
     public GetScenePointRsp OnGetScenePoint(GetScenePointReq msg)
     {
-        LoadState();
+        uint[] points;
 
-        var unlocks = _unlocks.GetValueOrDefault(msg.SceneId);
-        var points = unlocks?.UnlockedPoints ?? [];
+        lock (player.StateLock)
+        {
+            LoadState();
+            points = [.. _unlocks.GetValueOrDefault(msg.SceneId)?.UnlockedPoints ?? []];
+        }
 
         return new GetScenePointRsp {
             SceneId = msg.SceneId,
@@ -34,15 +37,19 @@ public sealed class MapModule(IPlayer player, GameData? data = null) : IModule
     [Opcode]
     public GetSceneAreaRsp OnGetSceneArea(GetSceneAreaReq msg)
     {
-        LoadState();
+        uint[] areas;
 
-        var unlocks = _unlocks.GetValueOrDefault(msg.SceneId);
+        lock (player.StateLock)
+        {
+            LoadState();
+            areas = [.. _unlocks.GetValueOrDefault(msg.SceneId)?.UnlockedAreas ?? []];
+        }
 
         // TODO: also send CityInfo for statue cities 1-5 here, from its Manager.
         //       Requires a statue-of-the-seven manager that does not exist yet.
         return new GetSceneAreaRsp {
             SceneId = msg.SceneId,
-            AreaIdList = [.. unlocks?.UnlockedAreas ?? []]
+            AreaIdList = [.. areas]
         };
     }
 
@@ -54,6 +61,8 @@ public sealed class MapModule(IPlayer player, GameData? data = null) : IModule
             return 0;
 
         var added = 0;
+        ScenePointUnlockNotify? pointNotify = null;
+        SceneAreaUnlockNotify? areaNotify = null;
 
         lock (player.StateLock)
         {
@@ -78,31 +87,34 @@ public sealed class MapModule(IPlayer player, GameData? data = null) : IModule
                 for (var area = 1u; area <= AreaIdCeiling; area++)
                     unlocks.UnlockedAreas.Add(area);
             }
+
+            var scene = player.Module<WorldModule>().Scene;
+
+            if (scene is not null && _unlocks.TryGetValue(scene.Id, out var current))
+            {
+                pointNotify = new ScenePointUnlockNotify {
+                    SceneId = scene.Id,
+                    PointList = [.. current.UnlockedPoints]
+                };
+
+                areaNotify = new SceneAreaUnlockNotify {
+                    SceneId = scene.Id,
+                    AreaList = [.. current.UnlockedAreas]
+                };
+            }
         }
 
-        var scene = player.Module<WorldModule>().Scene;
+        if (pointNotify is not null)
+            await player.Send(pointNotify);
 
-        if (scene is not null && _unlocks.TryGetValue(scene.Id, out var current))
-        {
-            await player.Send(new ScenePointUnlockNotify {
-                SceneId = scene.Id,
-                PointList = [.. current.UnlockedPoints]
-            });
-
-            await player.Send(new SceneAreaUnlockNotify {
-                SceneId = scene.Id,
-                AreaList = [.. current.UnlockedAreas]
-            });
-        }
+        if (areaNotify is not null)
+            await player.Send(areaNotify);
 
         return added;
     }
 
     private void LoadState()
     {
-        if (_loaded)
-            return;
-
         lock (player.StateLock)
         {
             if (_loaded)
